@@ -45,9 +45,11 @@
 > 3. Fases 4 a 8, na ordem do roteiro abaixo.
 > 4. Fase 9: tarefa no Agendador do Windows (ver README).
 >
-> Descobertas do reconhecimento inicial, ainda **não confirmadas** com HTML real: app Blazor
-> (LeptonX), classes `vh-*`; busca por URL `/jobs/{slug}-jobs` (~10 resultados, sem paginação);
-> vaga em `/job/{id}`; cards não mostram empresa.
+> **Listagem e vaga, confirmados contra o site real:** busca por URL `/jobs/{slug}-jobs` filtra
+> de verdade; vaga em `/job/{id}`; cards não mostram empresa — **e a página da vaga também não**
+> ("our hiring partner"), então `Job.company` fica `None` e email/digest não podem depender dela.
+> Correção do reconhecimento inicial: a listagem **tem scroll infinito** (10 cards no primeiro
+> render, 25 depois de rolar), então `MAX_LISTING_SCROLLS` é relevante.
 
 Serviço pessoal que, todo dia às 08:00 (America/Sao_Paulo), faz login na VanHack via navegador,
 coleta as vagas por scraping, filtra por buscas configuráveis, analisa cada vaga nova com o Claude
@@ -376,8 +378,8 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 - [ ] Validar contra o site real: `uv run vanhack-login` e depois `uv run vanhack-check`
 
 ### Fase 4: Listagem + detalhe
-- [ ] `listing.py` e `detail.py` extraem corretamente a partir das fixtures (testes offline)
-- [ ] Execução real com uma keyword lista vagas e detalha 2 delas
+- [x] `listing.py` e `detail.py` extraem corretamente a partir das fixtures (testes offline)
+- [x] Execução real: busca "python" lista 13 vagas e detalha a primeira
 
 ### Fase 4b: Sync de perfil
 - [x] `scraper/profile.py` extrai o perfil a partir da fixture (teste offline)
