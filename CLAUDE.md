@@ -262,7 +262,33 @@ Listas guardadas como JSON. Criar tabelas no startup (`SQLModel.metadata.create_
   /connect/authorize?client_id=VanHack_BlazorWebApp...`) quando não há autenticação.
   O cookie que importa não é o `.AspNetCore.Antiforgery.*`, que existe mesmo deslogado.
 
-### Página de perfil (`/profile`): particularidades já observadas
+### Página de perfil (`/profile`): estrutura real mapeada
+
+Layout semântico e estável (`pf-*` = perfil, `vh-*` = design system). Os ids gerados pelo Blazor
+(`0HNP0Q2EPN2A7`, `vhdd-<guid>-button`) **mudam a cada render** — nunca usar como seletor.
+
+```
+section.pf-section > h5.pf-section-title + div.pf-card
+  div.pf-field > label.pf-label + controle, onde o controle é um de:
+      div.vh-dd                     -> o texto é o valor escolhido
+      div.dropdown > input.form-control (autocomplete) -> valor em input_value()
+      div.pf-radio-group > label.pf-radio > input      -> ler o marcado
+      div.pf-company-checks > label.pf-check > input   -> ler os marcados
+      vários div.pf-target-row                         -> lista (7 países)
+  div.pf-skill-group > .pf-skill-group-title + div.pf-skill-row(.pf-skill-select/.pf-skill-years)
+  div.pf-lang-row > .pf-lang-select + .pf-lang-level
+  div.pf-exp > a.pf-item-title + .pf-item-sub + div.pf-role(.pf-role-head/.pf-role-desc/.pf-chips)
+  div.pf-chips > span.vh-chip      -> uma skill por chip; há chips com espaço ("Accounts Receivable")
+  div.pf-degree > label.pf-caption + div.vh-dd
+```
+
+`_mapa_de_campos()` guarda **todos** os pares pergunta/resposta, não só os rótulos conhecidos:
+se a VanHack reescrever uma pergunta, o dado continua chegando ao prompt.
+
+Não existe campo de resumo/bio no perfil: o "headline" é a resposta de
+"Which role best applies to your experience?".
+
+### Página de perfil: particularidades já observadas
 
 - É um **formulário editável**, não uma página de leitura: grande parte dos dados (cargo, top 3 skills,
   skills secundárias, países de preferência, idiomas, links) está em `value` de inputs/selects/autocompletes.
@@ -354,9 +380,10 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 - [ ] Execução real com uma keyword lista vagas e detalha 2 delas
 
 ### Fase 4b: Sync de perfil
-- [ ] `scraper/profile.py` extrai o perfil a partir da fixture (teste offline)
-- [ ] Hash estável: rodar duas vezes sem mudança no site não cria novo snapshot
-- [ ] Execução real grava o primeiro snapshot
+- [x] `scraper/profile.py` extrai o perfil a partir da fixture (teste offline)
+- [x] Hash estável: mesmo conteúdo gera o mesmo `content_hash`
+- [x] Validado contra o site real (cargo, skills, idiomas, 4 experiências, formação)
+- [ ] Persistir o ProfileSnapshot no banco (depende da Fase 5)
 
 ### Fase 5: Banco + buscas
 - [ ] Models criados, CRUD de `/searches` com testes
