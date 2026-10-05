@@ -1,0 +1,34 @@
+[project]
+name = "vanhack-watcher"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "gabriel vieira", email = "116896794+gvieiragoulart@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "aiosmtplib>=5.1.3",
+    "anthropic>=1.11.0",
+    "apscheduler>=3.11.3",
+    "fastapi>=0.142.2",
+    "httpx>=0.28.1",
+    "playwright>=1.63.0",
+    "pydantic-settings>=2.15.0",
+    "sqlmodel>=0.0.47",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+vanhack-watcher = "vanhack_watcher:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.10",
+]
