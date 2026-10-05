@@ -19,3 +19,15 @@ Os valores de `input` vivem na propriedade DOM, não no atributo, então a captu
 
 Para recapturar depois de uma mudança no site: abra `/profile` com a sessão válida, repita esse
 tratamento e **audite o arquivo** (`sig=`, `skoid`, `blob.core`, email, nome) antes de commitar.
+
+## `listing.html`, `detail_12030.html`, `detail_12018.html`
+
+Capturados em 2026-10-05 de `/jobs/python-jobs` (container `div.vh-cards`, depois de rolar) e de
+`/job/<id>` (raiz `div.vh-jd`). Removidos `script`, `style`, `svg`, `img` e `.dropdown-menu`.
+São anúncios de vaga, sem dados do usuário.
+
+`detail_12018.html` mantém de propósito a seção `.vh-jd-recommended`, com minicards de **outras**
+vagas: é o que prova que o extrator não mistura vaga recomendada com a vaga aberta.
+
+Atenção ao escrever testes: a fixture roda sem CSS, e `inner_text()` não insere o espaço que
+elementos inline teriam na página real ("CAD $160k /yr" vira "CAD$160k/yr").

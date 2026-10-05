@@ -125,8 +125,46 @@ PII_LABELS = (
     "name",
 )
 
-# --- Listagem e detalhe de vaga -------------------------------------------
-# Ainda não mapeados (Fase 4). Observações a confirmar com HTML real:
-#   - busca por URL: /jobs/{slug}-jobs (~10 resultados, sem paginação)
-#   - página da vaga: /job/{id}
-#   - cards da listagem não mostram a empresa
+# --- Listagem de vagas (/jobs e /jobs/{slug}-jobs) ------------------------
+# A busca é feita por URL: /jobs/python-jobs filtra de verdade (conferido
+# comparando os ids devolvidos). A listagem tem **scroll infinito**: 10 cards
+# no primeiro render, 25 depois de rolar.
+
+CARDS_CONTAINER = "div.vh-cards"
+# Escopar os links ao container é obrigatório: a página da vaga tem
+# `a.vh-jd-minicard` apontando para outras vagas (recomendadas/recentes).
+CARD_LINK = "a.vh-card-link"
+CARD = "div.vh-card"
+CARD_EYEBROW = "div.vh-eyebrow"  # ex.: "BACKEND ENGINEER · 8+ YEARS OF EXPERIENCE"
+CARD_TITLE = "h2.vh-card-title"
+CARD_LOCATION = "span.vh-detail-label"
+CARD_MODE = "span.vh-mode-pill"  # "Hybrid" / "Fully remote"
+CARD_SKILL = "span.vh-skill"
+CARD_SKILL_MUST = "vh-skill-must"  # modificador: skill obrigatória
+CARD_POSTED = "span.vh-posted"
+CARD_SALARY = "div.vh-salary-amount"
+CARD_CANDIDATE_LOCATION = "div.vh-card-candidate-location"
+
+JOB_URL_ID = r"/job/(\d+)"  # o id da vaga vem da URL, nunca do texto
+
+# --- Página da vaga (/job/{id}) -------------------------------------------
+
+JD_ROOT = "div.vh-jd"
+JD_TITLE = "section.vh-jd-hero h1"
+JD_FACT = "span.vh-jd-fact"
+JD_MODE = "span.vh-jd-mode-pill"
+JD_CANDIDATE_LOCATION = "div.vh-jd-candidate-location"
+JD_DESCRIPTION = "div.vh-jd-description"
+JD_SALARY = "span.vh-jd-apply-salary-amount"
+
+# Blocos de skill: cabeçalho (MUST-HAVE / NICE-TO-HAVE / LANGUAGES) + chips.
+JD_SUBBLOCK = "div.vh-jd-subblock"
+JD_SUBBLOCK_HEAD = "div.vh-jd-skill-key-head"
+JD_CHIP = "span.vh-jd-skill"
+JD_CHIP_YEARS = "small"  # dentro do chip: "5 Year(s)"
+JD_HEAD_MUST = "MUST-HAVE"
+JD_HEAD_NICE = "NICE-TO-HAVE"
+JD_HEAD_LANGUAGES = "LANGUAGES"
+
+# A VanHack **não publica a empresa**: nem no card, nem na página da vaga
+# (a descrição diz "our hiring partner"). `empresa` fica None de propósito.
