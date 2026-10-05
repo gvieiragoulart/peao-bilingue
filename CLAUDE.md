@@ -13,30 +13,35 @@
     `profile_notes.md` é só complemento manual.
   - Email é o canal principal (análise completa); WhatsApp via Twilio é opcional (resumo).
   - Modelo da análise configurável em `ANALYSIS_MODEL` (padrão `claude-sonnet-5-5`).
-- **Mapeamento do site:** feito em 2026-10-05 com Claude in Chrome na conta logada do usuário
-  (somente leitura). Resultado em `src/vanhack_watcher/scraper/selectors.py`.
-- **Ambiente:** `gh` já instalado e autenticado.
+- **Ambiente:** `gh` instalado, mas o PAT não tem escopo para criar repositórios nem alterar
+  visibilidade. Repo remoto: `gvieiragoulart/peao-bilingue` (privado), criado à mão.
 
-### Próxima tarefa
-1. `git init -b main`, `git add .`, mostrar o `git status` e confirmar que `.env`, `data/` e `artifacts/`
-   NÃO estão incluídos; commit inicial; `gh repo create vanhack-watcher --private --source=. --push`.
-2. Seguir as pendências do bloco "Estado atual" abaixo, uma de cada vez, pedindo ao usuário que faça
-   o login manual quando necessário (`uv run vanhack-login --headed`).
-
-
-> **Estado atual (2026-10-05):** fases 1, 3–8 implementadas e com testes (19 passando, offline).
-> Fase 2 parcial: seletores de listagem, detalhe e perfil mapeados no site real
-> (`scraper/selectors.py`), mas as fixtures em `tests/fixtures/` são **reconstruções** da estrutura.
-> Pendências, nesta ordem:
-> 1. Rodar `uv run vanhack-login --headed`, depois `POST /profile/sync` e conferir `GET /profile`
->    (validar a extração dos campos do formulário e a remoção de PII).
-> 2. `uv run vanhack-run --dry-run` contra o site real; corrigir seletores com base em `artifacts/`.
-> 3. Substituir as fixtures pelo HTML real (`page.content()`), anonimizado.
-> 4. Mapear a tela de login real (os seletores de login em `selectors.py` são genéricos).
-> 5. Fase 9: tarefa no Agendador do Windows (ver README).
+> **Estado atual (2026-10-05):** o código descrito no handoff original nunca chegou à máquina —
+> só o `CLAUDE.md` existia. Projeto recomeçado do zero.
+> **Fase 1 (setup) e Fase 3 (browser + autenticação) implementadas**, 7 testes offline passando.
+> Fases 2 e 4+ pendentes.
 >
-> Descobertas do mapeamento: app Blazor (LeptonX), classes `vh-*`; busca por URL
-> `/jobs/{slug}-jobs` (~10 resultados, sem paginação); vaga em `/job/{id}`; cards não mostram empresa.
+> **O login mudou de desenho (verificado no site real em 2026-10-05):**
+> `app.vanhack.com/login` responde **404**. O login real fica em `auth.vanhack.com` e é
+> **passwordless** ("Log in or sign up with your email. No password needed."): magic link por email,
+> Google ou LinkedIn. A página é protegida por **Cloudflare Turnstile** e tem um **honeypot**
+> (input rotulado "Website"). Um navegador automatizado foi recusado na hora
+> ("Security check could not complete").
+> Consequências já aplicadas no código: `VANHACK_EMAIL`/`VANHACK_PASSWORD` não existem mais,
+> não há `auth.login()` automático, e a sessão vem **sempre** de login manual (`uv run vanhack-login`).
+>
+> Pendências, nesta ordem:
+> 1. `uv run vanhack-login` (login manual na janela aberta) e depois `uv run vanhack-check`:
+>    responde a pergunta que decide a viabilidade do projeto — se o Cloudflare também bloqueia
+>    `/jobs` e `/profile` **logados** sob Playwright. Se bloquear, a abordagem browser-only morre.
+> 2. Fase 2: mapear listagem, detalhe e `/profile` com a sessão válida; salvar HTML real
+>    anonimizado em `tests/fixtures/`; preencher `selectors.py`.
+> 3. Fases 4 a 8, na ordem do roteiro abaixo.
+> 4. Fase 9: tarefa no Agendador do Windows (ver README).
+>
+> Descobertas do reconhecimento inicial, ainda **não confirmadas** com HTML real: app Blazor
+> (LeptonX), classes `vh-*`; busca por URL `/jobs/{slug}-jobs` (~10 resultados, sem paginação);
+> vaga em `/job/{id}`; cards não mostram empresa.
 
 Serviço pessoal que, todo dia às 08:00 (America/Sao_Paulo), faz login na VanHack via navegador,
 coleta as vagas por scraping, filtra por buscas configuráveis, analisa cada vaga nova com o Claude
@@ -62,8 +67,11 @@ O FastAPI é o painel de controle (buscas, histórico, análises, status). A col
 - **Nada de chamar a API interna da VanHack** (nem com httpx, nem interceptando XHR para consumir JSON).
   A coleta é feita lendo o DOM renderizado com Playwright, como um usuário.
 - **Não contornar 2FA, captcha ou detecção de bot.** Se aparecerem: parar, salvar evidência,
-  notificar o usuário e exigir login manual (`uv run vanhack-login --headed`).
-- **Login só quando a sessão expira.** Sempre tentar primeiro com `data/state.json`.
+  notificar o usuário e exigir login manual (`uv run vanhack-login`).
+- **O login é sempre manual.** Não existe login automático: o site é passwordless e protegido por
+  Cloudflare Turnstile. O robô só reaproveita `data/state.json`; se a sessão expirou, o run termina
+  com `login_required` e avisa o usuário. Nunca preencher o formulário de login, e **nunca** tocar
+  no campo honeypot "Website".
 - **Comportamento educado:** uma execução por vez, sem paralelismo de páginas, pausa aleatória de
   2–5 s entre navegações, limite de vagas detalhadas por execução (`MAX_DETAILS_PER_RUN`).
 - **Segredos só no `.env`** (no `.gitignore`, junto com `data/` e `artifacts/`). Nunca logar senha
@@ -105,7 +113,7 @@ vanhack-watcher/
 │   ├── cli.py                     # entrypoints: vanhack-login, vanhack-run
 │   ├── scraper/
 │   │   ├── browser.py             # cria browser/context, carrega/salva storage_state
-│   │   ├── auth.py                # is_logged_in, login, detect_challenge (2FA/captcha)
+│   │   ├── auth.py                # is_logged_in, ensure_logged_in, detect_challenge (captcha)
 │   │   ├── selectors.py           # TODOS os seletores aqui, documentados
 │   │   ├── listing.py             # busca por keyword, scroll/paginação, extrai cards
 │   │   ├── detail.py              # extrai dados completos da página da vaga
@@ -135,8 +143,9 @@ vanhack-watcher/
 `pyproject.toml` deve expor os scripts:
 ```toml
 [project.scripts]
-vanhack-login = "vanhack_watcher.cli:login"   # --headed para login manual
-vanhack-run   = "vanhack_watcher.cli:run"     # --dry-run para não notificar
+vanhack-login = "vanhack_watcher.cli:login"   # login manual, janela sempre visível
+vanhack-check = "vanhack_watcher.cli:check"   # valida a sessão salva (--headed para depurar)
+vanhack-run   = "vanhack_watcher.cli:run"     # --dry-run para não notificar (fase 8)
 ```
 
 ---
@@ -144,13 +153,12 @@ vanhack-run   = "vanhack_watcher.cli:run"     # --dry-run para não notificar
 ## Configuração (`.env.example`)
 
 ```
-# VanHack
-VANHACK_EMAIL=
-VANHACK_PASSWORD=
-VANHACK_LOGIN_URL=https://app.vanhack.com/login
+# VanHack (sem credenciais: o login é manual e passwordless)
+VANHACK_LOGIN_URL=https://auth.vanhack.com
 VANHACK_JOBS_URL=https://app.vanhack.com/jobs
 VANHACK_PROFILE_URL=https://app.vanhack.com/profile
 HEADLESS=true
+BROWSER_CHANNEL=chrome
 MAX_LISTING_SCROLLS=15
 MAX_DETAILS_PER_RUN=15
 
@@ -207,10 +215,11 @@ Listas guardadas como JSON. Criar tabelas no startup (`SQLModel.metadata.create_
 
 1. Adquirir lock (`asyncio.Lock`). Se já houver execução rodando → retornar 409 / pular.
 2. Abrir browser com `data/state.json` se existir.
-3. Abrir `VANHACK_JOBS_URL`. Se redirecionar para login ou mostrar formulário de login → `auth.login()`.
-4. `auth.login()`: preencher email/senha, enviar, aguardar navegação. Rodar `detect_challenge()`:
-   se houver 2FA/captcha/erro de credencial → dump em artifacts, `Run.status=login_required`,
-   notificar e encerrar. Sucesso → salvar `state.json`.
+3. Abrir `VANHACK_JOBS_URL`. Rodar `detect_challenge()`: se houver captcha/verificação humana →
+   dump em artifacts, `Run.status=erro`, notificar e encerrar.
+4. `auth.ensure_logged_in()`: se o app redirecionou para `auth.vanhack.com`, a sessão expirou →
+   dump em artifacts, `Run.status=login_required`, notificar pedindo `uv run vanhack-login` e
+   encerrar. Não há tentativa de login automático.
 5. **Sync de perfil**: abrir `VANHACK_PROFILE_URL`, extrair os dados (expandir seções colapsadas /
    "ver mais" se existirem), normalizar e calcular hash. Se mudou: gravar novo ProfileSnapshot,
    marcar `Run.profile_changed` e, se `REANALYZE_ON_PROFILE_CHANGE`, enfileirar reanálise das vagas
@@ -316,18 +325,19 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 - [ ] `config.py` carregando o `.env`; `uv run pytest` passa (teste trivial)
 
 ### Fase 2: Descoberta (com o usuário)
-- [ ] Usuário roda `uv run playwright codegen https://app.vanhack.com/login` e compartilha as interações
-- [ ] Mapear seletores: formulário de login, campo de busca, card de vaga, link, paginação/scroll,
-      campos da página de detalhe, indicadores de 2FA/captcha/erro de login
+- [x] Tela de login mapeada: `auth.vanhack.com`, passwordless, Turnstile + honeypot
+- [ ] Com a sessão válida, mapear seletores: campo de busca, card de vaga, link, paginação/scroll,
+      campos da página de detalhe
 - [ ] Mapear a página `/profile`: todas as seções e como expandir conteúdo colapsado
 - [ ] Salvar em `tests/fixtures/`: `listing.html`, `profile.html` e ao menos 2 `detail_*.html` reais
       (remover dados pessoais do HTML)
 - [ ] `selectors.py` preenchido e comentado
 
 ### Fase 3: Browser + autenticação
-- [ ] `vanhack-login --headed` abre o navegador para login manual e salva `state.json`
-- [ ] `is_logged_in()` e `login()` automático funcionam contra o site real
-- [ ] `detect_challenge()` identifica 2FA/captcha/credencial inválida e gera dump
+- [x] `vanhack-login` abre o navegador (sempre visível) para login manual e salva `state.json`
+- [x] `is_logged_in()` detecta sessão expirada pelo redirecionamento ao host de auth
+- [x] `detect_challenge()` identifica Turnstile/bloqueio do Cloudflare e gera dump
+- [ ] Validar contra o site real: `uv run vanhack-login` e depois `uv run vanhack-check`
 
 ### Fase 4: Listagem + detalhe
 - [ ] `listing.py` e `detail.py` extraem corretamente a partir das fixtures (testes offline)
@@ -367,7 +377,8 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 
 ```bash
 uv sync
-uv run vanhack-login --headed
+uv run vanhack-login          # login manual, salva data/state.json
+uv run vanhack-check          # a sessão salva ainda vale? o app carrega sob Playwright?
 uv run vanhack-run --dry-run
 uv run uvicorn vanhack_watcher.main:app --reload
 uv run pytest

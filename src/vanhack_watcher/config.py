@@ -2,15 +2,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     # VanHack
-    vanhack_email: str = ""
-    vanhack_password: str = ""
-    vanhack_login_url: str = "https://app.vanhack.com/login"
+    # O login é passwordless (magic link / Google / LinkedIn) e protegido por
+    # Cloudflare Turnstile, então não há credenciais aqui: a sessão vem sempre
+    # de um login manual salvo em data/state.json.
+    vanhack_login_url: str = "https://auth.vanhack.com"
     vanhack_jobs_url: str = "https://app.vanhack.com/jobs"
     vanhack_profile_url: str = "https://app.vanhack.com/profile"
     headless: bool = True
+    browser_channel: str = "chrome"
     max_listing_scrolls: int = 15
     max_details_per_run: int = 15
 
