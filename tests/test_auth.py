@@ -5,23 +5,45 @@ from vanhack_watcher.scraper import auth
 
 
 class PaginaFake:
-    """Stub para as checagens que dependem apenas da URL."""
+    """Stub de navegação: `destino` é onde o site deixa a página após o goto."""
 
-    def __init__(self, url: str) -> None:
-        self.url = url
+    def __init__(self, destino: str) -> None:
+        self.destino = destino
+        self.url = "about:blank"
+        self.visitadas: list[str] = []
+
+    async def goto(self, url: str, wait_until: str | None = None) -> None:
+        self.visitadas.append(url)
+        self.url = self.destino
+
+    async def wait_for_load_state(
+        self, state: str, timeout: float | None = None
+    ) -> None:
+        pass
 
 
-async def test_logado_quando_esta_no_app():
-    assert await auth.is_logged_in(PaginaFake("https://app.vanhack.com/jobs"))
+async def test_sessao_valida_quando_o_perfil_abre():
+    pagina = PaginaFake("https://app.vanhack.com/profile")
+    assert await auth.has_valid_session(pagina)
 
 
-async def test_deslogado_quando_redireciona_para_o_auth():
-    assert not await auth.is_logged_in(PaginaFake("https://auth.vanhack.com/"))
+async def test_sem_sessao_quando_o_perfil_redireciona_para_o_auth():
+    pagina = PaginaFake(
+        "https://auth.vanhack.com/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize"
+    )
+    assert not await auth.has_valid_session(pagina)
+
+
+async def test_a_prova_de_sessao_usa_o_perfil_e_nao_a_listagem():
+    pagina = PaginaFake("https://app.vanhack.com/profile")
+    await auth.has_valid_session(pagina)
+    assert pagina.visitadas == ["https://app.vanhack.com/profile"]
 
 
 async def test_ensure_logged_in_exige_login_manual():
+    pagina = PaginaFake("https://auth.vanhack.com/Account/Login")
     with pytest.raises(auth.LoginRequired, match="vanhack-login"):
-        await auth.ensure_logged_in(PaginaFake("https://auth.vanhack.com/"))
+        await auth.ensure_logged_in(pagina)
 
 
 async def test_detecta_recusa_do_cloudflare(page: Page):

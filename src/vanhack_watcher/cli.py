@@ -42,15 +42,14 @@ def check() -> None:
 async def _login() -> None:
     async with open_context(headless=False) as context:
         page = await context.new_page()
-        await auth.goto(page, settings.vanhack_jobs_url)
 
-        if await auth.is_logged_in(page):
+        if await auth.has_valid_session(page):
             caminho = await save_state(context)
             print(f"A sessão já estava válida. Salva em {caminho}.")
             return
 
         print(INSTRUCOES_LOGIN)
-        app_host = urlparse(settings.vanhack_jobs_url).netloc
+        app_host = urlparse(settings.vanhack_profile_url).netloc
         try:
             await page.wait_for_url(
                 lambda url: urlparse(url).netloc == app_host, timeout=LOGIN_TIMEOUT_MS
@@ -60,6 +59,10 @@ async def _login() -> None:
             raise SystemExit(
                 f"Tempo esgotado sem login. Evidência em {base}.*"
             ) from None
+
+        if not await auth.has_valid_session(page):
+            base = await debug.dump(page, "login_incompleto")
+            raise SystemExit(f"O login não completou. Evidência em {base}.*")
 
         caminho = await save_state(context)
         print(f"Login concluído. Sessão salva em {caminho}.")
@@ -73,23 +76,28 @@ async def _check(*, headless: bool) -> int:
     async with open_context(headless=headless) as context:
         page = await context.new_page()
 
-        for nome, url in (
-            ("vagas", settings.vanhack_jobs_url),
-            ("perfil", settings.vanhack_profile_url),
-        ):
-            await auth.goto(page, url)
-            desafio = await auth.detect_challenge(page)
-            if desafio:
-                base = await debug.dump(page, f"challenge_{nome}")
-                print(f"[{nome}] bloqueado: {desafio}. Evidência em {base}.*")
-                return 2
-            if not await auth.is_logged_in(page):
-                base = await debug.dump(page, f"login_required_{nome}")
-                print(
-                    f"[{nome}] sessão expirada (redirecionou para {page.url}). Evidência em {base}.*"
-                )
-                return 1
-            print(f"[{nome}] OK: {page.url} — {await page.title()}")
+        # O perfil é a prova da sessão: a listagem abre para visitante anônimo.
+        sessao_ok = await auth.has_valid_session(page)
+        desafio = await auth.detect_challenge(page)
+        if desafio:
+            base = await debug.dump(page, "challenge_perfil")
+            print(f"[perfil] bloqueado: {desafio}. Evidência em {base}.*")
+            return 2
+        if not sessao_ok:
+            base = await debug.dump(page, "login_required_perfil")
+            print(
+                f"[perfil] sem sessão (redirecionou para o login). Evidência em {base}.*"
+            )
+            return 1
+        print(f"[perfil] OK: {page.url} — {await page.title()}")
+
+        await auth.goto(page, settings.vanhack_jobs_url)
+        desafio = await auth.detect_challenge(page)
+        if desafio:
+            base = await debug.dump(page, "challenge_vagas")
+            print(f"[vagas] bloqueado: {desafio}. Evidência em {base}.*")
+            return 2
+        print(f"[vagas] OK: {page.url} — {await page.title()}")
 
     print("Sessão válida e páginas acessíveis pelo Playwright.")
     return 0
