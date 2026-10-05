@@ -26,9 +26,19 @@ async def goto(page: Page, url: str) -> None:
         await page.wait_for_load_state("networkidle", timeout=SETTLE_TIMEOUT_MS)
 
 
-async def is_logged_in(page: Page) -> bool:
-    """Logado = o app não nos jogou para o host de autenticação."""
-    return urlparse(page.url).netloc != login_host()
+def on_auth_host(page: Page) -> bool:
+    """A página atual é a tela de login do `auth.vanhack.com`."""
+    return urlparse(page.url).netloc == login_host()
+
+
+async def has_valid_session(page: Page) -> bool:
+    """Confirma a sessão abrindo uma rota que exige autenticação.
+
+    A listagem de vagas renderiza para visitante anônimo, então carregá-la não
+    prova nada: só o perfil força o redirecionamento OIDC quando não há sessão.
+    """
+    await goto(page, settings.vanhack_profile_url)
+    return not on_auth_host(page)
 
 
 async def detect_challenge(page: Page) -> str | None:
@@ -44,7 +54,7 @@ async def detect_challenge(page: Page) -> str | None:
 
 
 async def ensure_logged_in(page: Page) -> None:
-    if not await is_logged_in(page):
+    if not await has_valid_session(page):
         raise LoginRequired(
             "Sessão da VanHack expirada. Rode `uv run vanhack-login` e faça o login manualmente."
         )

@@ -30,10 +30,16 @@
 > Consequências já aplicadas no código: `VANHACK_EMAIL`/`VANHACK_PASSWORD` não existem mais,
 > não há `auth.login()` automático, e a sessão vem **sempre** de login manual (`uv run vanhack-login`).
 >
+> **Viabilidade confirmada (2026-10-05):** o Cloudflare **não** bloqueia o app sob Playwright
+> headless — `/jobs` carregou normalmente. A abordagem browser-only se sustenta; o Turnstile
+> vive só na tela de login, que é manual de qualquer forma.
+>
+> **A listagem `/jobs` é pública** (abre para visitante anônimo); só `/profile` exige sessão.
+> Por isso `has_valid_session()` prova a sessão pelo perfil: carregar a listagem não prova nada.
+> Essa confusão já gerou um falso positivo de "sessão válida" com `state.json` anônimo.
+>
 > Pendências, nesta ordem:
-> 1. `uv run vanhack-login` (login manual na janela aberta) e depois `uv run vanhack-check`:
->    responde a pergunta que decide a viabilidade do projeto — se o Cloudflare também bloqueia
->    `/jobs` e `/profile` **logados** sob Playwright. Se bloquear, a abordagem browser-only morre.
+> 1. `uv run vanhack-login` (login manual real) e `uv run vanhack-check` para confirmar o perfil.
 > 2. Fase 2: mapear listagem, detalhe e `/profile` com a sessão válida; salvar HTML real
 >    anonimizado em `tests/fixtures/`; preencher `selectors.py`.
 > 3. Fases 4 a 8, na ordem do roteiro abaixo.
@@ -251,6 +257,10 @@ Listas guardadas como JSON. Criar tabelas no startup (`SQLModel.metadata.create_
   (o `sleep` aleatório é só para o ritmo educado).
 - User agent padrão do Chromium; nada de técnicas de evasão.
 - `debug.dump(page, label)` salva `artifacts/<timestamp>_<label>.png` e `.html`.
+- **Nunca use a listagem para verificar sessão:** `/jobs` renderiza para anônimo. A prova de
+  sessão é `/profile`, que dispara o fluxo OIDC (`auth.vanhack.com/Account/Login?ReturnUrl=
+  /connect/authorize?client_id=VanHack_BlazorWebApp...`) quando não há autenticação.
+  O cookie que importa não é o `.AspNetCore.Antiforgery.*`, que existe mesmo deslogado.
 
 ### Página de perfil (`/profile`): particularidades já observadas
 
