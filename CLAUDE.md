@@ -413,10 +413,11 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 - [ ] Alterar algo no perfil VanHack → próxima execução detecta, grava snapshot e reanalisa
 
 ### Fase 9: Deploy
-- [ ] Documentar no README como rodar como serviço:
-      Windows (NSSM ou Agendador de Tarefas), Linux (systemd), e opção Docker para VPS
-- [ ] Documentar o procedimento de sessão expirada em VPS
-      (logar localmente e copiar `data/state.json`)
+- [x] README com instalação, uso, API e serviço: Windows (Agendador e NSSM),
+      Linux (systemd) e Docker para VPS
+- [x] Procedimento de sessão expirada em VPS (logar localmente e copiar `data/state.json`)
+- [x] Documentado que no Docker é obrigatório `BROWSER_CHANNEL=""`: o padrão usa o Chrome
+      da máquina, que não existe dentro da imagem
 
 ---
 
