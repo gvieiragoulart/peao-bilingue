@@ -55,6 +55,23 @@ uv run peao run                  # coleta, analisa e notifica
 `--sem-analise` é o jeito de validar a coleta de graça. Para limitar fontes ou trocar o LLM:
 `--fonte vanhack --llm anthropic`. `uv run peao adaptadores` lista o que está disponível.
 
+## Escolhendo o LLM
+
+Quatro provedores: **Claude** (`anthropic`, padrão), **Ollama** (local e grátis), **OpenAI** e
+**Gemini**. Escolha com `LLM_ANALISE` no `.env` ou `--llm` na linha de comando.
+
+Para gastar menos, use um modelo local na **triagem**: ele dá uma nota rápida a cada vaga nova,
+e só as que passam de `LIMIAR_TRIAGEM` vão para a análise completa no provedor pago.
+
+```bash
+ollama pull qwen3:8b                                  # uma vez; cabe numa GPU de 6 GB
+uv run peao run --dry-run --llm ollama                # tudo local
+uv run peao run --triagem ollama --llm anthropic      # Ollama filtra, Claude analisa
+```
+
+Modelos locais de 7–8B são mais fracos na análise fina (as 20 perguntas e as melhorias de
+perfil); para triagem eles servem bem.
+
 ## Como funciona
 
 Arquitetura de portas e adaptadores: o núcleo só conhece interfaces (`FonteDeVagas`,

@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     # Quais adapters usar, pelo nome registrado nas fábricas.
     fontes_habilitadas: list[str] = ["vanhack"]
     llm_analise: str = "anthropic"
+    # Opcional: um LLM barato (ex.: "ollama") dá uma nota rápida a cada vaga nova,
+    # e só as que passam do limiar seguem para a análise completa.
+    llm_triagem: str | None = None
+    limiar_triagem: int = 60
     notificadores: list[str] = ["email", "whatsapp"]
 
     # VanHack
@@ -25,9 +29,19 @@ class Settings(BaseSettings):
 
     timezone: str = "America/Sao_Paulo"
 
-    # Análise
+    # Provedores de LLM. OpenAI e Gemini não têm modelo padrão de propósito:
+    # o catálogo deles muda, e um nome inventado falharia só na hora de rodar.
     anthropic_api_key: str = ""
-    analysis_model: str = "claude-sonnet-5-5"
+    anthropic_modelo: str = "claude-sonnet-5-5"
+    ollama_host: str = "http://localhost:11434"
+    ollama_modelo: str = "qwen3:8b"
+    ollama_contexto: int = 8192
+    openai_api_key: str = ""
+    openai_modelo: str = ""
+    gemini_api_key: str = ""
+    gemini_modelo: str = ""
+
+    # Análise
     profile_notes_path: str = "profile_notes.md"
     reanalyze_on_profile_change: bool = True
     max_reanalyses_on_change: int = 10

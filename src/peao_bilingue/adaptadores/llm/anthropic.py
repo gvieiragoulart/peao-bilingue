@@ -30,7 +30,7 @@ class Anthropic(ProvedorLLM):
         api_key: str | None = None,
         client: AsyncAnthropic | None = None,
     ) -> None:
-        self.modelo = modelo or settings.analysis_model
+        self.modelo = modelo or settings.anthropic_modelo
         # Chave vazia vira None para o SDK resolver a credencial sozinho.
         self._client = client or AsyncAnthropic(
             api_key=api_key or settings.anthropic_api_key or None

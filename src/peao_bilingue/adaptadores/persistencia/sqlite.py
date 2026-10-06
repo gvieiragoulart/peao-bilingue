@@ -1,8 +1,10 @@
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import JSON, Column, Engine
+from sqlalchemy import inspect as inspecionar
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from peao_bilingue.configuracao import settings
@@ -15,6 +17,7 @@ from peao_bilingue.dominio.entidades import (
     Perfil,
     StatusExecucao,
     StatusVaga,
+    TriagemSalva,
     Vaga,
     VagaListada,
 )
@@ -50,6 +53,7 @@ class VagaTabela(SQLModel, table=True):
     buscas: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     status: StatusVaga = StatusVaga.nova
     vista_em: datetime = Field(default_factory=agora)
+    triagem: dict | None = Field(default=None, sa_column=Column(JSON))
 
 
 class PerfilTabela(SQLModel, table=True):
@@ -85,6 +89,7 @@ class ExecucaoTabela(SQLModel, table=True):
     vagas_listadas: int = 0
     vagas_novas: int = 0
     vagas_analisadas: int = 0
+    vagas_barradas_na_triagem: int = 0
     perfil_mudou: bool = False
     erro: str | None = None
     artefato: str | None = None
@@ -98,6 +103,46 @@ def engine_padrao() -> Engine:
     )
 
 
+def _sql_padrao(valor: object) -> str | None:
+    if isinstance(valor, bool):
+        return str(int(valor))
+    if isinstance(valor, Enum):
+        valor = valor.value
+    if isinstance(valor, int | float):
+        return str(valor)
+    if isinstance(valor, str):
+        return "'" + valor.replace("'", "''") + "'"
+    return None
+
+
+def _migrar(engine: Engine) -> None:
+    """Acrescenta às tabelas existentes as colunas novas dos models.
+
+    O `create_all` só cria tabelas que faltam: sem isto, um campo novo quebraria
+    o banco de quem já usa o app. Cobre apenas mudanças aditivas.
+    """
+    inspetor = inspecionar(engine)
+    with engine.begin() as conexao:
+        for tabela in SQLModel.metadata.sorted_tables:
+            if not inspetor.has_table(tabela.name):
+                continue
+            existentes = {
+                coluna["name"] for coluna in inspetor.get_columns(tabela.name)
+            }
+            for coluna in tabela.columns:
+                if coluna.name in existentes:
+                    continue
+                tipo = coluna.type.compile(dialect=engine.dialect)
+                padrao = None
+                if coluna.default is not None and coluna.default.is_scalar:
+                    padrao = _sql_padrao(coluna.default.arg)
+                # Linhas antigas recebem o padrão; sem ele um int viria NULL.
+                sufixo = f" DEFAULT {padrao}" if padrao is not None else ""
+                conexao.exec_driver_sql(
+                    f'ALTER TABLE "{tabela.name}" ADD COLUMN "{coluna.name}" {tipo}{sufixo}'
+                )
+
+
 def _diferencas(antes: dict, depois: dict) -> list[str]:
     chaves = set(antes) | set(depois)
     return sorted(chave for chave in chaves if antes.get(chave) != depois.get(chave))
@@ -106,6 +151,7 @@ def _diferencas(antes: dict, depois: dict) -> list[str]:
 class RepositorioSQLite(RepositorioVagas):
     def __init__(self, engine: Engine | None = None) -> None:
         self._engine = engine or engine_padrao()
+        _migrar(self._engine)
         SQLModel.metadata.create_all(self._engine)
 
     def _sessao(self) -> Session:
@@ -195,6 +241,9 @@ class RepositorioSQLite(RepositorioVagas):
                         fit_score=fit,
                         buscas=linha.buscas or [],
                         vista_em=linha.vista_em,
+                        triagem=TriagemSalva.model_validate(linha.triagem)
+                        if linha.triagem
+                        else None,
                     )
                 )
         return vagas[offset : offset + limite]
@@ -239,6 +288,15 @@ class RepositorioSQLite(RepositorioVagas):
                     perfil_id=perfil_id,
                 )
             )
+            sessao.commit()
+
+    def salvar_triagem(self, chave: str, triagem: TriagemSalva) -> None:
+        with self._sessao() as sessao:
+            linha = sessao.get(VagaTabela, chave)
+            if linha is None:
+                raise LookupError(f"Vaga {chave} não encontrada.")
+            linha.triagem = triagem.model_dump()
+            sessao.add(linha)
             sessao.commit()
 
     def analise_vigente(self, chave: str) -> AnaliseSalva | None:
