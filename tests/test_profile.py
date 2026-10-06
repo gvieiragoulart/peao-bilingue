@@ -97,3 +97,19 @@ async def test_hash_muda_apenas_quando_o_perfil_muda(dados: dict):
     assert profile.content_hash(dados) == profile.content_hash(dict(dados))
     alterado = {**dados, "cargo": "Data Engineer"}
     assert profile.content_hash(alterado) != profile.content_hash(dados)
+
+
+async def test_texto_para_o_prompt_traz_o_essencial(dados: dict):
+    texto = profile.to_text(dados)
+    assert "Cargo: Software Developer" in texto
+    assert "Python" in texto
+    assert "Acme Data Labs" in texto
+    assert "English (Advanced)" in texto
+    # preferências multivaloradas viram lista legível
+    assert "Canada, United States" in texto
+
+
+async def test_texto_do_prompt_nao_leva_pii(dados: dict):
+    texto = profile.to_text(dados).lower()
+    for proibido in ("fulano", "passport", "expiration", "citizenship"):
+        assert proibido not in texto

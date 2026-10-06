@@ -312,8 +312,12 @@ Não existe campo de resumo/bio no perfil: o "headline" é a resposta de
 - Entrada: `text` do ProfileSnapshot mais recente + `profile_notes.md` (se existir) + dados completos da vaga.
 - `melhorias_perfil` deve citar itens concretos do perfil VanHack atual (ex.: "skill X não aparece
   na lista de skills", "headline não menciona Y"), não conselhos genéricos.
-- Forçar **tool use** com uma ferramenta `registrar_analise` cujo input schema vem de
-  `JobAnalysis.model_json_schema()` e `tool_choice` obrigatório nessa ferramenta.
+- **Structured output, não tool use forçado.** `tool_choice` `any`/`tool` devolve **400** nos
+  modelos atuais (Sonnet 5.5, Opus 5.5, Fable 5.1), e aqui a ferramenta só existia para receber
+  JSON validado. Usar `client.messages.parse(..., output_format=JobAnalysis)`, que impõe o schema
+  no servidor e devolve o objeto já validado em `parsed_output`.
+- Checar `stop_reason == "refusal"` antes de ler a resposta: os classificadores de segurança
+  podem recusar, e isso vem como HTTP 200.
 - `JobAnalysis` (Pydantic): `fit_score: int (0–100)`, `resumo: str`, `preparacao: list[str]` (≥3),
   `perguntas: list[str]` (exatamente 20), `gaps: list[str]`, `melhorias_perfil: list[str]` (≥3).
 - Validação falhou → até 2 novas tentativas informando o erro ao modelo. Persistir falha no Run.
@@ -392,8 +396,9 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 - [x] CRUD de `/searches` com testes (SQLite em memória, sem tocar no banco real)
 
 ### Fase 6: Analyzer
-- [ ] Tool use + validação; teste com cliente mockado (sucesso e retry)
-- [ ] Análise real de uma vaga das fixtures com 20 perguntas válidas
+- [x] Structured output + validação; testes com cliente mockado (sucesso, retry e recusa)
+- [x] `profile.to_text()` monta o perfil do prompt sem PII (links entram só como preenchido/em branco)
+- [ ] Análise real de uma vaga das fixtures com 20 perguntas válidas (gasta credito da API)
 
 ### Fase 7: Notifier
 - [ ] Email por vaga (texto legível, seções claras) e digest WhatsApp ≤ 1500 caracteres

@@ -38,6 +38,69 @@ async def extract(page: Page) -> dict:
     }
 
 
+def to_text(dados: dict) -> str:
+    """Versão legível do perfil, usada no prompt da análise."""
+    linhas = [
+        f"Cargo: {dados.get('cargo') or 'não informado'}",
+        f"Anos como profissional de TI: {dados.get('anos_como_profissional_ti') or '-'}",
+        f"Liderança: {dados.get('lideranca') or '-'} ({dados.get('anos_de_lideranca') or '-'})",
+        f"Formação: {dados.get('formacao') or '-'}",
+        f"Aberto a remoto: {dados.get('aberto_a_remoto') or '-'}",
+        f"Inglês avaliado no vídeo: {dados.get('ingles_avaliado_no_video') or '-'}",
+        "",
+        "Skills principais: " + _skills_em_linha(dados.get("skills_principais")),
+        "Skills secundárias: " + _skills_em_linha(dados.get("skills_secundarias")),
+        "Idiomas: "
+        + ", ".join(
+            f"{i['idioma']} ({i.get('nivel') or '-'})"
+            for i in dados.get("idiomas") or []
+        ),
+    ]
+
+    # Só a presença do link: a URL carrega o nome real e o modelo não a acessa.
+    links = dados.get("links") or {}
+    if links:
+        linhas.append(
+            "Links no perfil: "
+            + ", ".join(
+                f"{nome} {'preenchido' if url else 'em branco'}"
+                for nome, url in links.items()
+            )
+        )
+
+    linhas += ["", "Experiências:"]
+    for experiencia in dados.get("experiencias") or []:
+        setor = f" ({experiencia['setor']})" if experiencia.get("setor") else ""
+        linhas.append(
+            f"- {experiencia.get('empresa') or 'empresa não informada'}{setor}"
+        )
+        for cargo in experiencia.get("cargos") or []:
+            linhas.append(f"  {cargo.get('cargo_e_periodo') or '-'}")
+            if cargo.get("descricao"):
+                linhas.append(f"  {cargo['descricao']}")
+            if cargo.get("skills"):
+                linhas.append("  Skills: " + ", ".join(cargo["skills"]))
+
+    outros = dados.get("outros_campos") or {}
+    if outros:
+        linhas += ["", "Preferências declaradas na VanHack:"]
+        linhas += [
+            f"- {chave}: {_valor_em_texto(valor)}"
+            for chave, valor in outros.items()
+            if valor
+        ]
+
+    return "\n".join(linhas)
+
+
+def _skills_em_linha(skills: list[dict] | None) -> str:
+    return ", ".join(f"{s['skill']} ({s.get('anos') or '-'})" for s in skills or [])
+
+
+def _valor_em_texto(valor: object) -> str:
+    return ", ".join(valor) if isinstance(valor, list) else str(valor)
+
+
 def normalizar(dados: dict) -> str:
     """JSON canônico do perfil, base para o hash de mudança."""
     return json.dumps(dados, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
