@@ -67,7 +67,9 @@ async def analisar(
     devolve 400 nos modelos atuais, e aqui a ferramenta só existia para obter
     JSON validado de volta.
     """
-    client = client or AsyncAnthropic(api_key=settings.anthropic_api_key)
+    # Chave vazia precisa virar None: assim o SDK resolve a credencial sozinho,
+    # em vez de tentar autenticar com string vazia.
+    client = client or AsyncAnthropic(api_key=settings.anthropic_api_key or None)
     notas = _notas_do_usuario() if notas is None else notas
     mensagens: list[dict] = [
         {"role": "user", "content": montar_prompt(vaga, perfil_texto, notas)}
