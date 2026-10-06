@@ -30,26 +30,27 @@
 > Consequências já aplicadas no código: `VANHACK_EMAIL`/`VANHACK_PASSWORD` não existem mais,
 > não há `auth.login()` automático, e a sessão vem **sempre** de login manual (`uv run vanhack-login`).
 >
-> **Viabilidade confirmada (2026-10-05):** o Cloudflare **não** bloqueia o app sob Playwright
-> headless — `/jobs` carregou normalmente. A abordagem browser-only se sustenta; o Turnstile
-> vive só na tela de login, que é manual de qualquer forma.
+> **Estado atual (2026-10-05):** fases 1 a 9 implementadas, 74 testes offline passando,
+> `ruff check` limpo. O código foi reescrito do zero nesta máquina — o do handoff original
+> nunca chegou aqui.
 >
-> **A listagem `/jobs` é pública** (abre para visitante anônimo); só `/profile` exige sessão.
-> Por isso `has_valid_session()` prova a sessão pelo perfil: carregar a listagem não prova nada.
-> Essa confusão já gerou um falso positivo de "sessão válida" com `state.json` anônimo.
+> **Pendências, todas dependendo do usuário (custam dinheiro ou exigem ação dele):**
+> 1. `uv run vanhack-run --dry-run` contra o site real — a análise gasta crédito da API.
+> 2. Envio real de um email de teste, depois de preencher SMTP no `.env`.
+> 3. Editar algo no perfil da VanHack e confirmar que a execução seguinte detecta,
+>    grava snapshot novo e reanalisa as vagas em aberto.
 >
-> Pendências, nesta ordem:
-> 1. `uv run vanhack-login` (login manual real) e `uv run vanhack-check` para confirmar o perfil.
-> 2. Fase 2: mapear listagem, detalhe e `/profile` com a sessão válida; salvar HTML real
->    anonimizado em `tests/fixtures/`; preencher `selectors.py`.
-> 3. Fases 4 a 8, na ordem do roteiro abaixo.
-> 4. Fase 9: tarefa no Agendador do Windows (ver README).
->
-> **Listagem e vaga, confirmados contra o site real:** busca por URL `/jobs/{slug}-jobs` filtra
-> de verdade; vaga em `/job/{id}`; cards não mostram empresa — **e a página da vaga também não**
-> ("our hiring partner"), então `Job.company` fica `None` e email/digest não podem depender dela.
-> Correção do reconhecimento inicial: a listagem **tem scroll infinito** (10 cards no primeiro
-> render, 25 depois de rolar), então `MAX_LISTING_SCROLLS` é relevante.
+> **O que o site real mostrou, e que o handoff original errava:**
+> - Login é **passwordless** em `auth.vanhack.com` (`app.vanhack.com/login` dá 404), com
+>   Cloudflare Turnstile e honeypot. Não existe login automático: só `vanhack-login` manual.
+> - O Cloudflare **não** bloqueia o app logado sob Playwright headless — a coleta é viável.
+> - `/jobs` é **público**: carregá-lo não prova sessão. A prova é `/profile`, que dispara o
+>   fluxo OIDC quando não há autenticação.
+> - A listagem tem **scroll infinito** (10 cards no primeiro render, 25 após rolar).
+> - A busca por URL (`/jobs/{slug}-jobs`) filtra de verdade.
+> - A **empresa contratante não é publicada** em lugar nenhum ("our hiring partner"):
+>   `Job.company` é `None` por natureza, e email/digest não dependem dela.
+> - **Tool use forçado devolve 400** nos modelos atuais; a análise usa structured output.
 
 Serviço pessoal que, todo dia às 08:00 (America/Sao_Paulo), faz login na VanHack via navegador,
 coleta as vagas por scraping, filtra por buscas configuráveis, analisa cada vaga nova com o Claude
@@ -362,24 +363,24 @@ Implementar **uma fase por vez**, rodar testes e `uv run ruff check` ao final de
 e pedir validação ao usuário antes de seguir quando a fase depender do site real.
 
 ### Fase 1: Setup
-- [ ] `uv init --package`, dependências instaladas, `uv run playwright install chromium`
-- [ ] `.env.example`, `.gitignore` (`.env`, `data/`, `artifacts/`), `profile_notes.md` de exemplo
-- [ ] `config.py` carregando o `.env`; `uv run pytest` passa (teste trivial)
+- [x] `uv init --package`, dependências instaladas, `uv run playwright install chromium`
+- [x] `.env.example`, `.gitignore` (`.env`, `data/`, `artifacts/`), `profile_notes.md` de exemplo
+- [x] `config.py` carregando o `.env`; `uv run pytest` passa
 
 ### Fase 2: Descoberta (com o usuário)
 - [x] Tela de login mapeada: `auth.vanhack.com`, passwordless, Turnstile + honeypot
-- [ ] Com a sessão válida, mapear seletores: campo de busca, card de vaga, link, paginação/scroll,
+- [x] Com a sessão válida, mapear seletores: campo de busca, card de vaga, link, scroll,
       campos da página de detalhe
-- [ ] Mapear a página `/profile`: todas as seções e como expandir conteúdo colapsado
-- [ ] Salvar em `tests/fixtures/`: `listing.html`, `profile.html` e ao menos 2 `detail_*.html` reais
-      (remover dados pessoais do HTML)
-- [ ] `selectors.py` preenchido e comentado
+- [x] Mapear a página `/profile`: nada é colapsado, tudo já vem renderizado
+- [x] Salvar em `tests/fixtures/`: `listing.html`, `profile.html` e 2 `detail_*.html` reais,
+      anonimizados (ver `tests/fixtures/README.md`)
+- [x] `selectors.py` preenchido e comentado
 
 ### Fase 3: Browser + autenticação
 - [x] `vanhack-login` abre o navegador (sempre visível) para login manual e salva `state.json`
 - [x] `is_logged_in()` detecta sessão expirada pelo redirecionamento ao host de auth
 - [x] `detect_challenge()` identifica Turnstile/bloqueio do Cloudflare e gera dump
-- [ ] Validar contra o site real: `uv run vanhack-login` e depois `uv run vanhack-check`
+- [x] Validado contra o site real: login manual e `vanhack-check` com perfil e vagas OK
 
 ### Fase 4: Listagem + detalhe
 - [x] `listing.py` e `detail.py` extraem corretamente a partir das fixtures (testes offline)
@@ -389,7 +390,7 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 - [x] `scraper/profile.py` extrai o perfil a partir da fixture (teste offline)
 - [x] Hash estável: mesmo conteúdo gera o mesmo `content_hash`
 - [x] Validado contra o site real (cargo, skills, idiomas, 4 experiências, formação)
-- [ ] Persistir o ProfileSnapshot no banco (depende da Fase 5)
+- [x] Persistir o ProfileSnapshot no banco (`pipeline.salvar_snapshot`, só grava se o hash muda)
 
 ### Fase 5: Banco + buscas
 - [x] Models criados (`models.py`), SQLite em `data/watcher.db`, tabelas no startup
