@@ -1,4 +1,5 @@
 from email.message import EmailMessage
+from typing import ClassVar
 
 import aiosmtplib
 
@@ -14,6 +15,14 @@ class Email(Notificador):
     """Um email por vaga analisada, com a análise completa."""
 
     nome = "email"
+    rotulo = "Email (análise completa)"
+    campos: ClassVar[dict[str, str]] = {
+        "smtp_host": "Servidor SMTP",
+        "smtp_port": "Porta",
+        "smtp_user": "Usuário",
+        "smtp_pass": "Senha",
+        "email_to": "Enviar para",
+    }
 
     async def notificar(
         self, resultados: list[ResultadoAnalise], *, perfil_mudou: bool

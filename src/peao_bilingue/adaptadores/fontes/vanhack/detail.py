@@ -30,7 +30,7 @@ async def extract(page: Page, url: str | None = None) -> dict:
         "skills_obrigatorias": must,
         "skills_desejaveis": nice,
         "idiomas": idiomas,
-        "descricao": await _texto(page.locator(selectors.JD_DESCRIPTION)),
+        "descricao": await _texto_em_paragrafos(page.locator(selectors.JD_DESCRIPTION)),
     }
 
 
@@ -38,6 +38,22 @@ async def _texto(locator: Locator) -> str | None:
     if not await locator.count():
         return None
     texto = " ".join((await locator.first.inner_text()).split())
+    return texto or None
+
+
+async def _texto_em_paragrafos(locator: Locator) -> str | None:
+    """Como `_texto`, mas mantém uma linha por parágrafo/item.
+
+    A descrição achatada numa linha só fica ilegível na tela e tira a estrutura
+    (responsabilidades, requisitos) que ajuda o LLM a ler a vaga.
+    """
+    if not await locator.count():
+        return None
+    linhas = (
+        " ".join(linha.split())
+        for linha in (await locator.first.inner_text()).splitlines()
+    )
+    texto = "\n".join(linha for linha in linhas if linha)
     return texto or None
 
 

@@ -1,6 +1,6 @@
 import asyncio
 import random
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager, suppress
 from typing import Self, TypeVar
 
@@ -12,12 +12,13 @@ from peao_bilingue.adaptadores.fontes.vanhack import (
     detail,
     listing,
     profile,
+    sessao,
 )
 from peao_bilingue.adaptadores.fontes.vanhack.browser import open_context, save_state
 from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import Perfil, Skill, Vaga, VagaResumo
 from peao_bilingue.dominio.erros import DesafioHumano, ErroDeColeta, SessaoExpirada
-from peao_bilingue.dominio.portas import FonteDePerfil, FonteDeVagas
+from peao_bilingue.dominio.portas import FonteDePerfil, FonteDeVagas, SessaoManual
 from peao_bilingue.fabricas import fontes
 
 T = TypeVar("T")
@@ -27,7 +28,7 @@ PAUSA_MAX_S = 5.0
 
 
 @fontes.registrar("vanhack")
-class VanHack(FonteDeVagas, FonteDePerfil):
+class VanHack(FonteDeVagas, FonteDePerfil, SessaoManual):
     """Coleta lendo o DOM com Playwright, na sessão salva pelo login manual.
 
     Nunca chama a API interna da VanHack e nunca tenta passar por desafio humano.
@@ -36,6 +37,16 @@ class VanHack(FonteDeVagas, FonteDePerfil):
     nome = "vanhack"
     rotulo = "VanHack"
     precisa_navegador = True
+
+    @classmethod
+    async def login_manual(cls, aviso: Callable[[str], None]) -> None:
+        await sessao.login_manual(aviso)
+
+    @classmethod
+    async def verificar_sessao(
+        cls, aviso: Callable[[str], None], *, headless: bool = True
+    ) -> int:
+        return await sessao.verificar_sessao(aviso, headless=headless)
 
     def __init__(
         self, *, headless: bool | None = None, max_scrolls: int | None = None

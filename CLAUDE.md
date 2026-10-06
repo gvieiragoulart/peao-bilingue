@@ -21,8 +21,9 @@ Para cada vaga nova a análise traz: fit score (0–100), resumo do encaixe, pas
 
 ## Estado atual (2026-10-06)
 
-**Fases 1 e 2 do novo roteiro concluídas:** núcleo hexagonal e quatro provedores de LLM
-(Anthropic, Ollama, OpenAI, Gemini) com triagem opcional; 130 testes offline, `ruff` limpo.
+**Fases 1 a 3 do novo roteiro concluídas:** núcleo hexagonal, quatro provedores de LLM
+(Anthropic, Ollama, OpenAI, Gemini) com triagem opcional, e o app desktop CustomTkinter
+(`uv run peao-ui`); 169 testes offline, `ruff` limpo.
 FastAPI, uvicorn e APScheduler saíram. Banco em `data/peao.db` (o antigo `watcher.db` ficou
 intocado) com 15 vagas da primeira coleta real. Três buscas cadastradas: Python, PHP/Laravel,
 React/TypeScript — sem `exclude`, porque filtrar "junior" descartaria vaga sênior que diz
@@ -46,9 +47,9 @@ O banco evolui por **migração aditiva automática** (`_migrar` em `persistenci
 - **Fontes com API ou feed oficial** usam a API/feed. Scraping só onde não houver alternativa, e
   sempre lendo o DOM como um usuário.
 - **VanHack:** nada de chamar a API interna (nem httpx, nem interceptando XHR).
-- **Segredos fora do código:** hoje no `.env` (no `.gitignore`, junto com `data/` e `artifacts/`);
-  na Fase 3 passam para o Cofre de Credenciais do Windows via `keyring`. Nunca logar senha nem
-  cookie.
+- **Segredos no Cofre de Credenciais do Windows** (via `keyring`, serviço `peao-bilingue`), nunca
+  em arquivo versionado. O `.env` (no `.gitignore`, junto com `data/` e `artifacts/`) é só
+  fallback da CLI. Nunca logar senha nem cookie.
 - **PII fora do snapshot e do prompt:** nada de email, telefone, documento, visto, passaporte,
   cidadania, nome, nem URLs assinadas (currículo, vídeo). Há teste travando isso.
 - Todo texto voltado ao usuário em **português do Brasil**.
@@ -74,9 +75,27 @@ src/peao_bilingue/
 │   └── persistencia/sqlite.py   # tabelas SQLModel + RepositorioSQLite
 ├── fabricas.py        # Registro[T] + fontes / llms / notificadores
 ├── composicao.py      # raiz de composição: único lugar que liga portas a adapters
-├── configuracao.py    # Settings (pydantic-settings, lê .env)
+├── configuracao.py    # Settings: config.json + cofre do Windows + .env (fallback)
+├── ui/                # CustomTkinter: app, executor assíncrono, abas, componentes
 └── cli.py             # peao login | check | run | buscas | adaptadores
 ```
+
+**Configuração:** precedência `config.json` > cofre > variáveis de ambiente > `.env` > padrão. A
+interface grava em `data/config.json` (público) e no cofre (campos em `SEGREDOS`) via
+`configuracao.salvar()`, que também atualiza o `settings` **no lugar** — vários módulos fazem
+`from configuracao import settings`, e trocar o objeto não chegaria a eles. `PEAO_DADOS` muda a
+pasta de dados (padrão `data`); os testes a apontam para um temporário e trocam o keyring por um
+em memória **antes** de importar o projeto, para nunca tocar na configuração real.
+
+**Interface (`ui/`):** o Tkinter é síncrono e o núcleo é assíncrono (Playwright). As corrotinas
+rodam num loop asyncio numa thread própria (`ExecutorAssincrono`); os resultados voltam por
+`after()` (`acompanhar`) e os logs por uma fila (`FilaDeLog`). **Nenhum widget é tocado fora da
+thread da interface** — callbacks que vêm do worker (ex.: `aviso` do login) só enfileiram.
+Verificado no Windows: Playwright funciona nessa thread (loop Proactor) sem travar a janela.
+Os formulários de LLMs e avisos são montados a partir de `campos` que cada adapter declara, com
+o tipo do widget inferido do próprio `Settings`. Fontes com login manual implementam a porta
+`SessaoManual` e ganham botões de login/verificação automaticamente. `peao-ui` é gui-script:
+abre sem console.
 
 **Regra de dependência:** `dominio` não importa nada do projeto; `aplicacao` só conhece
 `dominio`; adapters implementam portas; só `composicao.py`, `cli.py` e (depois) `ui/` conhecem
@@ -189,8 +208,10 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, co
 - [x] **Fase 2 — LLMs:** Ollama, OpenAI, Gemini; provedor de triagem separado do de análise;
       contrato comum testado contra os quatro. **Falta validar contra os serviços reais:** o
       Ollama não está instalado na máquina, e OpenAI/Gemini precisam de chave.
-- [ ] **Fase 3 — UI CustomTkinter:** abas Vagas/Buscas/Fontes/LLMs/Perfil/Execuções/Config;
-      loop asyncio em thread própria, UI recebe progresso por fila + `after()`; `keyring`.
+- [x] **Fase 3 — UI CustomTkinter:** abas Vagas/Buscas/Fontes/LLMs/Perfil/Execuções/
+      Configurações; executor assíncrono em thread própria; segredos no cofre; janela conferida
+      por captura de tela (corrigidos botões cortados e coluna fora da borda). A descrição da vaga
+      passou a manter os parágrafos — melhora a tela e o prompt.
 - [ ] **Fase 4 — Agendador do Windows:** `Register-ScheduledTask -StartWhenAvailable`;
       lock entre processos com `filelock`; SQLite em modo WAL.
 - [ ] **Fase 5 — APIs públicas:** Remotive, RemoteOK, Arbeitnow, Himalayas, We Work Remotely.
@@ -210,7 +231,8 @@ VanHack para validar a reanálise.
 
 ```bash
 uv sync
-uv run peao login                    # login manual na VanHack
+uv run peao-ui                       # o app desktop
+uv run peao login                    # login manual na VanHack (--fonte para outras)
 uv run peao check                    # a sessão salva ainda vale?
 uv run peao buscas                   # lista; `buscas adicionar NOME kw1 kw2 --exclude x`
 uv run peao adaptadores              # fontes, LLMs e notificadores registrados

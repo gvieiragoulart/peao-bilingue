@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from openai import AsyncOpenAI
 from openai.lib._pydantic import to_strict_json_schema
 from pydantic import BaseModel
@@ -12,6 +14,11 @@ from peao_bilingue.fabricas import llms
 @llms.registrar("openai")
 class OpenAI(ProvedorLLM):
     nome = "openai"
+    rotulo = "OpenAI"
+    campos: ClassVar[dict[str, str]] = {
+        "openai_modelo": "Modelo (obrigatório)",
+        "openai_api_key": "Chave da API",
+    }
 
     def __init__(
         self,

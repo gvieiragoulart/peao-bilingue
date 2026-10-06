@@ -2,6 +2,10 @@ class SessaoExpirada(RuntimeError):
     """A fonte exige login e a sessão salva não vale mais. O login é sempre manual."""
 
 
+class LoginFalhou(RuntimeError):
+    """O login manual não terminou (tempo esgotado ou sessão não confirmada)."""
+
+
 class DesafioHumano(RuntimeError):
     """Captcha ou verificação humana na página. O sistema nunca tenta resolver."""
 

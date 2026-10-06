@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from anthropic import AsyncAnthropic, transform_schema
 from pydantic import BaseModel
 
@@ -22,6 +24,11 @@ BETA_FALLBACK = "server-side-fallback-2026-07-01"
 @llms.registrar("anthropic")
 class Anthropic(ProvedorLLM):
     nome = "anthropic"
+    rotulo = "Claude (Anthropic)"
+    campos: ClassVar[dict[str, str]] = {
+        "anthropic_modelo": "Modelo",
+        "anthropic_api_key": "Chave da API",
+    }
 
     def __init__(
         self,
