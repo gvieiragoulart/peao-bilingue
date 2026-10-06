@@ -19,6 +19,7 @@ from peao_bilingue.dominio.entidades import (
     RespostaLLM,
     ResultadoAnalise,
     StatusVaga,
+    TriagemSalva,
     Vaga,
     VagaListada,
     VagaResumo,
@@ -123,6 +124,9 @@ class RepositorioVagas(ABC):
 
     @abstractmethod
     def analise_vigente(self, chave: str) -> AnaliseSalva | None: ...
+
+    @abstractmethod
+    def salvar_triagem(self, chave: str, triagem: TriagemSalva) -> None: ...
 
     # perfil
     @abstractmethod

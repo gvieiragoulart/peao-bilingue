@@ -6,6 +6,7 @@ from peao_bilingue.dominio.entidades import (
     Perfil,
     RespostaLLM,
     ResultadoAnalise,
+    Triagem,
     Vaga,
     VagaResumo,
 )
@@ -65,23 +66,42 @@ class FonteComPerfilFake(FonteFake, FonteDePerfil):
 
 
 class ProvedorFake(ProvedorLLM):
-    """Devolve as respostas na ordem; sem respostas, uma análise válida com `fit`."""
+    """Devolve as respostas na ordem; sem respostas, uma válida com nota `fit`.
 
-    nome = "fake"
-    modelo = "fake-1"
+    `fits` permite uma nota por chamada (ex.: triagem que aprova uma e barra outra).
+    """
 
-    def __init__(self, respostas: list[RespostaLLM] | None = None, fit: int = 82):
+    def __init__(
+        self,
+        respostas: list[RespostaLLM] | None = None,
+        fit: int = 82,
+        *,
+        fits: list[int] | None = None,
+        nome: str = "fake",
+        falha: Exception | None = None,
+    ):
+        self.nome = nome
+        self.modelo = f"{nome}-1"
         self.respostas = list(respostas or [])
         self.fit = fit
+        self.fits = list(fits or [])
+        self.falha = falha
         self.chamadas: list[dict] = []
 
     async def gerar_json(self, sistema, mensagens, schema):
         self.chamadas.append(
             {"sistema": sistema, "mensagens": list(mensagens), "schema": schema}
         )
+        if self.falha:
+            raise self.falha
         if self.respostas:
             return self.respostas.pop(0)
-        return RespostaLLM(texto=analise(self.fit).model_dump_json())
+        nota = self.fits.pop(0) if self.fits else self.fit
+        if schema is Triagem:
+            return RespostaLLM(
+                texto=Triagem(fit_score=nota, motivo="ok").model_dump_json()
+            )
+        return RespostaLLM(texto=analise(nota).model_dump_json())
 
 
 class NotificadorFake(Notificador):

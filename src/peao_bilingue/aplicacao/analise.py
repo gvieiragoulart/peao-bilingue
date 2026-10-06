@@ -2,7 +2,7 @@ import json
 import re
 from pathlib import Path
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import JobAnalysis, Mensagem, Vaga
@@ -60,30 +60,22 @@ def _sem_cerca(texto: str) -> str:
     return _CERCA_DE_CODIGO.sub("", texto.strip())
 
 
-async def analisar(
-    vaga: Vaga,
-    perfil_texto: str,
-    provedor: ProvedorLLM,
-    *,
-    notas: str | None = None,
-) -> JobAnalysis:
-    """Analisa uma vaga contra o perfil, devolvendo o erro ao modelo se a validação falhar.
+async def gerar_validado[M: BaseModel](
+    provedor: ProvedorLLM, sistema: str, prompt: str, schema: type[M]
+) -> M:
+    """Pede JSON ao provedor e valida, devolvendo o erro ao modelo se falhar.
 
     A validação mora aqui, e não no provedor: nenhum deles garante no servidor
     limites como "exatamente 20 perguntas".
     """
-    notas = _notas_do_usuario() if notas is None else notas
-    mensagens = [
-        Mensagem(role="user", content=montar_prompt(vaga, perfil_texto, notas))
-    ]
-
+    mensagens = [Mensagem(role="user", content=prompt)]
     erro: ValidationError | None = None
     for _ in range(TENTATIVAS):
-        resposta = await provedor.gerar_json(SISTEMA, mensagens, JobAnalysis)
+        resposta = await provedor.gerar_json(sistema, mensagens, schema)
         if resposta.recusou:
             raise AnaliseInvalida(f"O modelo recusou a análise: {resposta.motivo}")
         try:
-            return JobAnalysis.model_validate_json(_sem_cerca(resposta.texto))
+            return schema.model_validate_json(_sem_cerca(resposta.texto))
         except ValidationError as falha:
             erro = falha
             mensagens += [
@@ -93,10 +85,21 @@ async def analisar(
                 Mensagem(
                     role="user",
                     content=(
-                        "A análise anterior foi rejeitada na validação:\n"
+                        "A resposta anterior foi rejeitada na validação:\n"
                         f"{falha}\n\nRefaça respeitando exatamente o schema."
                     ),
                 ),
             ]
+    raise AnaliseInvalida(f"Resposta inválida após {TENTATIVAS} tentativas: {erro}")
 
-    raise AnaliseInvalida(f"Análise inválida após {TENTATIVAS} tentativas: {erro}")
+
+async def analisar(
+    vaga: Vaga,
+    perfil_texto: str,
+    provedor: ProvedorLLM,
+    *,
+    notas: str | None = None,
+) -> JobAnalysis:
+    notas = _notas_do_usuario() if notas is None else notas
+    prompt = montar_prompt(vaga, perfil_texto, notas)
+    return await gerar_validado(provedor, SISTEMA, prompt, JobAnalysis)

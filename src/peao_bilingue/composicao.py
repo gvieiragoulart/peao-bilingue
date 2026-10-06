@@ -15,9 +15,11 @@ def montar_servicos(
     *,
     fontes: list[str] | None = None,
     llm: str | None = None,
+    triagem: str | None = None,
     analisar: bool = True,
     repositorio: RepositorioVagas | None = None,
 ) -> Servicos:
+    nome_triagem = triagem or settings.llm_triagem
     return Servicos(
         repositorio=repositorio or RepositorioSQLite(),
         fontes=[
@@ -29,4 +31,7 @@ def montar_servicos(
         notificadores=[
             fabricas.notificadores.criar(nome) for nome in settings.notificadores
         ],
+        triagem=fabricas.llms.criar(nome_triagem)
+        if analisar and nome_triagem
+        else None,
     )

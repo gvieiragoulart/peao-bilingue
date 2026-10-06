@@ -38,6 +38,9 @@ def main() -> None:
         "--fonte", action="append", help="limita a estas fontes (repetível)"
     )
     run.add_argument("--llm", help="provedor de LLM para a análise")
+    run.add_argument(
+        "--triagem", help="provedor barato que filtra antes da análise (ex.: ollama)"
+    )
     run.add_argument("--agendado", action="store_true", help=argparse.SUPPRESS)
 
     buscas = comandos.add_parser("buscas", help="lista ou cadastra buscas")
@@ -82,7 +85,10 @@ def main() -> None:
 
 def _run(args: argparse.Namespace) -> None:
     servicos = montar_servicos(
-        fontes=args.fonte, llm=args.llm, analisar=not args.sem_analise
+        fontes=args.fonte,
+        llm=args.llm,
+        triagem=args.triagem,
+        analisar=not args.sem_analise,
     )
     execucao = asyncio.run(
         executar(
@@ -96,6 +102,11 @@ def _run(args: argparse.Namespace) -> None:
         f"Execução {execucao.id}: {execucao.status.value} — "
         f"{execucao.vagas_listadas} listadas, {execucao.vagas_novas} novas, "
         f"{execucao.vagas_analisadas} analisadas."
+        + (
+            f" {execucao.vagas_barradas_na_triagem} barradas na triagem."
+            if execucao.vagas_barradas_na_triagem
+            else ""
+        )
     )
     if execucao.erro:
         print(execucao.erro)

@@ -21,10 +21,16 @@ Para cada vaga nova a análise traz: fit score (0–100), resumo do encaixe, pas
 
 ## Estado atual (2026-10-06)
 
-**Fase 1 do novo roteiro concluída:** núcleo hexagonal, 105 testes offline, `ruff` limpo.
-FastAPI, uvicorn e APScheduler saíram. Banco novo em `data/peao.db` (o antigo `watcher.db` ficou
-intocado). Três buscas cadastradas: Python, PHP/Laravel, React/TypeScript — sem `exclude`, porque
-filtrar "junior" descartaria vaga sênior que diz "mentor junior engineers".
+**Fases 1 e 2 do novo roteiro concluídas:** núcleo hexagonal e quatro provedores de LLM
+(Anthropic, Ollama, OpenAI, Gemini) com triagem opcional; 130 testes offline, `ruff` limpo.
+FastAPI, uvicorn e APScheduler saíram. Banco em `data/peao.db` (o antigo `watcher.db` ficou
+intocado) com 15 vagas da primeira coleta real. Três buscas cadastradas: Python, PHP/Laravel,
+React/TypeScript — sem `exclude`, porque filtrar "junior" descartaria vaga sênior que diz
+"mentor junior engineers".
+
+O banco evolui por **migração aditiva automática** (`_migrar` em `persistencia/sqlite.py`): o
+`create_all` não acrescenta colunas a tabelas existentes, então campo novo em model ganha
+`ALTER TABLE ADD COLUMN` com o default do model. Mudança não aditiva exige migração à mão.
 
 ---
 
@@ -107,6 +113,22 @@ primeira fonte que implementa `FonteDePerfil`; se a leitura falhar, usa o últim
   que suportam (Sonnet 5.5, Opus 5.5/5, Fable 5.1), vai o fallback de recusa do servidor
   (`fallbacks: "default"` + beta `server-side-fallback-2026-07-01`). Checar `stop_reason ==
   "refusal"` antes de ler: recusa chega como HTTP 200.
+- **Ollama:** `format` recebe o JSON Schema (vira gramática; a saída já sai no formato). O
+  contexto padrão do Ollama é pequeno e **trunca o prompt em silêncio** — `num_ctx` sempre
+  explícito (`OLLAMA_CONTEXTO`, 8192 cabe nos 6 GB com modelo de 8B). Desligado ou modelo não
+  baixado viram `ProvedorIndisponivel` com a instrução (`ollama serve` / `ollama pull`).
+- **OpenAI:** `chat.completions.create` com `response_format` estrito (o conversor
+  `to_strict_json_schema` é o mesmo do `parse`). Não usar `parse`: ele valida dentro do SDK e
+  engole o texto que a aplicação devolve ao modelo no retry. Recusa vem em `message.refusal`.
+- **Gemini:** o assistente se chama `"model"`; bloqueio de segurança **não** levanta exceção —
+  chega como resposta sem texto e `finish_reason` `SAFETY`/`PROHIBITED_CONTENT`/`BLOCKLIST`.
+- **OpenAI e Gemini não têm modelo padrão** (`OPENAI_MODELO`/`GEMINI_MODELO` obrigatórios): o
+  catálogo muda e um nome inventado só falharia na hora de rodar.
+- **Triagem** (`aplicacao/triagem.py`, `LLM_TRIAGEM` + `LIMIAR_TRIAGEM`): nota rápida nas vagas
+  novas; só as acima do limiar vão para a análise completa. Resultado salvo na vaga. Formato
+  inválido **deixa passar** (perder vaga boa custa mais que uma análise); provedor fora do ar
+  **derruba a execução** (mandar tudo para o provedor pago é o gasto que a triagem evita).
+  Reanálises não passam pela triagem.
 - **Antes de escrever um adapter novo:** conferir a API no SDK instalado (introspecção) e na doc
   oficial. Nunca supor nome de método ou parâmetro.
 - Prompt em PT-BR; `melhorias_perfil` cita itens concretos do perfil, não conselho genérico.
@@ -164,7 +186,9 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, co
 - [x] **Fase 1 — Núcleo hexagonal.** Domínio, portas, fábricas, composição; VanHack e Anthropic
       como adapters; FastAPI/APScheduler removidos; bug da listagem corrigido (busca vazia e
       renderização lenta); evidência salva em qualquer falha de leitura.
-- [ ] **Fase 2 — LLMs:** Ollama, OpenAI, Gemini; provedor de triagem separado do de análise.
+- [x] **Fase 2 — LLMs:** Ollama, OpenAI, Gemini; provedor de triagem separado do de análise;
+      contrato comum testado contra os quatro. **Falta validar contra os serviços reais:** o
+      Ollama não está instalado na máquina, e OpenAI/Gemini precisam de chave.
 - [ ] **Fase 3 — UI CustomTkinter:** abas Vagas/Buscas/Fontes/LLMs/Perfil/Execuções/Config;
       loop asyncio em thread própria, UI recebe progresso por fila + `after()`; `keyring`.
 - [ ] **Fase 4 — Agendador do Windows:** `Register-ScheduledTask -StartWhenAvailable`;
@@ -193,6 +217,8 @@ uv run peao adaptadores              # fontes, LLMs e notificadores registrados
 uv run peao run --sem-analise        # só coleta e salva; não chama LLM (não gasta crédito)
 uv run peao run --dry-run            # analisa, mas não notifica
 uv run peao run --fonte vanhack --llm anthropic
+uv run peao run --dry-run --llm ollama               # análise local, grátis
+uv run peao run --triagem ollama --llm anthropic     # Ollama filtra, Claude analisa
 uv run pytest
 uv run ruff check . && uv run ruff format .
 ```

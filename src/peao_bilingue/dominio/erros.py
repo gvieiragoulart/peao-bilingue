@@ -18,6 +18,10 @@ class ExecucaoEmAndamento(RuntimeError):
     """Já existe uma execução rodando; só uma por vez."""
 
 
+class ProvedorIndisponivel(RuntimeError):
+    """O provedor de LLM está fora do ar ou mal configurado; a mensagem diz o que fazer."""
+
+
 class AnaliseInvalida(RuntimeError):
     """O provedor de LLM não produziu uma análise válida dentro das tentativas."""
 

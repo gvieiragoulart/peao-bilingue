@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 
 from peao_bilingue.aplicacao import filtros
 from peao_bilingue.aplicacao.analise import analisar
+from peao_bilingue.aplicacao.triagem import triar
 from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import (
     Busca,
@@ -18,6 +19,7 @@ from peao_bilingue.dominio.entidades import (
     Perfil,
     ResultadoAnalise,
     StatusExecucao,
+    TriagemSalva,
     Vaga,
     VagaResumo,
 )
@@ -45,6 +47,7 @@ class Servicos:
     fontes: list[FonteDeVagas]
     analise: ProvedorLLM | None = None
     notificadores: list[Notificador] = field(default_factory=list)
+    triagem: ProvedorLLM | None = None
 
 
 @dataclass
@@ -217,11 +220,52 @@ async def _analisar_e_notificar(
             if vaga.chave not in chaves_novas
         ]
 
+    aprovadas = await _triar(servicos, execucao, estado)
     resultados = await analisar_vagas(
-        servicos, (estado.novas + reanalises)[: settings.max_analyses_per_run], estado
+        servicos, (aprovadas + reanalises)[: settings.max_analyses_per_run], estado
     )
     execucao.vagas_analisadas = len(resultados)
     await _notificar(servicos, resultados, execucao.perfil_mudou, dry_run)
+
+
+async def _triar(servicos: Servicos, execucao: Execucao, estado: _Estado) -> list[Vaga]:
+    """Nota rápida nas vagas novas; só as que passam do limiar seguem.
+
+    Reanálises não passam por aqui: já foram julgadas relevantes antes.
+    Erro de formato deixa a vaga passar (perder uma vaga boa custa mais que uma
+    análise), mas provedor fora do ar derruba a execução: mandar tudo para a
+    análise paga seria justamente o gasto que a triagem existe para evitar.
+    """
+    if servicos.triagem is None:
+        return estado.novas
+
+    aprovadas = []
+    for vaga in estado.novas:
+        try:
+            triagem = await triar(vaga, estado.perfil.texto, servicos.triagem)
+        except AnaliseInvalida as falha:
+            estado.falhas.append(f"triagem de {vaga.chave}: {falha}")
+            aprovadas.append(vaga)
+            continue
+
+        passou = triagem.fit_score >= settings.limiar_triagem
+        servicos.repositorio.salvar_triagem(
+            vaga.chave,
+            TriagemSalva(
+                triagem=triagem, provedor=servicos.triagem.nome, passou=passou
+            ),
+        )
+        if passou:
+            aprovadas.append(vaga)
+        else:
+            execucao.vagas_barradas_na_triagem += 1
+            logger.info(
+                "Triagem barrou %s (nota %d): %s",
+                vaga.chave,
+                triagem.fit_score,
+                triagem.motivo,
+            )
+    return aprovadas
 
 
 async def analisar_vagas(
