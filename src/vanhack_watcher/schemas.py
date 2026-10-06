@@ -3,6 +3,17 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
 
+class JobAnalysis(BaseModel):
+    """Saída da análise de uma vaga. O schema é imposto pelo structured output."""
+
+    fit_score: int = Field(ge=0, le=100)
+    resumo: str = Field(min_length=1)
+    preparacao: list[str] = Field(min_length=3)
+    perguntas: list[str] = Field(min_length=20, max_length=20)
+    gaps: list[str]
+    melhorias_perfil: list[str] = Field(min_length=3)
+
+
 class SearchCreate(BaseModel):
     name: str = Field(min_length=1)
     keywords: list[str] = Field(min_length=1)
