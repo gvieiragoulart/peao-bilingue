@@ -98,15 +98,21 @@ def _job_para_prompt(job: Job) -> dict:
 
 
 async def executar(
-    trigger: GatilhoRun = GatilhoRun.manual, *, dry_run: bool | None = None
+    trigger: GatilhoRun = GatilhoRun.manual,
+    *,
+    dry_run: bool | None = None,
+    analisar_vagas: bool = True,
 ) -> Run:
+    """Uma execução completa. Com `analisar_vagas=False` para e salva as vagas."""
     if _lock.locked():
         raise ExecucaoEmAndamento("Já existe uma execução em andamento.")
     async with _lock:
-        return await _executar(trigger, dry_run)
+        return await _executar(trigger, dry_run, analisar_vagas)
 
 
-async def _executar(trigger: GatilhoRun, dry_run: bool | None) -> Run:
+async def _executar(
+    trigger: GatilhoRun, dry_run: bool | None, analisar_vagas: bool
+) -> Run:
     with Session(get_engine()) as session:
         run = Run(trigger=trigger)
         session.add(run)
@@ -114,7 +120,7 @@ async def _executar(trigger: GatilhoRun, dry_run: bool | None) -> Run:
         session.refresh(run)
 
         try:
-            await _rodar(session, run, dry_run)
+            await _rodar(session, run, dry_run, analisar_vagas)
             run.status = StatusRun.ok
         except auth.LoginRequired as falha:
             run.status = StatusRun.login_required
@@ -132,7 +138,9 @@ async def _executar(trigger: GatilhoRun, dry_run: bool | None) -> Run:
         return run
 
 
-async def _rodar(session: Session, run: Run, dry_run: bool | None) -> None:
+async def _rodar(
+    session: Session, run: Run, dry_run: bool | None, analisar_vagas: bool = True
+) -> None:
     buscas = _buscas_ativas(session)
     if not buscas:
         logger.info("Nenhuma busca ativa; nada a fazer.")
@@ -152,6 +160,13 @@ async def _rodar(session: Session, run: Run, dry_run: bool | None) -> None:
 
         snapshot, mudou = await _sincronizar_perfil(session, run, page)
         novas = await _coletar(session, run, page, buscas)
+
+    if not analisar_vagas:
+        logger.info(
+            "Coleta sem análise: %d vaga(s) nova(s) salva(s); nada foi enviado ao Claude.",
+            len(novas),
+        )
+        return
 
     reanalises = (
         _vagas_para_reanalisar(session)

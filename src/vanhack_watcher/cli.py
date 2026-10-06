@@ -41,13 +41,24 @@ def run() -> None:
         action="store_true",
         help="analisa mas não envia email nem WhatsApp",
     )
+    parser.add_argument(
+        "--sem-analise",
+        action="store_true",
+        help="só coleta e salva as vagas; não chama o Claude nem notifica (não gasta crédito)",
+    )
     args = parser.parse_args()
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
     )
 
     criar_tabelas()
-    execucao = asyncio.run(executar(GatilhoRun.manual, dry_run=args.dry_run or None))
+    execucao = asyncio.run(
+        executar(
+            GatilhoRun.manual,
+            dry_run=args.dry_run or None,
+            analisar_vagas=not args.sem_analise,
+        )
+    )
     print(
         f"Run {execucao.id}: {execucao.status.value} — "
         f"{execucao.jobs_listed} listadas, {execucao.jobs_new} novas, "

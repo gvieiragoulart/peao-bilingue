@@ -39,7 +39,7 @@ async def test_lock_impede_execucao_concorrente(monkeypatch: pytest.MonkeyPatch)
     comecou = asyncio.Event()
     liberar = asyncio.Event()
 
-    async def rodar_devagar(session, run, dry_run):
+    async def rodar_devagar(session, run, dry_run, analisar_vagas=True):
         comecou.set()
         await liberar.wait()
 
@@ -47,7 +47,9 @@ async def test_lock_impede_execucao_concorrente(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(pipeline, "Session", _SessionFake)
 
     primeira = asyncio.create_task(pipeline.executar())
-    await comecou.wait()
+    # com timeout: se a assinatura de _rodar mudar, o teste falha rapido em vez
+    # de travar a suite inteira esperando um evento que nunca vem
+    await asyncio.wait_for(comecou.wait(), timeout=5)
     assert pipeline.em_execucao()
 
     with pytest.raises(pipeline.ExecucaoEmAndamento):

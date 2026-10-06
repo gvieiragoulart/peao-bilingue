@@ -44,10 +44,16 @@ uv run vanhack-check
 ## Uso
 
 ```bash
+uv run vanhack-run --sem-analise                          # só coleta e salva (não gasta crédito)
 uv run vanhack-run --dry-run                              # coleta e analisa, sem notificar
 uv run vanhack-run                                        # coleta, analisa e notifica
 uv run uvicorn vanhack_watcher.main:app --port 8000       # painel + agendador
 ```
+
+`--sem-analise` roda o fluxo inteiro de scraping — login com a sessão salva, sync de perfil,
+busca, scroll, detalhe, filtros e banco — e para antes de chamar o Claude. É o jeito de validar
+os seletores sem gastar nada; as vagas ficam no banco e podem ser analisadas depois com
+`POST /jobs/{id}/reanalyze`.
 
 Com a API no ar, `http://127.0.0.1:8000/docs` abre a documentação interativa.
 

@@ -30,12 +30,14 @@
 > Consequências já aplicadas no código: `VANHACK_EMAIL`/`VANHACK_PASSWORD` não existem mais,
 > não há `auth.login()` automático, e a sessão vem **sempre** de login manual (`uv run vanhack-login`).
 >
-> **Estado atual (2026-10-05):** fases 1 a 9 implementadas, 74 testes offline passando,
+> **Estado atual (2026-10-05):** fases 1 a 9 implementadas, 77 testes offline passando,
 > `ruff check` limpo. O código foi reescrito do zero nesta máquina — o do handoff original
-> nunca chegou aqui.
+> nunca chegou aqui. Três buscas cadastradas (Python, PHP/Laravel, React/TypeScript), sem
+> `exclude`: filtrar por "junior" descartaria vaga sênior que diz "mentor junior engineers".
 >
 > **Pendências, todas dependendo do usuário (custam dinheiro ou exigem ação dele):**
-> 1. `uv run vanhack-run --dry-run` contra o site real — a análise gasta crédito da API.
+> 1. `uv run vanhack-run --sem-analise` contra o site real — valida todo o scraping de graça;
+>    é o próximo passo. Depois `--dry-run`, que já gasta crédito na análise.
 > 2. Envio real de um email de teste, depois de preencher SMTP no `.env`.
 > 3. Editar algo no perfil da VanHack e confirmar que a execução seguinte detecta,
 >    grava snapshot novo e reanalisa as vagas em aberto.
@@ -154,7 +156,7 @@ vanhack-watcher/
 [project.scripts]
 vanhack-login = "vanhack_watcher.cli:login"   # login manual, janela sempre visível
 vanhack-check = "vanhack_watcher.cli:check"   # valida a sessão salva (--headed para depurar)
-vanhack-run   = "vanhack_watcher.cli:run"     # --dry-run para não notificar (fase 8)
+vanhack-run   = "vanhack_watcher.cli:run"     # --dry-run não notifica; --sem-analise não analisa
 ```
 
 ---
@@ -428,6 +430,7 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 uv sync
 uv run vanhack-login          # login manual, salva data/state.json
 uv run vanhack-check          # a sessão salva ainda vale? o app carrega sob Playwright?
+uv run vanhack-run --sem-analise   # só coleta e salva, sem chamar o Claude
 uv run vanhack-run --dry-run
 uv run uvicorn vanhack_watcher.main:app --reload
 uv run pytest
