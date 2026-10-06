@@ -1,0 +1,146 @@
+"""Portas: o que o núcleo espera do mundo de fora.
+
+Cada porta é uma ABC; um adapter que esquece um método abstrato nem instancia.
+"""
+
+from abc import ABC, abstractmethod
+from typing import ClassVar, Self
+
+from pydantic import BaseModel
+
+from peao_bilingue.dominio.entidades import (
+    AnaliseSalva,
+    Busca,
+    Execucao,
+    Gatilho,
+    JobAnalysis,
+    Mensagem,
+    Perfil,
+    RespostaLLM,
+    ResultadoAnalise,
+    StatusVaga,
+    Vaga,
+    VagaListada,
+    VagaResumo,
+)
+
+
+class FonteDeVagas(ABC):
+    nome: ClassVar[str]
+    rotulo: ClassVar[str]  # nome amigável para a interface
+    precisa_navegador: ClassVar[bool] = False
+
+    async def __aenter__(self) -> Self:
+        """Abre os recursos da fonte (navegador, cliente HTTP)."""
+        return self
+
+    async def __aexit__(self, *excecao: object) -> None:
+        return None
+
+    @abstractmethod
+    async def buscar(self, termo: str) -> list[VagaResumo]: ...
+
+    @abstractmethod
+    async def detalhar(self, resumo: VagaResumo) -> Vaga: ...
+
+
+class FonteDePerfil(ABC):
+    @abstractmethod
+    async def ler_perfil(self) -> Perfil: ...
+
+
+class ProvedorLLM(ABC):
+    """Só traduz a chamada para o SDK. Validação e retry ficam na aplicação."""
+
+    nome: ClassVar[str]
+    modelo: str
+
+    @abstractmethod
+    async def gerar_json(
+        self, sistema: str, mensagens: list[Mensagem], schema: type[BaseModel]
+    ) -> RespostaLLM: ...
+
+
+class Notificador(ABC):
+    nome: ClassVar[str]
+
+    @abstractmethod
+    async def notificar(
+        self, resultados: list[ResultadoAnalise], *, perfil_mudou: bool
+    ) -> None: ...
+
+
+class RepositorioVagas(ABC):
+    # buscas
+    @abstractmethod
+    def listar_buscas(self, *, so_ativas: bool = False) -> list[Busca]: ...
+
+    @abstractmethod
+    def salvar_busca(self, busca: Busca) -> Busca: ...
+
+    @abstractmethod
+    def remover_busca(self, busca_id: int) -> None: ...
+
+    # vagas
+    @abstractmethod
+    def vaga_existe(self, chave: str) -> bool: ...
+
+    @abstractmethod
+    def salvar_vaga(self, vaga: Vaga, buscas: list[str]) -> None: ...
+
+    @abstractmethod
+    def obter_vaga(self, chave: str) -> Vaga | None: ...
+
+    @abstractmethod
+    def listar_vagas(
+        self,
+        *,
+        status: StatusVaga | None = None,
+        min_score: int | None = None,
+        busca: str | None = None,
+        fonte: str | None = None,
+        limite: int = 50,
+        offset: int = 0,
+    ) -> list[VagaListada]: ...
+
+    @abstractmethod
+    def mudar_status(self, chave: str, status: StatusVaga) -> None: ...
+
+    @abstractmethod
+    def vagas_para_reanalisar(self, limite: int) -> list[Vaga]: ...
+
+    # análises
+    @abstractmethod
+    def salvar_analise(
+        self,
+        chave: str,
+        analise: JobAnalysis,
+        *,
+        provedor: str,
+        modelo: str,
+        perfil_id: int | None,
+    ) -> None: ...
+
+    @abstractmethod
+    def analise_vigente(self, chave: str) -> AnaliseSalva | None: ...
+
+    # perfil
+    @abstractmethod
+    def salvar_perfil(self, perfil: Perfil) -> tuple[int, bool]:
+        """Grava um snapshot novo só se o conteúdo mudou. Devolve (id, mudou)."""
+
+    @abstractmethod
+    def ultimo_perfil(self) -> tuple[int, Perfil] | None: ...
+
+    @abstractmethod
+    def historico_perfil(self) -> list[dict]: ...
+
+    # execuções
+    @abstractmethod
+    def iniciar_execucao(self, gatilho: Gatilho) -> Execucao: ...
+
+    @abstractmethod
+    def finalizar_execucao(self, execucao: Execucao) -> None: ...
+
+    @abstractmethod
+    def listar_execucoes(self, limite: int = 20) -> list[Execucao]: ...

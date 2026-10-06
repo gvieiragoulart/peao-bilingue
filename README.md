@@ -1,192 +1,82 @@
-# VanHack Watcher
+# Peão Bilíngue
 
-Serviço pessoal que, todo dia às 08:00 (America/Sao_Paulo), entra na VanHack pelo navegador,
-coleta as vagas por scraping, filtra por buscas configuráveis, analisa cada vaga nova com o Claude
-e avisa por email (análise completa) e WhatsApp (resumo).
+Radar pessoal de vagas: coleta em vários sites, filtra pelas suas buscas, analisa o encaixe de
+cada vaga nova com um LLM e avisa por email (análise completa) e WhatsApp (resumo).
 
 Para cada vaga nova a análise traz fit score, resumo do encaixe, passos de preparação,
-exatamente 20 perguntas de entrevista, gaps e o que melhorar no perfil.
+exatamente 20 perguntas de entrevista, gaps e o que melhorar no seu perfil.
 
-O perfil do candidato não é mantido à mão: a cada execução o sistema lê
-`https://app.vanhack.com/profile`, guarda um snapshot e usa sempre a versão mais recente.
-
----
+> **Em transição para app desktop Windows.** Hoje roda pela linha de comando. A interface
+> CustomTkinter e o agendamento pelo Agendador do Windows vêm nas próximas fases (ver
+> [CLAUDE.md](CLAUDE.md)).
 
 ## Instalação
 
 ```bash
 uv sync
-uv run playwright install chromium
-cp .env.example .env     # preencha as credenciais
+cp .env.example .env     # preencha o que for usar (chave de API, SMTP, Twilio)
 ```
 
-### O login é manual, sempre
+O projeto usa o **Chrome instalado na máquina**, não o Chromium do Playwright: o Cloudflare da
+VanHack recusa navegadores atípicos.
 
-A VanHack usa login **sem senha** (link por email, Google ou LinkedIn) atrás do Cloudflare
-Turnstile. Não existe login automático: você loga uma vez e a sessão fica salva.
+## Primeiro uso
+
+**1. Login na VanHack (manual, sempre).** O login é sem senha (link por email, Google ou
+LinkedIn) e protegido por verificação humana, então não existe login automático:
 
 ```bash
-uv run vanhack-login
+uv run peao login
 ```
 
-Abre uma janela do Chrome. Se escolher entrar por email, **copie o link recebido e cole na barra
-dessa janela** — clicar no link pelo cliente de email cria a sessão no navegador errado. A
-verificação "confirme que é humano" é sua; o robô nunca a resolve.
+Abre uma janela do Chrome. Se entrar por email, **copie o link recebido e cole na barra dessa
+janela** — clicar pelo cliente de email cria a sessão no navegador errado. A verificação
+"confirme que é humano" é sua; o robô nunca a resolve. Confira com `uv run peao check`.
 
-Confira depois que a sessão está valendo:
+**2. Cadastre as buscas:**
 
 ```bash
-uv run vanhack-check
+uv run peao buscas adicionar "Python" python django fastapi
+uv run peao buscas adicionar "React" react typescript --exclude internship
+uv run peao buscas                    # lista
 ```
 
----
+Cuidado com `--exclude`: o filtro olha a descrição inteira, e vaga sênior costuma dizer
+"mentor junior engineers" — excluir "junior" descartaria justamente essas.
 
-## Uso
+**3. Rode:**
 
 ```bash
-uv run vanhack-run --sem-analise                          # só coleta e salva (não gasta crédito)
-uv run vanhack-run --dry-run                              # coleta e analisa, sem notificar
-uv run vanhack-run                                        # coleta, analisa e notifica
-uv run uvicorn vanhack_watcher.main:app --port 8000       # painel + agendador
+uv run peao run --sem-analise    # só coleta e salva; não chama LLM, não gasta crédito
+uv run peao run --dry-run        # analisa, mas não notifica
+uv run peao run                  # coleta, analisa e notifica
 ```
 
-`--sem-analise` roda o fluxo inteiro de scraping — login com a sessão salva, sync de perfil,
-busca, scroll, detalhe, filtros e banco — e para antes de chamar o Claude. É o jeito de validar
-os seletores sem gastar nada; as vagas ficam no banco e podem ser analisadas depois com
-`POST /jobs/{id}/reanalyze`.
+`--sem-analise` é o jeito de validar a coleta de graça. Para limitar fontes ou trocar o LLM:
+`--fonte vanhack --llm anthropic`. `uv run peao adaptadores` lista o que está disponível.
 
-Com a API no ar, `http://127.0.0.1:8000/docs` abre a documentação interativa.
+## Como funciona
 
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/health` | último run, se há sessão salva, próxima execução agendada |
-| GET POST | `/searches` | listar e criar buscas |
-| PUT DELETE | `/searches/{id}` | atualizar e remover |
-| GET | `/jobs` | filtros: `status`, `min_score`, `search`, paginação |
-| GET PATCH | `/jobs/{id}` | detalhe com a análise vigente; mudar status |
-| POST | `/jobs/{id}/reanalyze` | nova análise (ex.: depois de editar `profile_notes.md`) |
-| GET | `/profile` | snapshot mais recente |
-| GET | `/profile/history` | snapshots e os campos que mudaram entre eles |
-| POST | `/profile/sync` | sincroniza só o perfil |
-| GET POST | `/runs` | histórico e disparo manual (409 se já estiver rodando) |
+Arquitetura de portas e adaptadores: o núcleo só conhece interfaces (`FonteDeVagas`,
+`ProvedorLLM`, `Notificador`, `RepositorioVagas`), e cada site, LLM ou canal é um adapter
+registrado numa fábrica pelo nome. Adicionar uma fonte nova é escrever um módulo e registrá-lo
+— nada no núcleo muda. Detalhes e decisões em [CLAUDE.md](CLAUDE.md).
 
-Cadastre ao menos uma busca antes da primeira coleta:
+Cada execução fica registrada com contadores e erros. Uma fonte com problema não derruba as
+outras; qualquer falha de leitura deixa screenshot + HTML em `artifacts/`.
 
-```bash
-curl -X POST http://127.0.0.1:8000/searches -H "Content-Type: application/json" \
-  -d '{"name":"Python remoto","keywords":["python","django"],"exclude":["junior"]}'
-```
+## Sessão expirada
 
-**Rode sempre com 1 worker:** o agendador vive dentro do processo.
-
----
-
-## Rodar como serviço
-
-O agendador é interno (APScheduler com `coalesce` e tolerância de 6 h), então basta manter o
-processo da API no ar: se a máquina estava desligada às 08:00, a coleta acontece uma vez quando
-o app sobe.
-
-### Windows — Agendador de Tarefas
-
-Mantém a API rodando a cada logon:
-
-```bash
-schtasks /create /tn "VanHack Watcher" /sc onlogon /rl highest ^
-  /tr "cmd /c cd /d %USERPROFILE%\vanhack-watcher && uv run uvicorn vanhack_watcher.main:app --port 8000"
-```
-
-Se preferir **não** manter a API no ar, agende só a coleta:
-
-```bash
-schtasks /create /tn "VanHack Watcher - coleta" /sc daily /st 08:00 ^
-  /tr "cmd /c cd /d %USERPROFILE%\vanhack-watcher && uv run vanhack-run"
-```
-
-Marque "Executar estando o usuário conectado ou não" só se o `uv` estiver no PATH do sistema;
-caso contrário use o caminho completo (`C:\Users\<voce>\.local\bin\uv.exe`).
-
-### Windows — NSSM (serviço de verdade)
-
-```bash
-nssm install VanHackWatcher "%USERPROFILE%\.local\bin\uv.exe" "run uvicorn vanhack_watcher.main:app --port 8000"
-nssm set VanHackWatcher AppDirectory "%USERPROFILE%\vanhack-watcher"
-nssm start VanHackWatcher
-```
-
-### Linux — systemd
-
-`/etc/systemd/system/vanhack-watcher.service`:
-
-```ini
-[Unit]
-Description=VanHack Watcher
-After=network-online.target
-
-[Service]
-Type=simple
-User=gabriel
-WorkingDirectory=/opt/vanhack-watcher
-ExecStart=/usr/local/bin/uv run uvicorn vanhack_watcher.main:app --port 8000
-Restart=on-failure
-RestartSec=30
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl enable --now vanhack-watcher
-```
-
-### Docker (VPS)
-
-```dockerfile
-FROM mcr.microsoft.com/playwright/python:v1.63.0-noble
-WORKDIR /app
-COPY . .
-RUN pip install uv && uv sync --frozen
-ENV BROWSER_CHANNEL=""
-CMD ["uv", "run", "uvicorn", "vanhack_watcher.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-**`BROWSER_CHANNEL=""` é obrigatório no container.** Por padrão o projeto usa o Chrome instalado
-na máquina (o Cloudflare recusa navegadores atípicos), e dentro da imagem só existe o Chromium
-do Playwright.
-
-Monte `data/` como volume para a sessão e o banco sobreviverem ao redeploy:
-
-```bash
-docker run -d --env-file .env -v $PWD/data:/app/data -p 8000:8000 vanhack-watcher
-```
-
----
-
-## Sessão expirada no VPS
-
-O login exige interação humana (Turnstile e, no caso do magic link, o email), então **não dá para
-logar dentro do servidor**. Quando `/health` mostrar o último run com status `login_required`:
-
-1. Na sua máquina, rode `uv run vanhack-login` e faça o login.
-2. Copie o `data/state.json` gerado para o servidor:
-   ```bash
-   scp data/state.json usuario@servidor:/opt/vanhack-watcher/data/state.json
-   ```
-3. Reinicie o serviço (`sudo systemctl restart vanhack-watcher` ou `docker restart ...`).
-
-O `state.json` contém cookies de sessão: trate como senha, nunca versione (já está no
-`.gitignore`) e copie por canal seguro.
-
----
+Quando uma execução terminar com `login_required`, rode `uv run peao login` de novo. O
+`data/state.json` contém cookies de sessão: trate como senha e nunca versione (já está no
+`.gitignore`).
 
 ## Desenvolvimento
 
 ```bash
-uv run pytest                         # testes, todos offline
+uv run pytest                         # todos offline: sem site, sem SMTP, sem LLM
 uv run ruff check . && uv run ruff format .
 ```
 
-Os testes usam HTML real anonimizado em `tests/fixtures/` (veja o README de lá) e nunca abrem
-conexão com a VanHack, com SMTP, com a Twilio nem com a API do Claude.
-
-Convenções e decisões do projeto estão em [CLAUDE.md](CLAUDE.md).
+O pipeline inteiro é testado com dublês das portas e um SQLite em memória. Os adapters de
+scraping usam HTML real anonimizado em `tests/fixtures/<fonte>/`.

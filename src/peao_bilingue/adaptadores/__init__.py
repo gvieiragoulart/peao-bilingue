@@ -1,0 +1,6 @@
+"""Importar este pacote registra todos os adapters nas fábricas."""
+
+from peao_bilingue.adaptadores.fontes.vanhack import fonte as _vanhack  # noqa: F401
+from peao_bilingue.adaptadores.llm import anthropic as _anthropic  # noqa: F401
+from peao_bilingue.adaptadores.notificacao import email as _email  # noqa: F401
+from peao_bilingue.adaptadores.notificacao import whatsapp as _whatsapp  # noqa: F401
