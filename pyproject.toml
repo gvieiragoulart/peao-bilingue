@@ -22,6 +22,7 @@ dependencies = [
 [project.scripts]
 vanhack-login = "vanhack_watcher.cli:login"
 vanhack-check = "vanhack_watcher.cli:check"
+vanhack-run   = "vanhack_watcher.cli:run"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
