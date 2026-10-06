@@ -388,7 +388,8 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 - [ ] Persistir o ProfileSnapshot no banco (depende da Fase 5)
 
 ### Fase 5: Banco + buscas
-- [ ] Models criados, CRUD de `/searches` com testes
+- [x] Models criados (`models.py`), SQLite em `data/watcher.db`, tabelas no startup
+- [x] CRUD de `/searches` com testes (SQLite em memória, sem tocar no banco real)
 
 ### Fase 6: Analyzer
 - [ ] Tool use + validação; teste com cliente mockado (sucesso e retry)
