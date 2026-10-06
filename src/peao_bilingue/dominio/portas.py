@@ -4,6 +4,7 @@ Cada porta é uma ABC; um adapter que esquece um método abstrato nem instancia.
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import ClassVar, Self
 
 from pydantic import BaseModel
@@ -50,10 +51,32 @@ class FonteDePerfil(ABC):
     async def ler_perfil(self) -> Perfil: ...
 
 
+class SessaoManual(ABC):
+    """Fonte que exige login feito pelo usuário (o robô nunca preenche o login).
+
+    `aviso` recebe as mensagens para quem estiver acompanhando (CLI ou interface).
+    """
+
+    @classmethod
+    @abstractmethod
+    async def login_manual(cls, aviso: Callable[[str], None]) -> None: ...
+
+    @classmethod
+    @abstractmethod
+    async def verificar_sessao(
+        cls, aviso: Callable[[str], None], *, headless: bool = True
+    ) -> int:
+        """0 = sessão válida; 1 = sem sessão; 2 = bloqueado por desafio humano."""
+
+
 class ProvedorLLM(ABC):
     """Só traduz a chamada para o SDK. Validação e retry ficam na aplicação."""
 
     nome: ClassVar[str]
+    rotulo: ClassVar[str]
+    # Campos de Settings que configuram o adapter -> rótulo na interface. Assim a
+    # tela monta o formulário de um provedor novo sem ser alterada.
+    campos: ClassVar[dict[str, str]] = {}
     modelo: str
 
     @abstractmethod
@@ -64,6 +87,8 @@ class ProvedorLLM(ABC):
 
 class Notificador(ABC):
     nome: ClassVar[str]
+    rotulo: ClassVar[str]
+    campos: ClassVar[dict[str, str]] = {}
 
     @abstractmethod
     async def notificar(

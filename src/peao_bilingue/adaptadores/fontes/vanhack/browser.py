@@ -4,9 +4,9 @@ from pathlib import Path
 
 from playwright.async_api import BrowserContext, async_playwright
 
-from peao_bilingue.configuracao import settings
+from peao_bilingue.configuracao import DIRETORIO_DADOS, settings
 
-STATE_PATH = Path("data/state.json")
+STATE_PATH = DIRETORIO_DADOS / "state.json"
 
 
 def has_state() -> bool:

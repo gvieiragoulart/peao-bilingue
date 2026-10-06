@@ -1,4 +1,5 @@
 import logging
+from typing import ClassVar
 
 from ollama import AsyncClient, ResponseError
 from pydantic import BaseModel
@@ -17,6 +18,12 @@ class Ollama(ProvedorLLM):
     """LLM local via Ollama. Grátis; pensado para a triagem em GPUs modestas."""
 
     nome = "ollama"
+    rotulo = "Ollama (local, grátis)"
+    campos: ClassVar[dict[str, str]] = {
+        "ollama_host": "Endereço",
+        "ollama_modelo": "Modelo",
+        "ollama_contexto": "Contexto (tokens)",
+    }
 
     def __init__(
         self,

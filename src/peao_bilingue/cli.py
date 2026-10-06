@@ -5,15 +5,23 @@ import asyncio
 import logging
 
 from peao_bilingue import fabricas
-from peao_bilingue.adaptadores.fontes.vanhack.sessao import (
-    LoginFalhou,
-    login_manual,
-    verificar_sessao,
-)
 from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
 from peao_bilingue.aplicacao.execucao import executar
 from peao_bilingue.composicao import montar_servicos
 from peao_bilingue.dominio.entidades import Busca, Gatilho
+from peao_bilingue.dominio.erros import (
+    LoginFalhou,
+    NomeDesconhecido,
+    ProvedorIndisponivel,
+)
+from peao_bilingue.dominio.portas import SessaoManual
+
+
+def _fonte_com_login(nome: str) -> type[SessaoManual]:
+    classe = fabricas.fontes.classe(nome)
+    if not issubclass(classe, SessaoManual):
+        raise SystemExit(f"A fonte {nome!r} não usa login manual.")
+    return classe
 
 
 def main() -> None:
@@ -22,9 +30,11 @@ def main() -> None:
     )
     comandos = parser.add_subparsers(dest="comando", required=True)
 
-    comandos.add_parser("login", help="login manual na VanHack (abre o Chrome)")
+    login = comandos.add_parser("login", help="login manual numa fonte (abre o Chrome)")
+    login.add_argument("--fonte", default="vanhack")
 
-    check = comandos.add_parser("check", help="a sessão salva da VanHack ainda vale?")
+    check = comandos.add_parser("check", help="a sessão salva de uma fonte ainda vale?")
+    check.add_argument("--fonte", default="vanhack")
     check.add_argument("--headed", action="store_true", help="mostra o navegador")
 
     run = comandos.add_parser("run", help="executa uma coleta agora")
@@ -60,15 +70,21 @@ def main() -> None:
         level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
     )
 
+    # Erro de configuração do usuário vira mensagem, não traceback.
+    try:
+        _executar_comando(args)
+    except (NomeDesconhecido, ProvedorIndisponivel, LoginFalhou) as falha:
+        raise SystemExit(str(falha)) from None
+
+
+def _executar_comando(args: argparse.Namespace) -> None:
     match args.comando:
         case "login":
-            try:
-                asyncio.run(login_manual(print))
-            except LoginFalhou as falha:
-                raise SystemExit(str(falha)) from None
+            asyncio.run(_fonte_com_login(args.fonte).login_manual(print))
         case "check":
+            fonte = _fonte_com_login(args.fonte)
             raise SystemExit(
-                asyncio.run(verificar_sessao(print, headless=not args.headed))
+                asyncio.run(fonte.verificar_sessao(print, headless=not args.headed))
             )
         case "run":
             _run(args)

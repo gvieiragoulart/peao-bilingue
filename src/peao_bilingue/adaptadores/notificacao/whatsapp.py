@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import httpx
 
 from peao_bilingue.adaptadores.notificacao.formatacao import montar_digest
@@ -14,6 +16,13 @@ class WhatsApp(Notificador):
     """Um único resumo por execução, via Twilio."""
 
     nome = "whatsapp"
+    rotulo = "WhatsApp via Twilio (resumo)"
+    campos: ClassVar[dict[str, str]] = {
+        "twilio_sid": "Account SID",
+        "twilio_token": "Auth token",
+        "twilio_whatsapp_from": "Número de origem",
+        "whatsapp_to": "Enviar para",
+    }
 
     async def notificar(
         self, resultados: list[ResultadoAnalise], *, perfil_mudou: bool

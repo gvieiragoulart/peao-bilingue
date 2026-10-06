@@ -16,6 +16,7 @@ from peao_bilingue.adaptadores.fontes.vanhack.browser import (
     save_state,
 )
 from peao_bilingue.configuracao import settings
+from peao_bilingue.dominio.erros import LoginFalhou
 
 LOGIN_TIMEOUT_MS = 10 * 60 * 1_000
 
@@ -31,10 +32,6 @@ Assim que o painel da VanHack carregar, a sessão é salva automaticamente.
 Aguardando até 10 minutos..."""
 
 Aviso = Callable[[str], None]
-
-
-class LoginFalhou(RuntimeError):
-    pass
 
 
 async def login_manual(aviso: Aviso) -> None:

@@ -6,21 +6,34 @@ cada vaga nova com um LLM e avisa por email (análise completa) e WhatsApp (resu
 Para cada vaga nova a análise traz fit score, resumo do encaixe, passos de preparação,
 exatamente 20 perguntas de entrevista, gaps e o que melhorar no seu perfil.
 
-> **Em transição para app desktop Windows.** Hoje roda pela linha de comando. A interface
-> CustomTkinter e o agendamento pelo Agendador do Windows vêm nas próximas fases (ver
-> [CLAUDE.md](CLAUDE.md)).
-
 ## Instalação
 
 ```bash
 uv sync
-cp .env.example .env     # preencha o que for usar (chave de API, SMTP, Twilio)
+uv run peao-ui
 ```
+
+O app abre direto, sem console. Tudo se configura pelas abas — fontes, buscas, provedores de
+LLM, avisos e limites. **Chaves e senhas ficam no Cofre de Credenciais do Windows**, não em
+arquivo; o resto vai para `data/config.json`. O `.env` (copiado de `.env.example`) continua
+funcionando como alternativa para quem prefere a linha de comando.
+
+| Aba | Para quê |
+|---|---|
+| Vagas | lista com fit e triagem, filtros, análise completa, marcar como estudando/aplicada/descartada |
+| Buscas | palavras-chave, termos excluídos e quais fontes cada busca usa |
+| Fontes | liga/desliga cada site; login manual e verificação de sessão |
+| LLMs | quem analisa, quem faz a triagem, modelos e chaves |
+| Perfil | o perfil usado nas análises (sem dados pessoais) e o histórico de mudanças |
+| Execuções | "Coletar agora", histórico e o registro ao vivo |
+| Configurações | limites da coleta e canais de aviso (email, WhatsApp) |
 
 O projeto usa o **Chrome instalado na máquina**, não o Chromium do Playwright: o Cloudflare da
 VanHack recusa navegadores atípicos.
 
-## Primeiro uso
+## Pela linha de comando
+
+Tudo que a interface faz também existe na CLI — é ela que a coleta agendada usa.
 
 **1. Login na VanHack (manual, sempre).** O login é sem senha (link por email, Google ou
 LinkedIn) e protegido por verificação humana, então não existe login automático:

@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
@@ -15,6 +17,11 @@ BLOQUEIOS = {"SAFETY", "BLOCKLIST", "PROHIBITED_CONTENT"}
 @llms.registrar("gemini")
 class Gemini(ProvedorLLM):
     nome = "gemini"
+    rotulo = "Gemini (Google)"
+    campos: ClassVar[dict[str, str]] = {
+        "gemini_modelo": "Modelo (obrigatório)",
+        "gemini_api_key": "Chave da API",
+    }
 
     def __init__(
         self,

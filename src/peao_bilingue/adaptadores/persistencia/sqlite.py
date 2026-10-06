@@ -1,13 +1,12 @@
 from datetime import datetime
 from enum import Enum
-from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import JSON, Column, Engine
 from sqlalchemy import inspect as inspecionar
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-from peao_bilingue.configuracao import settings
+from peao_bilingue.configuracao import DIRETORIO_DADOS, settings
 from peao_bilingue.dominio.entidades import (
     AnaliseSalva,
     Busca,
@@ -23,7 +22,7 @@ from peao_bilingue.dominio.entidades import (
 )
 from peao_bilingue.dominio.portas import RepositorioVagas
 
-DB_PATH = Path("data/peao.db")
+DB_PATH = DIRETORIO_DADOS / "peao.db"
 
 
 def agora() -> datetime:
