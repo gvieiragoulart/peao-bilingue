@@ -401,8 +401,9 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 - [ ] Análise real de uma vaga das fixtures com 20 perguntas válidas (gasta credito da API)
 
 ### Fase 7: Notifier
-- [ ] Email por vaga (texto legível, seções claras) e digest WhatsApp ≤ 1500 caracteres
-- [ ] `DRY_RUN` só loga; teste com SMTP/Twilio mockados
+- [x] Email por vaga (texto legível, seções claras) e digest WhatsApp ≤ 1500 caracteres
+- [x] `DRY_RUN` só loga; testes com envio mockado
+- [ ] Envio real de um email de teste (depende das credenciais SMTP no `.env`)
 
 ### Fase 8: Pipeline + scheduler + API
 - [ ] `vanhack-run --dry-run` executa o fluxo completo contra o site real
