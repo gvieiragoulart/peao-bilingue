@@ -406,10 +406,11 @@ e pedir validação ao usuário antes de seguir quando a fase depender do site r
 - [ ] Envio real de um email de teste (depende das credenciais SMTP no `.env`)
 
 ### Fase 8: Pipeline + scheduler + API
-- [ ] `vanhack-run --dry-run` executa o fluxo completo contra o site real
-- [ ] Lock impede execução concorrente; `Run` registrado em todos os desfechos
+- [x] Lock impede execução concorrente; `Run` registrado em todos os desfechos
+- [x] `/jobs`, `/runs`, `/profile`, `/health` com testes; scheduler visível no `/health`
+- [x] Cron diário com `coalesce` e `misfire_grace_time` de 6 h (catch-up ao ligar o PC)
+- [ ] `vanhack-run --dry-run` contra o site real (gasta crédito da API na análise)
 - [ ] Alterar algo no perfil VanHack → próxima execução detecta, grava snapshot e reanalisa
-- [ ] `/jobs`, `/runs`, `/profile`, `/health` funcionando; scheduler visível no `/health`
 
 ### Fase 9: Deploy
 - [ ] Documentar no README como rodar como serviço:

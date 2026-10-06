@@ -1,10 +1,14 @@
 import argparse
 import asyncio
+import logging
 from urllib.parse import urlparse
 
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from vanhack_watcher.config import settings
+from vanhack_watcher.db import criar_tabelas
+from vanhack_watcher.models import GatilhoRun
+from vanhack_watcher.pipeline import executar
 from vanhack_watcher.scraper import auth, debug
 from vanhack_watcher.scraper.browser import has_state, open_context, save_state
 
@@ -27,6 +31,30 @@ Aguardando até 10 minutos...
 def login() -> None:
     """Abre o navegador para login manual e salva a sessão em data/state.json."""
     asyncio.run(_login())
+
+
+def run() -> None:
+    """Executa uma coleta completa agora (sem subir a API)."""
+    parser = argparse.ArgumentParser(description="Roda uma coleta da VanHack.")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="analisa mas não envia email nem WhatsApp",
+    )
+    args = parser.parse_args()
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
+    )
+
+    criar_tabelas()
+    execucao = asyncio.run(executar(GatilhoRun.manual, dry_run=args.dry_run or None))
+    print(
+        f"Run {execucao.id}: {execucao.status.value} — "
+        f"{execucao.jobs_listed} listadas, {execucao.jobs_new} novas, "
+        f"{execucao.jobs_analyzed} analisadas."
+    )
+    if execucao.error:
+        raise SystemExit(execucao.error)
 
 
 def check() -> None:
