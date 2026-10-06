@@ -1,0 +1,26 @@
+class SessaoExpirada(RuntimeError):
+    """A fonte exige login e a sessão salva não vale mais. O login é sempre manual."""
+
+
+class DesafioHumano(RuntimeError):
+    """Captcha ou verificação humana na página. O sistema nunca tenta resolver."""
+
+
+class ErroDeColeta(RuntimeError):
+    """Falha ao ler uma fonte; `artefato` aponta para o screenshot + HTML salvos."""
+
+    def __init__(self, mensagem: str, artefato: str | None = None) -> None:
+        super().__init__(mensagem)
+        self.artefato = artefato
+
+
+class ExecucaoEmAndamento(RuntimeError):
+    """Já existe uma execução rodando; só uma por vez."""
+
+
+class AnaliseInvalida(RuntimeError):
+    """O provedor de LLM não produziu uma análise válida dentro das tentativas."""
+
+
+class NomeDesconhecido(LookupError):
+    """Nenhum adapter registrado com esse nome."""

@@ -1,7 +1,7 @@
 [project]
-name = "vanhack-watcher"
+name = "peao-bilingue"
 version = "0.1.0"
-description = "Add your description here"
+description = "Busca vagas em varios sites, analisa o encaixe com LLMs e avisa por email."
 readme = "README.md"
 authors = [
     { name = "gabriel vieira", email = "vieirabiel2009@hotmail.com" }
@@ -10,19 +10,15 @@ requires-python = ">=3.12"
 dependencies = [
     "aiosmtplib>=5.1.3",
     "anthropic>=1.11.0",
-    "apscheduler>=3.11.3",
-    "fastapi>=0.142.2",
     "httpx>=0.28.1",
     "playwright>=1.63.0",
     "pydantic-settings>=2.15.0",
     "sqlmodel>=0.0.47",
-    "uvicorn[standard]>=0.54.0",
+    "tzdata>=2026.5",
 ]
 
 [project.scripts]
-vanhack-login = "vanhack_watcher.cli:login"
-vanhack-check = "vanhack_watcher.cli:check"
-vanhack-run   = "vanhack_watcher.cli:run"
+peao = "peao_bilingue.cli:main"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
