@@ -152,6 +152,15 @@ class Execucao(BaseModel):
     artefato: str | None = None
 
 
+class SituacaoAgenda(BaseModel):
+    horario: str
+    estado: str
+    proxima_execucao: datetime | None = None
+    ultima_execucao: datetime | None = None
+    # Código de saída da última execução (0 = sucesso), como o Windows informa.
+    ultimo_resultado: int | None = None
+
+
 class ResultadoAnalise(BaseModel):
     vaga: Vaga
     analise: JobAnalysis

@@ -19,11 +19,12 @@ Para cada vaga nova a análise traz: fit score (0–100), resumo do encaixe, pas
   nem mudar visibilidade.
 - **Hardware:** RTX 3050 Laptop com 6 GB de VRAM — limita o Ollama a modelos de 7–8B quantizados.
 
-## Estado atual (2026-10-06)
+## Estado atual (2026-10-07)
 
-**Fases 1 a 3 do novo roteiro concluídas:** núcleo hexagonal, quatro provedores de LLM
-(Anthropic, Ollama, OpenAI, Gemini) com triagem opcional, e o app desktop CustomTkinter
-(`uv run peao-ui`); 169 testes offline, `ruff` limpo.
+**Fases 1 a 4 do novo roteiro concluídas:** núcleo hexagonal, quatro provedores de LLM
+(Anthropic, Ollama, OpenAI, Gemini) com triagem opcional, o app desktop CustomTkinter
+(`uv run peao-ui`) e a coleta diária pelo Agendador do Windows; 198 testes offline, `ruff`
+limpo.
 FastAPI, uvicorn e APScheduler saíram. Banco em `data/peao.db` (o antigo `watcher.db` ficou
 intocado) com 15 vagas da primeira coleta real. Três buscas cadastradas: Python, PHP/Laravel,
 React/TypeScript — sem `exclude`, porque filtrar "junior" descartaria vaga sênior que diz
@@ -62,7 +63,8 @@ O banco evolui por **migração aditiva automática** (`_migrar` em `persistenci
 src/peao_bilingue/
 ├── dominio/
 │   ├── entidades.py   # VagaResumo, Vaga, Perfil, JobAnalysis, Busca, Execucao (pydantic, sem SQL)
-│   ├── portas.py      # ABCs: FonteDeVagas, FonteDePerfil, ProvedorLLM, Notificador, RepositorioVagas
+│   ├── portas.py      # ABCs: FonteDeVagas, FonteDePerfil, ProvedorLLM, Notificador,
+│   │                  #       RepositorioVagas, Trava, Agendador
 │   └── erros.py       # SessaoExpirada, DesafioHumano, ErroDeColeta, AnaliseInvalida...
 ├── aplicacao/
 │   ├── execucao.py    # caso de uso: coleta → filtro → análise → notificação, com lock
@@ -72,12 +74,13 @@ src/peao_bilingue/
 │   ├── fontes/vanhack/   # Playwright: auth, listing, detail, profile, selectors, sessao, fonte
 │   ├── llm/anthropic.py
 │   ├── notificacao/      # formatacao, email, whatsapp
-│   └── persistencia/sqlite.py   # tabelas SQLModel + RepositorioSQLite
+│   ├── agendamento/windows.py   # Agendador de Tarefas via PowerShell
+│   └── persistencia/     # sqlite.py (tabelas SQLModel + RepositorioSQLite), trava.py (filelock)
 ├── fabricas.py        # Registro[T] + fontes / llms / notificadores
 ├── composicao.py      # raiz de composição: único lugar que liga portas a adapters
 ├── configuracao.py    # Settings: config.json + cofre do Windows + .env (fallback)
 ├── ui/                # CustomTkinter: app, executor assíncrono, abas, componentes
-└── cli.py             # peao login | check | run | buscas | adaptadores
+└── cli.py             # peao login | check | run | buscas | agenda | adaptadores
 ```
 
 **Configuração:** precedência `config.json` > cofre > variáveis de ambiente > `.env` > padrão. A
@@ -116,6 +119,35 @@ A vaga é guardada inteira em JSON (`VagaTabela.dados`); campos próprios de cad
 não derruba as outras — vira "Falhas parciais" na execução; só falha tudo se todas falharem.
 Uma análise inválida ou um notificador fora do ar também não perdem o resto. O perfil vem da
 primeira fonte que implementa `FonteDePerfil`; se a leitura falhar, usa o último snapshot salvo.
+
+---
+
+## Coleta agendada e concorrência
+
+- **Tarefa** registrada pelo PowerShell 5.1 (`Register-ScheduledTask`; o `schtasks` não tem
+  `-StartWhenAvailable`): diária, roda ao ligar o PC se a hora passou com ele desligado,
+  `-MultipleInstances IgnoreNew`, limite de 2 h. Executa `.venv\Scripts\pythonw.exe -m
+  peao_bilingue.cli run --agendado` com a **pasta do projeto como diretório de trabalho** —
+  `data/`, `.env` e `profile_notes.md` são relativos a ela. Nome da tarefa em ASCII: a saída
+  do PowerShell 5.1 vem na página de código do console.
+- **Script sempre com `$ErrorActionPreference = 'Stop'` e `exit 0` no fim.** Sem isso,
+  `Get-ScheduledTask -ErrorAction SilentlyContinue` com a tarefa inexistente sai com código 1
+  e nenhuma mensagem. O `ConvertTo-Json` do 5.1 serializa data como `\/Date(...)\/`: as datas
+  são formatadas em ISO dentro do script. `LastRunTime` 30/11/1999 = nunca rodou;
+  `LastTaskResult` 0 = ok, 1 = nossa falha, 267009 = rodando, 267011 = nunca rodou.
+- O `pythonw` não tem console: com `--agendado`, o registro vai para `data/coleta.log`
+  (rotativo, 1 MB × 3).
+- **Uma execução por vez, entre processos:** `TravaDeArquivo` (`filelock` em
+  `data/execucao.lock`). A mesma instância do `FileLock` é **reentrante** — cada aquisição usa
+  uma instância nova, senão a segunda execução no mesmo processo entraria. Verificado no Windows:
+  app/CLI e tarefa agendada se excluem.
+- **Execução órfã:** com a trava na mão, nenhuma outra execução está viva — o que ainda consta
+  "rodando" é de processo que morreu (app fechado no meio, PC desligado, limite de tempo) e é
+  marcado como erro no início da execução seguinte.
+- SQLite em **WAL** com `busy_timeout` de 5 s: a interface lê enquanto a tarefa grava.
+- **PC suspenso no meio da coleta:** o processo volta junto com o PC e o Playwright falha com
+  `ERR_NETWORK_IO_SUSPENDED`; a execução fica registrada como erro (visto em 06/10). Sem
+  `-WakeToRun` de propósito: acordar o notebook do usuário é invasivo.
 
 ---
 
@@ -212,8 +244,10 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, co
       Configurações; executor assíncrono em thread própria; segredos no cofre; janela conferida
       por captura de tela (corrigidos botões cortados e coluna fora da borda). A descrição da vaga
       passou a manter os parágrafos — melhora a tela e o prompt.
-- [ ] **Fase 4 — Agendador do Windows:** `Register-ScheduledTask -StartWhenAvailable`;
-      lock entre processos com `filelock`; SQLite em modo WAL.
+- [x] **Fase 4 — Agendador do Windows:** tarefa diária pelo app ou por `peao agenda`; lock
+      entre processos com `filelock`; SQLite em WAL; execuções órfãs encerradas. Verificado de
+      ponta a ponta: a tarefa roda o `pythonw` na pasta certa, grava em `coleta.log`, e app e
+      tarefa se excluem. Corrigido de quebra o teste de interface intermitente (ver "Testes").
 - [ ] **Fase 5 — APIs públicas:** Remotive, RemoteOK, Arbeitnow, Himalayas, We Work Remotely.
 - [ ] **Fase 6 — Sites brasileiros:** investigar endpoint e termos antes de implementar.
 - [ ] **Fase 7 — LinkedIn/Indeed:** opt-in, desligados por padrão, mesmas regras da VanHack. Os
@@ -241,6 +275,20 @@ uv run peao run --dry-run            # analisa, mas não notifica
 uv run peao run --fonte vanhack --llm anthropic
 uv run peao run --dry-run --llm ollama               # análise local, grátis
 uv run peao run --triagem ollama --llm anthropic     # Ollama filtra, Claude analisa
+uv run peao agenda                   # situação da coleta diária
+uv run peao agenda ativar --horario 08:00            # ou `agenda desativar`
 uv run pytest
 uv run ruff check . && uv run ruff format .
 ```
+
+## Testes
+
+- Todos offline: dublês das portas, SQLite em memória, keyring em memória e `PEAO_DADOS`
+  temporário (o `conftest.py` prepara isso **antes** de importar o projeto).
+- **`--capture=sys` no `pyproject.toml` é obrigatório.** A captura padrão do pytest (fd) troca os
+  handles de stdout/stderr do processo a cada fase; o Tcl guarda esses handles e o Windows recicla
+  os valores, então a janela do teste seguinte falhava ao ler os próprios arquivos do Tcl
+  (`Can't find a usable init.tcl`, `tcl_findLibrary`), ao acaso. Fora do pytest, 40 janelas
+  seguidas abrem sem erro.
+- Com o app aberto, `uv run` falha ao reinstalar o projeto (`peao-ui.exe` em uso) quando o
+  `pyproject.toml` mudou: use `uv run --no-sync ...` ou feche o app.

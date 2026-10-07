@@ -102,6 +102,7 @@ class Settings(BaseSettings):
     max_details_per_run: int = 15
 
     timezone: str = "America/Sao_Paulo"
+    horario_coleta: str = "08:00"
 
     # Provedores de LLM. OpenAI e Gemini não têm modelo padrão de propósito:
     # o catálogo deles muda, e um nome inventado falharia só na hora de rodar.

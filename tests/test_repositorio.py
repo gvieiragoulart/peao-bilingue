@@ -165,3 +165,18 @@ def test_execucao_e_registrada_do_inicio_ao_fim(repositorio):
     assert salva.vagas_novas == 3
     assert salva.gatilho == Gatilho.agendado
     assert salva.finalizada_em is not None
+
+
+def test_so_execucoes_rodando_sao_encerradas_como_orfas(repositorio):
+    concluida = repositorio.iniciar_execucao(Gatilho.manual)
+    concluida.status = StatusExecucao.ok
+    repositorio.finalizar_execucao(concluida)
+    repositorio.iniciar_execucao(Gatilho.agendado)  # o processo morreu aqui
+
+    assert repositorio.encerrar_execucoes_orfas("interrompida") == 1
+
+    orfa, ok = repositorio.listar_execucoes()
+    assert (orfa.status, orfa.erro) == (StatusExecucao.erro, "interrompida")
+    assert orfa.finalizada_em is None  # não se sabe quando o processo morreu
+    assert (ok.status, ok.erro) == (StatusExecucao.ok, None)
+    assert repositorio.encerrar_execucoes_orfas("interrompida") == 0

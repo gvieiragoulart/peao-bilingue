@@ -6,7 +6,7 @@ from dubles import FonteComPerfilFake, FonteFake, NotificadorFake, ProvedorFake
 
 from peao_bilingue.aplicacao import execucao
 from peao_bilingue.aplicacao.execucao import Servicos, executar, reanalisar_vaga
-from peao_bilingue.dominio.entidades import Busca, RespostaLLM, StatusExecucao
+from peao_bilingue.dominio.entidades import Busca, Gatilho, RespostaLLM, StatusExecucao
 from peao_bilingue.dominio.erros import (
     ErroDeColeta,
     ExecucaoEmAndamento,
@@ -217,14 +217,42 @@ async def test_lock_impede_execucao_concorrente(com_busca, monkeypatch):
     primeira = asyncio.create_task(executar(servicos(com_busca)))
     # com timeout: uma mudança de assinatura falha rápido em vez de travar a suíte
     await asyncio.wait_for(comecou.wait(), timeout=5)
-    assert execucao.em_execucao()
 
+    # outra instância de Servicos no mesmo processo também é barrada
     with pytest.raises(ExecucaoEmAndamento):
         await executar(servicos(com_busca))
+    # ...sem tratar a execução viva como órfã
+    assert com_busca.listar_execucoes()[0].status == StatusExecucao.rodando
 
     liberar.set()
     await primeira
-    assert not execucao.em_execucao()
+    # liberada ao terminar: a próxima execução entra normalmente
+    monkeypatch.setattr(execucao, "_rodar", lambda *a, **k: asyncio.sleep(0))
+    resultado = await executar(servicos(com_busca))
+    assert resultado.status == StatusExecucao.ok
+
+
+async def test_trava_e_liberada_mesmo_quando_a_execucao_falha(com_busca, monkeypatch):
+    async def explode(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(execucao, "_rodar", explode)
+    await executar(servicos(com_busca))  # vira status erro, não exceção
+
+    monkeypatch.setattr(execucao, "_rodar", lambda *a, **k: asyncio.sleep(0))
+    assert (await executar(servicos(com_busca))).status == StatusExecucao.ok
+
+
+async def test_execucao_que_ficou_pela_metade_e_encerrada_pela_seguinte(com_busca):
+    # o processo anterior morreu sem finalizar (app fechado, PC desligado...)
+    com_busca.iniciar_execucao(Gatilho.agendado)
+
+    await executar(servicos(com_busca, FonteFake()), analisar_vagas=False)
+
+    nova, orfa = com_busca.listar_execucoes()
+    assert nova.status == StatusExecucao.ok
+    assert orfa.status == StatusExecucao.erro
+    assert orfa.erro.startswith("Interrompida")
 
 
 async def test_reanalise_avulsa_usa_o_ultimo_perfil(com_busca):

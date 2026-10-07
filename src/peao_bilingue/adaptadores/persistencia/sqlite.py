@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import JSON, Column, Engine
+from sqlalchemy import JSON, Column, Engine, event
 from sqlalchemy import inspect as inspecionar
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
@@ -97,9 +97,20 @@ class ExecucaoTabela(SQLModel, table=True):
 def engine_padrao() -> Engine:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     # A interface e o worker assíncrono usam o banco de threads diferentes.
-    return create_engine(
+    engine = create_engine(
         f"sqlite:///{DB_PATH}", connect_args={"check_same_thread": False}
     )
+
+    @event.listens_for(engine, "connect")
+    def _ao_conectar(conexao: object, _registro: object) -> None:
+        # WAL: a interface lê enquanto a tarefa agendada (outro processo) escreve.
+        # busy_timeout: em vez de falhar na hora, espera o outro terminar de gravar.
+        cursor = conexao.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=5000")
+        cursor.close()
+
+    return engine
 
 
 def _sql_padrao(valor: object) -> str | None:
@@ -386,6 +397,20 @@ class RepositorioSQLite(RepositorioVagas):
             linha.finalizada_em = agora()
             sessao.add(linha)
             sessao.commit()
+
+    def encerrar_execucoes_orfas(self, motivo: str) -> int:
+        consulta = select(ExecucaoTabela).where(
+            ExecucaoTabela.status == StatusExecucao.rodando
+        )
+        with self._sessao() as sessao:
+            orfas = sessao.exec(consulta).all()
+            for linha in orfas:
+                # finalizada_em fica vazio: não se sabe quando o processo morreu.
+                linha.status = StatusExecucao.erro
+                linha.erro = motivo
+                sessao.add(linha)
+            sessao.commit()
+            return len(orfas)
 
     def listar_execucoes(self, limite: int = 20) -> list[Execucao]:
         consulta = (

@@ -5,10 +5,14 @@ importa um adapter diretamente.
 """
 
 from peao_bilingue import fabricas
+from peao_bilingue.adaptadores.agendamento.windows import AgendadorWindows
 from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
+from peao_bilingue.adaptadores.persistencia.trava import TravaDeArquivo
 from peao_bilingue.aplicacao.execucao import Servicos
-from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.portas import RepositorioVagas
+from peao_bilingue.configuracao import DIRETORIO_DADOS, settings
+from peao_bilingue.dominio.portas import Agendador, RepositorioVagas
+
+CAMINHO_TRAVA = DIRETORIO_DADOS / "execucao.lock"
 
 
 def montar_servicos(
@@ -34,4 +38,10 @@ def montar_servicos(
         triagem=fabricas.llms.criar(nome_triagem)
         if analisar and nome_triagem
         else None,
+        # Lock de arquivo: o app e a tarefa agendada são processos diferentes.
+        trava=TravaDeArquivo(CAMINHO_TRAVA),
     )
+
+
+def montar_agendador() -> Agendador:
+    return AgendadorWindows()

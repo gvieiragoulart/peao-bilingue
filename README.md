@@ -13,7 +13,8 @@ uv sync
 uv run peao-ui
 ```
 
-O app abre direto, sem console. Tudo se configura pelas abas — fontes, buscas, provedores de
+O app abre direto, sem console. Rode sempre na pasta do projeto: os dados (`data/`) e o `.env`
+são procurados na pasta atual. Tudo se configura pelas abas — fontes, buscas, provedores de
 LLM, avisos e limites. **Chaves e senhas ficam no Cofre de Credenciais do Windows**, não em
 arquivo; o resto vai para `data/config.json`. O `.env` (copiado de `.env.example`) continua
 funcionando como alternativa para quem prefere a linha de comando.
@@ -67,6 +68,22 @@ uv run peao run                  # coleta, analisa e notifica
 
 `--sem-analise` é o jeito de validar a coleta de graça. Para limitar fontes ou trocar o LLM:
 `--fonte vanhack --llm anthropic`. `uv run peao adaptadores` lista o que está disponível.
+
+## Coleta diária automática
+
+Na aba **Execuções**, digite o horário e clique em **Agendar** — ou pela linha de comando:
+
+```bash
+uv run peao agenda ativar --horario 08:00
+uv run peao agenda                    # próxima e última execução
+uv run peao agenda desativar
+```
+
+A tarefa fica no Agendador de Tarefas do Windows ("Peao Bilingue - coleta diaria") e roda com o
+app fechado; se o PC estiver desligado na hora marcada, ela roda assim que ele ligar. Faz a
+mesma coleta do `uv run peao run`. Como roda sem janela, o registro fica em `data/coleta.log`.
+Só uma coleta roda por vez: se a tarefa começar enquanto você coleta pelo app (ou o contrário),
+a segunda é recusada.
 
 ## Escolhendo o LLM
 
