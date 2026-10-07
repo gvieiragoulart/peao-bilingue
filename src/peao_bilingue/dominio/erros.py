@@ -22,6 +22,10 @@ class ExecucaoEmAndamento(RuntimeError):
     """Já existe uma execução rodando; só uma por vez."""
 
 
+class ErroDeAgendamento(RuntimeError):
+    """O sistema operacional recusou criar, ler ou remover a tarefa agendada."""
+
+
 class ProvedorIndisponivel(RuntimeError):
     """O provedor de LLM está fora do ar ou mal configurado; a mensagem diz o que fazer."""
 

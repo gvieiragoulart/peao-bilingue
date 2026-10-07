@@ -4,8 +4,8 @@ Só conhece portas. Quais fontes, LLM e notificadores entram é decidido na
 composição (`peao_bilingue.composicao`), a partir da configuração.
 """
 
-import asyncio
 import logging
+import threading
 from dataclasses import dataclass, field
 
 from peao_bilingue.aplicacao import filtros
@@ -34,11 +34,33 @@ from peao_bilingue.dominio.portas import (
     Notificador,
     ProvedorLLM,
     RepositorioVagas,
+    Trava,
 )
 
 logger = logging.getLogger(__name__)
 
-_lock = asyncio.Lock()
+INTERROMPIDA = (
+    "Interrompida: o processo terminou antes de concluir "
+    "(app fechado no meio da coleta, PC desligado ou limite de tempo da tarefa agendada)."
+)
+
+
+class TravaDoProcesso(Trava):
+    """Exclui execuções dentro de um mesmo processo. Entre processos, a composição
+    usa a trava de arquivo."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+
+    def adquirir(self) -> bool:
+        return self._lock.acquire(blocking=False)
+
+    def liberar(self) -> None:
+        self._lock.release()
+
+
+# Compartilhada: duas instâncias de Servicos no mesmo processo também se excluem.
+_TRAVA_DO_PROCESSO = TravaDoProcesso()
 
 
 @dataclass
@@ -48,6 +70,7 @@ class Servicos:
     analise: ProvedorLLM | None = None
     notificadores: list[Notificador] = field(default_factory=list)
     triagem: ProvedorLLM | None = None
+    trava: Trava = field(default_factory=lambda: _TRAVA_DO_PROCESSO)
 
 
 @dataclass
@@ -59,10 +82,6 @@ class _Estado:
     excecoes: list[Exception] = field(default_factory=list)
 
 
-def em_execucao() -> bool:
-    return _lock.locked()
-
-
 async def executar(
     servicos: Servicos,
     gatilho: Gatilho = Gatilho.manual,
@@ -70,10 +89,19 @@ async def executar(
     dry_run: bool | None = None,
     analisar_vagas: bool = True,
 ) -> Execucao:
-    if _lock.locked():
-        raise ExecucaoEmAndamento("Já existe uma execução em andamento.")
-    async with _lock:
+    if not servicos.trava.adquirir():
+        raise ExecucaoEmAndamento(
+            "Já existe uma execução em andamento (no app ou na tarefa agendada)."
+        )
+    try:
         repositorio = servicos.repositorio
+        # Com a trava na mão, nenhuma outra execução está viva: o que ainda consta
+        # como "rodando" é de um processo que morreu no meio do caminho.
+        orfas = repositorio.encerrar_execucoes_orfas(INTERROMPIDA)
+        if orfas:
+            logger.warning(
+                "%d execução(ões) anterior(es) marcada(s) como interrompida(s).", orfas
+            )
         execucao = repositorio.iniciar_execucao(gatilho)
         try:
             await _rodar(
@@ -91,6 +119,8 @@ async def executar(
             logger.exception("Execução falhou")
         repositorio.finalizar_execucao(execucao)
         return execucao
+    finally:
+        servicos.trava.liberar()
 
 
 async def _rodar(

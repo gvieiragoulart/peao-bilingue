@@ -9,7 +9,8 @@ from typing import Any
 import customtkinter as ctk
 
 from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
-from peao_bilingue.dominio.portas import RepositorioVagas
+from peao_bilingue.composicao import montar_agendador
+from peao_bilingue.dominio.portas import Agendador, RepositorioVagas
 from peao_bilingue.ui.abas.buscas import AbaBuscas
 from peao_bilingue.ui.abas.configuracoes import AbaConfiguracoes
 from peao_bilingue.ui.abas.execucoes import AbaExecucoes
@@ -37,6 +38,7 @@ class Aplicativo(ctk.CTk):
         self,
         repositorio: RepositorioVagas | None = None,
         executor: ExecutorAssincrono | None = None,
+        agendador: Agendador | None = None,
     ) -> None:
         super().__init__()
         self.title(f"{TITULO} — radar de vagas")
@@ -45,6 +47,7 @@ class Aplicativo(ctk.CTk):
 
         self.repositorio = repositorio or RepositorioSQLite()
         self.executor = executor or ExecutorAssincrono()
+        self.agendador = agendador or montar_agendador()
         self._fila: queue.Queue[str] = queue.Queue()
         self._log = FilaDeLog(self._fila)
         logging.getLogger().addHandler(self._log)

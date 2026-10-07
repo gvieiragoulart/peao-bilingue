@@ -1,9 +1,12 @@
+import asyncio
 from typing import TYPE_CHECKING, Any
 
 import customtkinter as ctk
 
+from peao_bilingue import configuracao
 from peao_bilingue.aplicacao.execucao import executar
 from peao_bilingue.composicao import montar_servicos
+from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import Execucao, Gatilho
 from peao_bilingue.ui import apresentacao
 from peao_bilingue.ui.componentes import Tabela
@@ -42,6 +45,30 @@ class AbaExecucoes(ctk.CTkFrame):
         )
         self.botao.pack(side="right")
 
+        agenda = ctk.CTkFrame(self)
+        agenda.pack(fill="x", pady=(0, 8))
+        ctk.CTkLabel(
+            agenda, text="Coleta diária automática", font=ctk.CTkFont(weight="bold")
+        ).pack(side="left", padx=12, pady=10)
+        self.horario = ctk.CTkEntry(agenda, width=70)
+        self.horario.pack(side="left")
+        self.horario.insert(0, settings.horario_coleta)
+        ctk.CTkButton(agenda, text="Agendar", width=90, command=self._agendar).pack(
+            side="left", padx=6
+        )
+        ctk.CTkButton(
+            agenda,
+            text="Cancelar",
+            width=90,
+            fg_color="transparent",
+            border_width=1,
+            command=self._cancelar_agenda,
+        ).pack(side="left")
+        self.situacao_agenda = ctk.CTkLabel(
+            agenda, text="Consultando…", text_color="gray55"
+        )
+        self.situacao_agenda.pack(side="left", padx=12)
+
         self.historico = Tabela(self, COLUNAS, height=220)
         self.historico.pack(fill="x")
 
@@ -49,6 +76,51 @@ class AbaExecucoes(ctk.CTkFrame):
         self.log = ctk.CTkTextbox(self, wrap="word", height=220)
         self.log.pack(fill="both", expand=True)
         self.log.configure(state="disabled")
+        self._consultar_agenda()
+
+    # O PowerShell leva ~1 s para responder: tudo da agenda passa pelo executor,
+    # e a consulta não entra no atualizar(), que roda a cada mudança de dados.
+    def _consultar_agenda(self) -> None:
+        def mostrar(situacao: object) -> None:
+            self.situacao_agenda.configure(text=apresentacao.descrever_agenda(situacao))
+
+        def falhar(falha: BaseException) -> None:
+            self.situacao_agenda.configure(
+                text=f"Não consegui consultar a agenda: {falha}"
+            )
+
+        self.app.rodar(
+            asyncio.to_thread(self.app.agendador.situacao),
+            ao_terminar=mostrar,
+            ao_falhar=falhar,
+        )
+
+    def _agendar(self) -> None:
+        horario = self.horario.get().strip()
+        self.situacao_agenda.configure(text="Agendando…")
+
+        def terminar(_resultado: object) -> None:
+            # Aqui já na thread da interface: só ela mexe no `settings` compartilhado.
+            configuracao.salvar({"horario_coleta": horario})
+            self._consultar_agenda()
+
+        self.app.rodar(
+            asyncio.to_thread(self.app.agendador.agendar, horario),
+            ao_terminar=terminar,
+            ao_falhar=self._falha_na_agenda,
+        )
+
+    def _cancelar_agenda(self) -> None:
+        self.situacao_agenda.configure(text="Cancelando…")
+        self.app.rodar(
+            asyncio.to_thread(self.app.agendador.cancelar),
+            ao_terminar=lambda _r: self._consultar_agenda(),
+            ao_falhar=self._falha_na_agenda,
+        )
+
+    def _falha_na_agenda(self, falha: BaseException) -> None:
+        self._consultar_agenda()
+        self.app.mostrar_erro(falha)
 
     def atualizar(self) -> None:
         self.historico.preencher(

@@ -1,9 +1,11 @@
 """A janela de verdade, escondida, sobre um repositório em memória."""
 
 import json
+import time
 
 import pytest
 from construtores import analise, perfil, vaga
+from dubles import AgendadorFake
 
 from peao_bilingue import configuracao
 from peao_bilingue.configuracao import settings
@@ -21,7 +23,8 @@ def janela(repositorio, monkeypatch):
     monkeypatch.setattr(
         Aplicativo, "informar", lambda self, m: avisos["infos"].append(m)
     )
-    app = Aplicativo(repositorio=repositorio)
+    # Agendador falso: os testes nunca consultam nem mexem no Agendador do Windows.
+    app = Aplicativo(repositorio=repositorio, agendador=AgendadorFake())
     app.withdraw()
     app.update()
     app.avisos = avisos
@@ -135,3 +138,44 @@ def test_perfil_mostra_o_ultimo_snapshot(janela, repositorio):
     aba = janela.paineis["Perfil"]
     aba.atualizar()
     assert "Staff Engineer" in aba.texto.get("1.0", "end")
+
+
+def processar_ate(janela, condicao, limite=5.0):
+    """Roda o mainloop do Tk até a condição valer (o trabalho vai e volta pelo executor)."""
+    fim = time.time() + limite
+    while time.time() < fim:
+        janela.update()
+        if condicao():
+            return True
+        time.sleep(0.02)
+    return False
+
+
+def test_agendar_pela_tela_registra_e_guarda_o_horario(janela):
+    aba = janela.paineis["Execuções"]
+    aba.horario.delete(0, "end")
+    aba.horario.insert(0, "07:45")
+    aba._agendar()
+
+    assert processar_ate(janela, lambda: "07:45" in aba.situacao_agenda.cget("text"))
+    assert janela.agendador.situacao().horario == "07:45"
+    assert settings.horario_coleta == "07:45"
+
+
+def test_cancelar_pela_tela(janela):
+    janela.agendador.agendar("08:00")
+    aba = janela.paineis["Execuções"]
+    aba._cancelar_agenda()
+
+    assert processar_ate(janela, lambda: "Nenhuma" in aba.situacao_agenda.cget("text"))
+    assert janela.agendador.situacao() is None
+
+
+def test_horario_invalido_avisa(janela):
+    aba = janela.paineis["Execuções"]
+    aba.horario.delete(0, "end")
+    aba.horario.insert(0, "8h")
+    aba._agendar()
+
+    assert processar_ate(janela, lambda: bool(janela.avisos["erros"]))
+    assert janela.agendador.situacao() is None

@@ -6,11 +6,13 @@ from peao_bilingue.dominio.entidades import (
     Perfil,
     RespostaLLM,
     ResultadoAnalise,
+    SituacaoAgenda,
     Triagem,
     Vaga,
     VagaResumo,
 )
 from peao_bilingue.dominio.portas import (
+    Agendador,
     FonteDePerfil,
     FonteDeVagas,
     Notificador,
@@ -102,6 +104,24 @@ class ProvedorFake(ProvedorLLM):
                 texto=Triagem(fit_score=nota, motivo="ok").model_dump_json()
             )
         return RespostaLLM(texto=analise(nota).model_dump_json())
+
+
+class AgendadorFake(Agendador):
+    """Guarda o agendamento em memória: os testes nunca mexem no Agendador do Windows."""
+
+    def __init__(self):
+        self.atual: SituacaoAgenda | None = None
+
+    def agendar(self, horario):
+        if len(horario) != 5:
+            raise ValueError(f"Horário inválido: {horario!r}.")
+        self.atual = SituacaoAgenda(horario=horario, estado="Ready")
+
+    def cancelar(self):
+        self.atual = None
+
+    def situacao(self):
+        return self.atual
 
 
 class NotificadorFake(Notificador):

@@ -19,12 +19,39 @@ from peao_bilingue.dominio.entidades import (
     Perfil,
     RespostaLLM,
     ResultadoAnalise,
+    SituacaoAgenda,
     StatusVaga,
     TriagemSalva,
     Vaga,
     VagaListada,
     VagaResumo,
 )
+
+
+class Trava(ABC):
+    """Uma execução por vez — inclusive entre processos (app e tarefa agendada)."""
+
+    @abstractmethod
+    def adquirir(self) -> bool:
+        """Tenta sem esperar; False se outra execução estiver rodando."""
+
+    @abstractmethod
+    def liberar(self) -> None: ...
+
+
+class Agendador(ABC):
+    """Dispara a coleta diária fora do app (no Windows, o Agendador de Tarefas)."""
+
+    @abstractmethod
+    def agendar(self, horario: str) -> None:
+        """`horario` no formato HH:MM. Substitui um agendamento anterior."""
+
+    @abstractmethod
+    def cancelar(self) -> None: ...
+
+    @abstractmethod
+    def situacao(self) -> SituacaoAgenda | None:
+        """None quando não há nada agendado."""
 
 
 class FonteDeVagas(ABC):
@@ -170,6 +197,10 @@ class RepositorioVagas(ABC):
 
     @abstractmethod
     def finalizar_execucao(self, execucao: Execucao) -> None: ...
+
+    @abstractmethod
+    def encerrar_execucoes_orfas(self, motivo: str) -> int:
+        """Marca como erro as execuções que ainda constam 'rodando'. Devolve quantas."""
 
     @abstractmethod
     def listar_execucoes(self, limite: int = 20) -> list[Execucao]: ...
