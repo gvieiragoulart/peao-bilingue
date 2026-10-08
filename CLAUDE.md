@@ -323,6 +323,24 @@ se protege de expansão de entidades). Primeira coleta real (08/10): 27 listadas
 
 ---
 
+## Sites brasileiros (Fase 6): o que os termos permitem
+
+Investigado em 08/10, antes de qualquer código, como o roteiro manda (termos lidos no site de
+cada um, com acesso honesto):
+
+| Site | API/feed oficial | O que os termos dizem | Veredito |
+|---|---|---|---|
+| Gupy | só para empresas clientes | proíbe "agregar, copiar ou duplicar partes do Gupy [...] incluindo oportunidades de trabalho" | **não** |
+| Remotar | não | proíbe "mecanismos, software ou scripts"; cópia por "Robot/Crawler" "expressamente proibido" | **não** |
+| GeekHunter | não | proíbe "scraping, spiders, crawlers, bots" sem autorização prévia e escrita | **não** |
+| Trampos | não | mesma cláusula da Remotar (scripts e robôs proibidos) | **não** |
+| Programathor | não (`/jobs.rss` dá 500) | **silencia** sobre acesso automatizado; `robots.txt` libera as páginas de vagas | **a decidir pelo Gabriel** |
+
+O Programathor exigiria ler o HTML das páginas (não há alternativa oficial): os termos não
+proíbem, mas também não autorizam. Fica parado até o Gabriel decidir.
+
+---
+
 ## Roteiro
 
 Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `uv run mypy`, commit e push.
@@ -347,7 +365,9 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `u
 - [x] **Fase 5 — APIs públicas:** Remotive, Remote OK, Arbeitnow (Alemanha com visto),
       Himalayas (aberto ao Brasil) e We Work Remotely (RSS), sobre a base `FonteDeApi`. Termos
       conferidos um a um e documentados em "Fontes por API"; todas desligadas por padrão.
-- [ ] **Fase 6 — Sites brasileiros:** investigar endpoint e termos antes de implementar.
+- [~] **Fase 6 — Sites brasileiros:** investigação feita (ver "Sites brasileiros"): Gupy,
+      Remotar, GeekHunter e Trampos proíbem; o Programathor silencia e só daria por HTML —
+      **aguarda decisão do Gabriel**.
 - [ ] **Fase 7 — LinkedIn/Indeed:** opt-in, desligados por padrão, mesmas regras da VanHack. Os
       termos proíbem automação (risco de restrição da conta); se bloquearem, **não** escalar para
       evasão — a alternativa é ler os alertas de vaga por email (IMAP).
