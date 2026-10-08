@@ -13,9 +13,10 @@ ser guardada: não vai para o banco, para o prompt do LLM nem para os testes.
 import re
 from typing import Any
 
-from peao_bilingue.adaptadores.fontes.api import FonteDeApi, consertar_codificacao
+from peao_bilingue.adaptadores.fontes.api import FonteDeApi, Json, consertar_codificacao
 from peao_bilingue.adaptadores.fontes.html import html_para_texto
 from peao_bilingue.dominio.entidades import Vaga
+from peao_bilingue.dominio.erros import ErroDeColeta
 from peao_bilingue.fabricas import fontes
 
 URL = "https://remoteok.com/api"
@@ -37,7 +38,11 @@ class RemoteOK(FonteDeApi):
     marca = "Remote OK"
     url = URL
 
-    def converter(self, dados: Any) -> list[Vaga]:
+    def converter(self, dados: Json) -> list[Vaga]:
+        if not isinstance(dados, list):
+            raise ErroDeColeta(
+                "Remote OK mudou o formato da resposta (esperava uma lista)."
+            )
         # O primeiro item é o aviso legal, sem vaga.
         return [
             _vaga(item) for item in dados if isinstance(item, dict) and item.get("id")

@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from tkinter import ttk
 from typing import Any, Literal
@@ -5,6 +6,7 @@ from typing import Any, Literal
 import customtkinter as ctk
 
 from peao_bilingue.configuracao import SEGREDOS, Settings
+from peao_bilingue.dominio.portas import Notificador, ProvedorLLM
 
 Tipo = Literal["texto", "inteiro", "booleano", "segredo", "opcoes"]
 
@@ -85,7 +87,7 @@ class Tabela(ctk.CTkFrame):
         selecao = self.arvore.selection()
         return selecao[0] if selecao else None
 
-    def ao_selecionar(self, callback: Any) -> None:
+    def ao_selecionar(self, callback: Callable[[], None]) -> None:
         self.arvore.bind("<<TreeviewSelect>>", lambda _evento: callback())
 
 
@@ -97,7 +99,7 @@ class Campo:
     opcoes: list[str] = field(default_factory=list)
 
 
-def campos_do_adapter(classe: Any) -> list[Campo]:
+def campos_do_adapter(classe: type[ProvedorLLM] | type[Notificador]) -> list[Campo]:
     """Formulário de um adapter a partir do que ele declara em `campos`."""
     return [
         Campo(nome, rotulo, tipo_do_campo(nome))
@@ -122,6 +124,7 @@ class Formulario(ctk.CTkFrame):
                 row=linha, column=1, sticky="ew", padx=(0, 8), pady=4
             )
 
+    # Any: widget do CustomTkinter, biblioteca sem tipos.
     def _criar(self, campo: Campo) -> Any:
         if campo.tipo == "booleano":
             return ctk.CTkSwitch(self, text="")

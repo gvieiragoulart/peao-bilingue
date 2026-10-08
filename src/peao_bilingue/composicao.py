@@ -15,13 +15,17 @@ from peao_bilingue.dominio.portas import Agendador, ProvedorLLM, RepositorioVaga
 CAMINHO_TRAVA = DIRETORIO_DADOS / "execucao.lock"
 
 
+def montar_repositorio() -> RepositorioVagas:
+    return RepositorioSQLite()
+
+
 def montar_servicos(
     *,
     fontes: list[str] | None = None,
     repositorio: RepositorioVagas | None = None,
 ) -> Servicos:
     return Servicos(
-        repositorio=repositorio or RepositorioSQLite(),
+        repositorio=repositorio or montar_repositorio(),
         fontes=[
             fabricas.fontes.criar(nome)
             for nome in fontes or settings.fontes_habilitadas

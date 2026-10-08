@@ -8,8 +8,7 @@ from typing import Any
 
 import customtkinter as ctk
 
-from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
-from peao_bilingue.composicao import montar_agendador
+from peao_bilingue.composicao import montar_agendador, montar_repositorio
 from peao_bilingue.dominio.portas import Agendador, RepositorioVagas
 from peao_bilingue.ui.abas.buscas import AbaBuscas
 from peao_bilingue.ui.abas.configuracoes import AbaConfiguracoes
@@ -46,7 +45,7 @@ class Aplicativo(ctk.CTk):
         self.geometry("1280x800")
         self.minsize(1000, 640)
 
-        self.repositorio = repositorio or RepositorioSQLite()
+        self.repositorio = repositorio or montar_repositorio()
         self.executor = executor or ExecutorAssincrono()
         self.agendador = agendador or montar_agendador()
         self._fila: queue.Queue[str] = queue.Queue()

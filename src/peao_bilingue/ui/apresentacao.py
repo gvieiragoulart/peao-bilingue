@@ -5,7 +5,6 @@ from peao_bilingue.dominio.entidades import (
     Busca,
     Execucao,
     JobAnalysis,
-    SituacaoAgenda,
     StatusVaga,
     Vaga,
     VagaListada,
@@ -115,22 +114,6 @@ def linha_de_execucao(execucao: Execucao) -> tuple[str, ...]:
         str(execucao.vagas_novas),
         erro,
     )
-
-
-def descrever_agenda(situacao: SituacaoAgenda | None) -> str:
-    if situacao is None:
-        return "Nenhuma coleta agendada."
-    partes = [f"Todo dia às {situacao.horario} (tarefa: {situacao.estado})."]
-    if situacao.proxima_execucao:
-        partes.append(f"Próxima: {situacao.proxima_execucao:%d/%m %H:%M}.")
-    if situacao.ultima_execucao:
-        resultado = (
-            "ok"
-            if situacao.ultimo_resultado == 0
-            else f"código {situacao.ultimo_resultado}"
-        )
-        partes.append(f"Última: {situacao.ultima_execucao:%d/%m %H:%M} ({resultado}).")
-    return " ".join(partes)
 
 
 def termos(texto: str) -> list[str]:

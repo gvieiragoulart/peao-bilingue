@@ -368,3 +368,21 @@ uv run mypy                          # strict em src/ (configurado no pyproject)
   parâmetro opcional da Anthropic que não deve ir na requisição é `omit` — não `**kwargs`
   montado à parte, que o mypy não consegue conferir. Há teste com o SDK de verdade sobre um
   transporte local (`httpx2`, que o SDK usa) provando que o `omit` não chega à API.
+
+## Auditoria de qualidade (07/10, em andamento)
+
+Critérios pedidos: arquivos separados por domínio, SOLID, funções tipadas na entrada e na saída.
+
+- [x] `Any` evitável em assinaturas de `src/` (JSON das APIs virou `Json` com checagem do
+      formato; callbacks da UI tipados). Sobra só widget do CustomTkinter, sem tipos.
+- [x] Raiz de composição respeitada: UI e CLI pegam o repositório em `montar_repositorio()`.
+- [x] CLI não importa de `ui/` (textos comuns em `textos.py`).
+- [x] Adapter não importa da aplicação: o texto pesquisável da vaga é regra de domínio
+      (`Vaga.texto_pesquisavel()`).
+- [ ] **D** (inversão de dependência): `aplicacao/` lê `configuracao.settings` direto
+      (limite de detalhes, notas do perfil com leitura de arquivo) — injetar.
+- [ ] **Domínio em arquivos**: `dominio/entidades.py` e `dominio/portas.py` juntam todos os
+      subdomínios — separar (vagas, buscas, perfil, análise, coleta/execução, avisos, agenda).
+- [ ] **I** (interfaces enxutas): `RepositorioVagas` faz buscas, vagas, análises, perfis e
+      execuções — uma porta por agregado; `sqlite.py` (434 linhas) dividido junto (**S**).
+- [ ] Testes tipados (343 pendências no mypy estrito) e `tests/` no mypy do CI.

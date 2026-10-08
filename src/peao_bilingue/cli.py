@@ -6,9 +6,12 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 from peao_bilingue import fabricas
-from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
 from peao_bilingue.aplicacao.execucao import executar
-from peao_bilingue.composicao import montar_agendador, montar_servicos
+from peao_bilingue.composicao import (
+    montar_agendador,
+    montar_repositorio,
+    montar_servicos,
+)
 from peao_bilingue.configuracao import DIRETORIO_DADOS, settings
 from peao_bilingue.dominio.entidades import Busca, Gatilho, StatusExecucao
 from peao_bilingue.dominio.erros import (
@@ -19,7 +22,7 @@ from peao_bilingue.dominio.erros import (
     ProvedorIndisponivel,
 )
 from peao_bilingue.dominio.portas import SessaoManual
-from peao_bilingue.ui.apresentacao import descrever_agenda
+from peao_bilingue.textos import descrever_agenda
 
 ARQUIVO_DE_LOG = DIRETORIO_DADOS / "coleta.log"
 
@@ -165,7 +168,7 @@ def _run(args: argparse.Namespace) -> None:
 
 
 def _buscas(args: argparse.Namespace) -> None:
-    repositorio = RepositorioSQLite()
+    repositorio = montar_repositorio()
     if args.acao == "adicionar":
         busca = repositorio.salvar_busca(
             Busca(

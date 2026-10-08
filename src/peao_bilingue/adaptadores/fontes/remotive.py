@@ -12,10 +12,11 @@ from typing import Any
 
 import httpx
 
-from peao_bilingue.adaptadores.fontes.api import FonteDeApi
+from peao_bilingue.adaptadores.fontes.api import FonteDeApi, Json
 from peao_bilingue.adaptadores.fontes.html import html_para_texto
 from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import Vaga
+from peao_bilingue.dominio.erros import ErroDeColeta
 from peao_bilingue.fabricas import fontes
 
 URL = "https://remotive.com/api/remote-jobs"
@@ -41,7 +42,11 @@ class Remotive(FonteDeApi):
     def parametros(self) -> dict[str, str]:
         return {"category": self.categoria}
 
-    def converter(self, dados: Any) -> list[Vaga]:
+    def converter(self, dados: Json) -> list[Vaga]:
+        if not isinstance(dados, dict):
+            raise ErroDeColeta(
+                "Remotive mudou o formato da resposta (esperava um objeto)."
+            )
         return [_vaga(item) for item in dados.get("jobs", [])]
 
 
