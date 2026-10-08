@@ -1,6 +1,7 @@
 import hashlib
 import json
 import re
+from typing import Any
 
 from playwright.async_api import Locator, Page
 
@@ -10,7 +11,7 @@ from peao_bilingue.configuracao import settings
 TIMEOUT_RENDER_MS = 20_000
 
 
-async def scrape(page: Page) -> dict:
+async def scrape(page: Page) -> dict[str, Any]:
     """Abre /profile e devolve o perfil estruturado, já sem PII."""
     await auth.goto(page, settings.vanhack_profile_url)
     await page.wait_for_selector(
@@ -19,7 +20,7 @@ async def scrape(page: Page) -> dict:
     return await extract(page)
 
 
-async def extract(page: Page) -> dict:
+async def extract(page: Page) -> dict[str, Any]:
     campos = await _mapa_de_campos(page)
     return {
         "cargo": campos.get(selectors.LABEL_CARGO),
@@ -38,7 +39,7 @@ async def extract(page: Page) -> dict:
     }
 
 
-def to_text(dados: dict) -> str:
+def to_text(dados: dict[str, Any]) -> str:
     """Versão legível do perfil, usada no prompt da análise."""
     linhas = [
         f"Cargo: {dados.get('cargo') or 'não informado'}",
@@ -93,7 +94,7 @@ def to_text(dados: dict) -> str:
     return "\n".join(linhas)
 
 
-def _skills_em_linha(skills: list[dict] | None) -> str:
+def _skills_em_linha(skills: list[dict[str, Any]] | None) -> str:
     return ", ".join(f"{s['skill']} ({s.get('anos') or '-'})" for s in skills or [])
 
 
@@ -101,12 +102,12 @@ def _valor_em_texto(valor: object) -> str:
     return ", ".join(valor) if isinstance(valor, list) else str(valor)
 
 
-def normalizar(dados: dict) -> str:
+def normalizar(dados: dict[str, Any]) -> str:
     """JSON canônico do perfil, base para o hash de mudança."""
     return json.dumps(dados, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def content_hash(dados: dict) -> str:
+def content_hash(dados: dict[str, Any]) -> str:
     return hashlib.sha256(normalizar(dados).encode("utf-8")).hexdigest()
 
 
@@ -156,13 +157,13 @@ async def _valor(campo: Locator) -> str | list[str] | None:
     return None
 
 
-async def _mapa_de_campos(page: Page) -> dict[str, str | None]:
+async def _mapa_de_campos(page: Page) -> dict[str, str | list[str] | None]:
     """Todos os pares pergunta/resposta da página, menos os sensíveis.
 
     Guardar o mapa inteiro (e não só os rótulos conhecidos) faz o snapshot
     sobreviver a mudanças de texto das perguntas na VanHack.
     """
-    mapa: dict[str, str | None] = {}
+    mapa: dict[str, str | list[str] | None] = {}
     for campo in await page.locator(selectors.FIELD).all():
         rotulo = campo.locator(selectors.FIELD_LABEL)
         if not await rotulo.count():
@@ -221,7 +222,7 @@ async def _idiomas(page: Page) -> list[dict[str, str | None]]:
     return idiomas
 
 
-async def _experiencias(page: Page) -> list[dict]:
+async def _experiencias(page: Page) -> list[dict[str, Any]]:
     experiencias = []
     for bloco in await page.locator(selectors.EXPERIENCE).all():
         cargos = []

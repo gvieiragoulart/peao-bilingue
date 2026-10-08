@@ -126,6 +126,7 @@ Quando uma execução terminar com `login_required`, rode `uv run peao login` de
 ```bash
 uv run pytest                         # todos offline: sem site, sem SMTP, sem LLM
 uv run ruff check . && uv run ruff format .
+uv run mypy                           # tipagem estrita do código em src/
 ```
 
 O pipeline inteiro é testado com dublês das portas e um SQLite em memória. Os adapters de

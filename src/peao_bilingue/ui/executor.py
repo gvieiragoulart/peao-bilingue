@@ -30,7 +30,7 @@ class ExecutorAssincrono:
         asyncio.set_event_loop(self._loop)
         self._loop.run_forever()
 
-    def submeter(self, corrotina: Coroutine[Any, Any, Any]) -> Future:
+    def submeter(self, corrotina: Coroutine[Any, Any, Any]) -> Future[Any]:
         return asyncio.run_coroutine_threadsafe(corrotina, self._loop)
 
     def encerrar(self) -> None:
@@ -40,7 +40,7 @@ class ExecutorAssincrono:
 
 def acompanhar(
     widget: Any,
-    futuro: Future,
+    futuro: Future[Any],
     ao_terminar: Callable[[Any], None] | None = None,
     ao_falhar: Callable[[BaseException], None] | None = None,
 ) -> None:

@@ -1,4 +1,5 @@
 import json
+from contextlib import suppress
 
 import keyring
 import pytest
@@ -12,10 +13,8 @@ def configuracao_limpa():
     """Cada teste começa sem config.json e com o cofre vazio."""
     configuracao.CONFIG_PATH.unlink(missing_ok=True)
     for nome in configuracao.SEGREDOS:
-        try:
+        with suppress(keyring.errors.PasswordDeleteError):
             keyring.delete_password(SERVICO_KEYRING, nome)
-        except keyring.errors.PasswordDeleteError:
-            pass
     yield
     configuracao.CONFIG_PATH.unlink(missing_ok=True)
     configuracao.recarregar()

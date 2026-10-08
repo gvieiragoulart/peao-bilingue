@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 from playwright.async_api import Locator, Page
 
@@ -7,13 +8,13 @@ from peao_bilingue.adaptadores.fontes.vanhack import auth, selectors
 TIMEOUT_RENDER_MS = 20_000
 
 
-async def scrape(page: Page, url: str) -> dict:
+async def scrape(page: Page, url: str) -> dict[str, Any]:
     await auth.goto(page, url)
     await page.wait_for_selector(selectors.JD_ROOT, timeout=TIMEOUT_RENDER_MS)
     return await extract(page, url)
 
 
-async def extract(page: Page, url: str | None = None) -> dict:
+async def extract(page: Page, url: str | None = None) -> dict[str, Any]:
     url = url or page.url
     achado = re.search(selectors.JOB_URL_ID, url)
     must, nice, idiomas = await _skills(page)
@@ -67,9 +68,11 @@ async def _fatos(page: Page) -> list[str]:
     return fatos
 
 
-async def _skills(page: Page) -> tuple[list[dict], list[dict], list[str]]:
-    must: list[dict] = []
-    nice: list[dict] = []
+async def _skills(
+    page: Page,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
+    must: list[dict[str, Any]] = []
+    nice: list[dict[str, Any]] = []
     idiomas: list[str] = []
     for bloco in await page.locator(selectors.JD_SUBBLOCK).all():
         cabecalho = (
@@ -85,7 +88,7 @@ async def _skills(page: Page) -> tuple[list[dict], list[dict], list[str]]:
     return must, nice, idiomas
 
 
-async def _chips(bloco: Locator) -> list[dict]:
+async def _chips(bloco: Locator) -> list[dict[str, Any]]:
     """Cada chip é "C#" + <small>5 Year(s)</small>; separar nome e anos."""
     chips = []
     for chip in await bloco.locator(selectors.JD_CHIP).all():

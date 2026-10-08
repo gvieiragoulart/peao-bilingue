@@ -38,12 +38,49 @@ asyncio_mode = "auto"
 # próprios arquivos do Tcl ("Can't find a usable init.tcl"), de forma aleatória.
 addopts = "--capture=sys"
 
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "UP", "B", "SIM", "C4", "PIE", "RET", "PTH",
+    "BLE", "DTZ", "ISC", "PLE", "PLW", "PT", "ASYNC", "RUF",
+]
+ignore = [
+    "E501",  # o comprimento é do formatter; sobram só textos longos em PT-BR
+    # Travessão, aspas e reticências tipográficos nos textos são de propósito.
+    "RUF001", "RUF002", "RUF003",
+    "PT018",  # assert composto é usado de propósito nos testes
+]
+
+[tool.ruff.lint.per-file-ignores]
+# O ambiente (pasta de dados, keyring) é preparado antes de importar o projeto.
+"tests/conftest.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src"]
+strict = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+# O CustomTkinter não publica tipos: os widgets dele chegam como Any.
+module = ["customtkinter", "customtkinter.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["peao_bilingue.ui.*"]
+disallow_subclassing_any = false
+
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "mypy>=2.4.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "ruff>=0.16.10",

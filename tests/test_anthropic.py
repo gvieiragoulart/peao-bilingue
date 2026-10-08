@@ -1,4 +1,8 @@
+import json
 from types import SimpleNamespace
+
+import httpx2
+from anthropic import AsyncAnthropic
 
 from peao_bilingue.adaptadores.llm.anthropic import BETA_FALLBACK, Anthropic
 from peao_bilingue.dominio.entidades import JobAnalysis, Mensagem
@@ -65,10 +69,37 @@ async def test_liga_fallback_de_recusa_nos_modelos_que_suportam():
 
 
 async def test_nao_manda_fallback_em_modelo_sem_suporte():
-    cliente = ClienteFake(resposta())
-    await chamar(Anthropic(modelo="claude-haiku-4-5", client=cliente))
+    # O adapter passa `omit`; confere na requisição que o SDK de verdade monta
+    # (transporte local, sem rede) que nada disso chega à API, onde daria 400.
+    enviado: dict = {}
 
-    assert "fallbacks" not in cliente.argumentos and "betas" not in cliente.argumentos
+    def responder(requisicao: httpx2.Request) -> httpx2.Response:
+        enviado["corpo"] = json.loads(requisicao.content)
+        enviado["beta"] = requisicao.headers.get("anthropic-beta", "")
+        return httpx2.Response(
+            200,
+            json={
+                "id": "msg_1",
+                "type": "message",
+                "role": "assistant",
+                "model": "claude-haiku-4-5",
+                "content": [{"type": "text", "text": "{}"}],
+                "stop_reason": "end_turn",
+                "stop_sequence": None,
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            },
+        )
+
+    cliente = AsyncAnthropic(
+        api_key="teste",
+        http_client=httpx2.AsyncClient(transport=httpx2.MockTransport(responder)),
+    )
+    resultado = await chamar(Anthropic(modelo="claude-haiku-4-5", client=cliente))
+
+    assert resultado.texto == "{}"
+    assert "fallbacks" not in enviado["corpo"]
+    assert BETA_FALLBACK not in enviado["beta"]
+    assert enviado["corpo"]["messages"] == [{"role": "user", "content": "oi"}]
 
 
 async def test_recusa_vira_resposta_marcada():

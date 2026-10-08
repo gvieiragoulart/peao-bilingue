@@ -1,6 +1,7 @@
 from typing import ClassVar
 
-from anthropic import AsyncAnthropic, transform_schema
+from anthropic import AsyncAnthropic, omit, transform_schema
+from anthropic.types.beta import BetaMessageParam
 from pydantic import BaseModel
 
 from peao_bilingue.configuracao import settings
@@ -46,16 +47,18 @@ class Anthropic(ProvedorLLM):
     async def gerar_json(
         self, sistema: str, mensagens: list[Mensagem], schema: type[BaseModel]
     ) -> RespostaLLM:
-        extras = {}
-        if self.modelo in MODELOS_COM_FALLBACK:
-            # Em vez de parar numa recusa, a API refaz a chamada em outro modelo.
-            extras = {"betas": [BETA_FALLBACK], "fallbacks": "default"}
+        # Em vez de parar numa recusa, a API refaz a chamada em outro modelo.
+        com_fallback = self.modelo in MODELOS_COM_FALLBACK
+        mensagens_api: list[BetaMessageParam] = [
+            {"role": mensagem.role, "content": mensagem.content}
+            for mensagem in mensagens
+        ]
 
         resposta = await self._client.beta.messages.create(
             model=self.modelo,
             max_tokens=MAX_TOKENS,
             system=sistema,
-            messages=[mensagem.model_dump() for mensagem in mensagens],
+            messages=mensagens_api,
             # transform_schema é o mesmo que o messages.parse usa: deixa o schema
             # aceitável pela API, movendo minItems/maximum para a descrição.
             output_config={
@@ -64,7 +67,9 @@ class Anthropic(ProvedorLLM):
                     "schema": transform_schema(schema.model_json_schema()),
                 }
             },
-            **extras,
+            # `omit` não vai na requisição: nos outros modelos o parâmetro dá 400.
+            betas=[BETA_FALLBACK] if com_fallback else omit,
+            fallbacks="default" if com_fallback else omit,
         )
         if resposta.stop_reason == "refusal":
             return RespostaLLM(

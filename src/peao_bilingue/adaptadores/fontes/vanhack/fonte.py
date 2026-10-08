@@ -2,7 +2,7 @@ import asyncio
 import random
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager, suppress
-from typing import Self, TypeVar
+from typing import Any, Self, TypeVar
 
 from playwright.async_api import BrowserContext, Page
 
@@ -125,7 +125,7 @@ async def _pausa_educada() -> None:
     await asyncio.sleep(random.uniform(PAUSA_MIN_S, PAUSA_MAX_S))
 
 
-def _resumo(card: dict) -> VagaResumo:
+def _resumo(card: dict[str, Any]) -> VagaResumo:
     return VagaResumo(
         fonte=VanHack.nome,
         id_externo=card["id"],
@@ -143,7 +143,7 @@ def _resumo(card: dict) -> VagaResumo:
     )
 
 
-def _vaga(resumo: VagaResumo, dados: dict) -> Vaga:
+def _vaga(resumo: VagaResumo, dados: dict[str, Any]) -> Vaga:
     def skills(chave: str) -> list[Skill]:
         return [
             Skill(nome=item["skill"], anos=item.get("anos"))

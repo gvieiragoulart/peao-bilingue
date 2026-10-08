@@ -1,10 +1,13 @@
+import sqlite3
 from datetime import datetime
 from enum import Enum
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import JSON, Column, Engine, event
 from sqlalchemy import inspect as inspecionar
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlalchemy.sql.schema import ScalarElementColumnDefault
+from sqlmodel import Field, Session, SQLModel, col, create_engine, select
 
 from peao_bilingue.configuracao import DIRETORIO_DADOS, settings
 from peao_bilingue.dominio.entidades import (
@@ -47,7 +50,7 @@ class VagaTabela(SQLModel, table=True):
     chave: str = Field(primary_key=True)
     fonte: str = Field(index=True)
     # A vaga inteira em JSON: cada fonte traz campos próprios em `extras`.
-    dados: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    dados: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     buscas: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     status: StatusVaga = StatusVaga.nova
     vista_em: datetime = Field(default_factory=agora)
@@ -60,7 +63,7 @@ class PerfilTabela(SQLModel, table=True):
     # O padrão só vale para a migração: antes do perfil por fonte, todos os
     # snapshots vinham da VanHack. Os novos sempre gravam a fonte.
     fonte: str = "vanhack"
-    dados: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    dados: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     texto: str = ""
     content_hash: str = Field(index=True)
     lido_em: datetime = Field(default_factory=agora)
@@ -71,7 +74,7 @@ class AnaliseTabela(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     vaga_chave: str = Field(foreign_key="vaga.chave", index=True)
-    dados: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    dados: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
     provedor: str
     modelo: str
     perfil_id: int | None = Field(default=None, foreign_key="perfil.id")
@@ -104,7 +107,7 @@ def engine_padrao() -> Engine:
     )
 
     @event.listens_for(engine, "connect")
-    def _ao_conectar(conexao: object, _registro: object) -> None:
+    def _ao_conectar(conexao: sqlite3.Connection, _registro: object) -> None:
         # WAL: a interface lê enquanto a tarefa agendada (outro processo) escreve.
         # busy_timeout: em vez de falhar na hora, espera o outro terminar de gravar.
         cursor = conexao.cursor()
@@ -146,7 +149,7 @@ def _migrar(engine: Engine) -> None:
                     continue
                 tipo = coluna.type.compile(dialect=engine.dialect)
                 padrao = None
-                if coluna.default is not None and coluna.default.is_scalar:
+                if isinstance(coluna.default, ScalarElementColumnDefault):
                     padrao = _sql_padrao(coluna.default.arg)
                 # Linhas antigas recebem o padrão; sem ele um int viria NULL.
                 sufixo = f" DEFAULT {padrao}" if padrao is not None else ""
@@ -155,7 +158,14 @@ def _migrar(engine: Engine) -> None:
                 )
 
 
-def _diferencas(antes: dict, depois: dict) -> list[str]:
+def _id(linha: PerfilTabela) -> int:
+    # Linha lida do banco ou já gravada: o id existe; None aqui seria bug.
+    if linha.id is None:
+        raise RuntimeError("Snapshot de perfil sem id.")
+    return linha.id
+
+
+def _diferencas(antes: dict[str, Any], depois: dict[str, Any]) -> list[str]:
     chaves = set(antes) | set(depois)
     return sorted(chave for chave in chaves if antes.get(chave) != depois.get(chave))
 
@@ -172,7 +182,7 @@ class RepositorioSQLite(RepositorioVagas):
     # buscas -----------------------------------------------------------------
 
     def listar_buscas(self, *, so_ativas: bool = False) -> list[Busca]:
-        consulta = select(BuscaTabela).order_by(BuscaTabela.id)
+        consulta = select(BuscaTabela).order_by(col(BuscaTabela.id))
         if so_ativas:
             consulta = consulta.where(BuscaTabela.ativa)
         with self._sessao() as sessao:
@@ -231,7 +241,7 @@ class RepositorioSQLite(RepositorioVagas):
         limite: int = 50,
         offset: int = 0,
     ) -> list[VagaListada]:
-        consulta = select(VagaTabela).order_by(VagaTabela.vista_em.desc())
+        consulta = select(VagaTabela).order_by(col(VagaTabela.vista_em).desc())
         if status is not None:
             consulta = consulta.where(VagaTabela.status == status)
         if fonte is not None:
@@ -298,9 +308,9 @@ class RepositorioSQLite(RepositorioVagas):
                 sessao.get(PerfilTabela, linha.perfil_id) if linha.perfil_id else None
             )
             # Um snapshot mais novo da mesma fonte: a análise usou um perfil antigo.
+            ultimo = self._ultimo_perfil(sessao, perfil.fonte) if perfil else None
             desatualizado = (
-                perfil is not None
-                and self._ultimo_perfil(sessao, perfil.fonte).id != perfil.id
+                perfil is not None and ultimo is not None and ultimo.id != perfil.id
             )
             return AnaliseSalva(
                 analise=JobAnalysis.model_validate(linha.dados),
@@ -316,7 +326,7 @@ class RepositorioSQLite(RepositorioVagas):
         consulta = (
             select(AnaliseTabela)
             .where(AnaliseTabela.vaga_chave == chave)
-            .order_by(AnaliseTabela.id.desc())
+            .order_by(col(AnaliseTabela.id).desc())
         )
         return sessao.exec(consulta).first()
 
@@ -327,7 +337,7 @@ class RepositorioSQLite(RepositorioVagas):
         consulta = (
             select(PerfilTabela)
             .where(PerfilTabela.fonte == fonte)
-            .order_by(PerfilTabela.id.desc())
+            .order_by(col(PerfilTabela.id).desc())
         )
         return sessao.exec(consulta).first()
 
@@ -335,31 +345,31 @@ class RepositorioSQLite(RepositorioVagas):
         with self._sessao() as sessao:
             atual = self._ultimo_perfil(sessao, perfil.fonte)
             if atual and atual.content_hash == perfil.content_hash:
-                return atual.id, False
+                return _id(atual), False
             linha = PerfilTabela(**perfil.model_dump())
             sessao.add(linha)
             sessao.commit()
             sessao.refresh(linha)
-            return linha.id, True
+            return _id(linha), True
 
     def ultimo_perfil(self, fonte: str) -> tuple[int, Perfil] | None:
         with self._sessao() as sessao:
             linha = self._ultimo_perfil(sessao, fonte)
             if linha is None:
                 return None
-            return linha.id, Perfil.model_validate(linha, from_attributes=True)
+            return _id(linha), Perfil.model_validate(linha, from_attributes=True)
 
     def fontes_com_perfil(self) -> list[str]:
         consulta = select(PerfilTabela.fonte).distinct().order_by(PerfilTabela.fonte)
         with self._sessao() as sessao:
             return list(sessao.exec(consulta))
 
-    def historico_perfil(self, fonte: str) -> list[dict]:
+    def historico_perfil(self, fonte: str) -> list[dict[str, Any]]:
         """Snapshots da fonte, do mais novo ao mais antigo, com os campos que mudaram."""
         consulta = (
             select(PerfilTabela)
             .where(PerfilTabela.fonte == fonte)
-            .order_by(PerfilTabela.id.desc())
+            .order_by(col(PerfilTabela.id).desc())
         )
         with self._sessao() as sessao:
             linhas = list(sessao.exec(consulta))
@@ -391,6 +401,8 @@ class RepositorioSQLite(RepositorioVagas):
     def finalizar_execucao(self, execucao: Execucao) -> None:
         with self._sessao() as sessao:
             linha = sessao.get(ExecucaoTabela, execucao.id)
+            if linha is None:
+                raise LookupError(f"Execução {execucao.id} não encontrada.")
             for campo, valor in execucao.model_dump(exclude={"id"}).items():
                 setattr(linha, campo, valor)
             linha.finalizada_em = agora()
@@ -413,7 +425,7 @@ class RepositorioSQLite(RepositorioVagas):
 
     def listar_execucoes(self, limite: int = 20) -> list[Execucao]:
         consulta = (
-            select(ExecucaoTabela).order_by(ExecucaoTabela.id.desc()).limit(limite)
+            select(ExecucaoTabela).order_by(col(ExecucaoTabela.id).desc()).limit(limite)
         )
         with self._sessao() as sessao:
             return [

@@ -5,7 +5,7 @@ Cada porta é uma ABC; um adapter que esquece um método abstrato nem instancia.
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import ClassVar, Self
+from typing import Any, ClassVar, Self
 
 from pydantic import BaseModel
 
@@ -182,7 +182,7 @@ class RepositorioVagas(ABC):
     def ultimo_perfil(self, fonte: str) -> tuple[int, Perfil] | None: ...
 
     @abstractmethod
-    def historico_perfil(self, fonte: str) -> list[dict]: ...
+    def historico_perfil(self, fonte: str) -> list[dict[str, Any]]: ...
 
     @abstractmethod
     def fontes_com_perfil(self) -> list[str]: ...
