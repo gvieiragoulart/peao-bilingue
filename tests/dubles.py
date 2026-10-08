@@ -1,5 +1,8 @@
 """Dublês das portas: o pipeline inteiro roda sem navegador, rede ou LLM."""
 
+from pathlib import Path
+
+import httpx
 from construtores import analise
 
 from peao_bilingue.dominio.entidades import (
@@ -129,3 +132,22 @@ class NotificadorFake(Notificador):
         if self.falha:
             raise self.falha
         self.recebido.append(vagas)
+
+
+class ApiFalsa:
+    """Responde como uma API pública, com a resposta real salva na fixture, e
+    conta as chamadas: os termos dessas APIs limitam quantas por dia."""
+
+    def __init__(self, fixture: Path, status: int = 200):
+        self.fixture = fixture
+        self.status = status
+        self.chamadas: list[httpx.Request] = []
+
+    def __call__(self, requisicao: httpx.Request) -> httpx.Response:
+        self.chamadas.append(requisicao)
+        if self.status != 200:
+            return httpx.Response(self.status, json={})
+        return httpx.Response(200, content=self.fixture.read_bytes())
+
+    def cliente(self) -> httpx.AsyncClient:
+        return httpx.AsyncClient(transport=httpx.MockTransport(self))
