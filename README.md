@@ -34,6 +34,11 @@ funcionando como alternativa para quem prefere a linha de comando.
 uma vaga usa, por padrão, o perfil da fonte dela. A coleta não chama LLM: nada é gasto até você
 clicar em Analisar.
 
+**Fontes disponíveis:** VanHack (login manual, lê o seu perfil) e Remotive (API pública de vagas
+remotas, sem conta). O Remotive pede no máximo ~4 consultas por dia, então o app consulta uma
+vez por coleta e reaproveita a resposta por 6 horas; cada vaga mantém o link original no
+Remotive. Ligue as fontes na aba Fontes, ou só para uma coleta: `uv run peao run --fonte remotive`.
+
 O projeto usa o **Chrome instalado na máquina**, não o Chromium do Playwright: o Cloudflare da
 VanHack recusa navegadores atípicos.
 

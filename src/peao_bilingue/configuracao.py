@@ -100,6 +100,9 @@ class Settings(BaseSettings):
     max_listing_scrolls: int = 15
     max_details_per_run: int = 15
 
+    # Remotive (API pública): uma categoria por chamada; "software-dev" cobre dev.
+    remotive_categoria: str = "software-dev"
+
     timezone: str = "America/Sao_Paulo"
     horario_coleta: str = "08:00"
 
