@@ -243,6 +243,24 @@ Seletores **somente** em `selectors.py`, documentados. Fixtures reais anonimizad
 
 ---
 
+## Fontes por API
+
+Sem login e sem perfil: a análise de uma vaga delas usa o perfil escolhido no seletor (o padrão
+cai no primeiro perfil salvo, hoje o da VanHack). Descrição em HTML vira texto com uma linha por
+parágrafo (`adaptadores/fontes/html.py`). Fixture = resposta real salva em
+`tests/fixtures/<fonte>/`; os testes usam `httpx.MockTransport`, sem rede.
+
+**Remotive** (`GET https://remotive.com/api/remote-jobs?category=software-dev`). Termos, no
+aviso legal da própria resposta: linkar a vaga no Remotive **e** citar o Remotive como fonte;
+**no máximo ~4 chamadas por dia** (mais de 2 por minuto são bloqueadas); dados com 24 h de
+atraso; não republicar em outros sites de vagas. Por isso **uma chamada por coleta** (a
+categoria vem inteira — 17 vagas em 07/10 — e cada termo é filtrado localmente com o mesmo
+texto do filtro das buscas) e **cache de 6 h** em `data/cache/remotive.json`. O `limit` da API
+foi ignorado no teste real. Salário vem `""` quando não informado. A listagem já traz a vaga
+inteira: `detalhar` não chama a API. Desligada por padrão: liga na aba Fontes.
+
+---
+
 ## Roteiro
 
 Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `uv run mypy`, commit e push.
@@ -264,7 +282,8 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `u
 - [x] **Análise sob demanda e perfil por fonte** (pedido de 07/10): a coleta não chama LLM;
       botão Analisar com seletor de LLM e de perfil; um perfil por fonte; triagem e reanálise
       automática removidas; avisos viraram resumo das vagas novas após a coleta agendada.
-- [ ] **Fase 5 — APIs públicas:** Remotive, RemoteOK, Arbeitnow, Himalayas, We Work Remotely.
+- [ ] **Fase 5 — APIs públicas:** ~~Remotive~~ (feito, 07/10), RemoteOK, Arbeitnow, Himalayas,
+      We Work Remotely. Antes de cada uma: endpoint, limites e termos (ver "Fontes por API").
 - [ ] **Fase 6 — Sites brasileiros:** investigar endpoint e termos antes de implementar.
 - [ ] **Fase 7 — LinkedIn/Indeed:** opt-in, desligados por padrão, mesmas regras da VanHack. Os
       termos proíbem automação (risco de restrição da conta); se bloquearem, **não** escalar para
