@@ -5,7 +5,7 @@ import customtkinter as ctk
 
 from peao_bilingue import configuracao, fabricas
 from peao_bilingue.aplicacao.analise import analisar_vaga
-from peao_bilingue.composicao import montar_llm
+from peao_bilingue.composicao import ler_notas_do_perfil, montar_llm
 from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import JobAnalysis, StatusVaga, VagaListada
 from peao_bilingue.ui import apresentacao
@@ -244,6 +244,7 @@ class AbaVagas(ctk.CTkFrame):
                 provedor,
                 vaga.chave,
                 perfil_de=None if perfil == SEM_PERFIL else perfil,
+                notas=ler_notas_do_perfil(),
             ),
             ao_terminar=terminar,
             ao_falhar=falhar,

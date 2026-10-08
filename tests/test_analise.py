@@ -108,17 +108,11 @@ def test_schema_exige_preparacao_e_melhorias():
 # --- análise pedida na interface, vaga a vaga ---------------------------------
 
 
-@pytest.fixture
-def sem_notas(monkeypatch):
-    # o profile_notes.md da pasta do projeto não entra no prompt dos testes
-    monkeypatch.setattr(modulo, "_notas_do_usuario", lambda: "")
-
-
 def prompt_enviado(provedor: ProvedorFake) -> str:
     return provedor.chamadas[0]["mensagens"][0].content
 
 
-async def test_usa_o_perfil_da_fonte_da_vaga(repositorio, sem_notas):
+async def test_usa_o_perfil_da_fonte_da_vaga(repositorio):
     repositorio.salvar_perfil(perfil("Staff Engineer", fonte="vanhack"))
     repositorio.salvar_perfil(perfil("Tech Lead", fonte="linkedin"))
     repositorio.salvar_vaga(vaga("1", fonte="vanhack"), ["Python"])
@@ -133,7 +127,7 @@ async def test_usa_o_perfil_da_fonte_da_vaga(repositorio, sem_notas):
     assert (salva.provedor, salva.perfil_fonte) == ("fake", "vanhack")
 
 
-async def test_perfil_de_outra_fonte_quando_pedido(repositorio, sem_notas):
+async def test_perfil_de_outra_fonte_quando_pedido(repositorio):
     repositorio.salvar_perfil(perfil("Tech Lead", fonte="linkedin"))
     # ex.: vaga de uma API pública, fonte que não tem perfil
     repositorio.salvar_vaga(vaga("1", fonte="remotive"), ["Python"])
@@ -147,7 +141,7 @@ async def test_perfil_de_outra_fonte_quando_pedido(repositorio, sem_notas):
     assert repositorio.analise_vigente("remotive:1").perfil_fonte == "linkedin"
 
 
-async def test_sem_perfil_da_fonte_explica_o_que_fazer(repositorio, sem_notas):
+async def test_sem_perfil_da_fonte_explica_o_que_fazer(repositorio):
     repositorio.salvar_vaga(vaga("1", fonte="remotive"), ["Python"])
     provedor = ProvedorFake()
 
@@ -156,12 +150,12 @@ async def test_sem_perfil_da_fonte_explica_o_que_fazer(repositorio, sem_notas):
     assert provedor.chamadas == []  # nem chega a gastar com o LLM
 
 
-async def test_vaga_inexistente_avisa(repositorio, sem_notas):
+async def test_vaga_inexistente_avisa(repositorio):
     with pytest.raises(LookupError, match="não encontrada"):
         await modulo.analisar_vaga(repositorio, ProvedorFake(), "vanhack:999")
 
 
-async def test_analise_invalida_nao_grava_nada(repositorio, sem_notas):
+async def test_analise_invalida_nao_grava_nada(repositorio):
     repositorio.salvar_perfil(perfil())
     repositorio.salvar_vaga(vaga("1"), ["Python"])
     provedor = ProvedorFake(respostas=[RespostaLLM(texto="{}")] * 3)
@@ -169,3 +163,16 @@ async def test_analise_invalida_nao_grava_nada(repositorio, sem_notas):
     with pytest.raises(AnaliseInvalida):
         await modulo.analisar_vaga(repositorio, provedor, "vanhack:1")
     assert repositorio.analise_vigente("vanhack:1") is None
+
+
+async def test_notas_do_usuario_entram_no_prompt(repositorio):
+    # vêm de fora (a composição lê o profile_notes.md): a aplicação não lê arquivo
+    repositorio.salvar_perfil(perfil())
+    repositorio.salvar_vaga(vaga("1"), ["Python"])
+    provedor = ProvedorFake()
+
+    await modulo.analisar_vaga(
+        repositorio, provedor, "vanhack:1", notas="Prefiro vagas 100% remotas."
+    )
+
+    assert "Prefiro vagas 100% remotas." in prompt_enviado(provedor)

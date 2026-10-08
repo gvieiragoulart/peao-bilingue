@@ -4,6 +4,8 @@ CLI e interface montam os serviços por aqui; a camada de aplicação nunca
 importa um adapter diretamente.
 """
 
+from pathlib import Path
+
 from peao_bilingue import fabricas
 from peao_bilingue.adaptadores.agendamento.windows import AgendadorWindows
 from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
@@ -35,12 +37,19 @@ def montar_servicos(
         ],
         # Lock de arquivo: o app e a tarefa agendada são processos diferentes.
         trava=TravaDeArquivo(CAMINHO_TRAVA),
+        max_detalhes=settings.max_details_per_run,
     )
 
 
 def montar_llm(nome: str | None = None) -> ProvedorLLM:
     """O provedor escolhido na tela; sem nome, o padrão da configuração."""
     return fabricas.llms.criar(nome or settings.llm_analise)
+
+
+def ler_notas_do_perfil() -> str:
+    """O complemento que o usuário escreve sobre si (`profile_notes.md`), se houver."""
+    caminho = Path(settings.profile_notes_path)
+    return caminho.read_text(encoding="utf-8") if caminho.exists() else ""
 
 
 def montar_agendador() -> Agendador:

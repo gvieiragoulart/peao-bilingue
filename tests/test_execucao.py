@@ -227,3 +227,14 @@ async def test_execucao_que_ficou_pela_metade_e_encerrada_pela_seguinte(com_busc
     assert nova.status == StatusExecucao.ok
     assert orfa.status == StatusExecucao.erro
     assert orfa.erro.startswith("Interrompida")
+
+
+async def test_detalha_no_maximo_o_limite_por_fonte(com_busca):
+    # comportamento educado: o resto fica para a próxima coleta
+    fonte = FonteFake(vagas=[vaga("1"), vaga("2"), vaga("3")])
+    servicos_ = Servicos(repositorio=com_busca, fontes=[fonte], max_detalhes=2)
+
+    resultado = await executar(servicos_)
+
+    assert len(fonte.detalhadas) == 2
+    assert resultado.vagas_novas == 2

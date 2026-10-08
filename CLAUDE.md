@@ -379,8 +379,9 @@ Critérios pedidos: arquivos separados por domínio, SOLID, funções tipadas na
 - [x] CLI não importa de `ui/` (textos comuns em `textos.py`).
 - [x] Adapter não importa da aplicação: o texto pesquisável da vaga é regra de domínio
       (`Vaga.texto_pesquisavel()`).
-- [ ] **D** (inversão de dependência): `aplicacao/` lê `configuracao.settings` direto
-      (limite de detalhes, notas do perfil com leitura de arquivo) — injetar.
+- [x] **D** (inversão de dependência): `aplicacao/` não importa mais `configuracao` — o limite
+      de detalhes vem em `Servicos.max_detalhes` e as notas do perfil em `notas=`; quem lê
+      configuração e arquivo é a composição (`ler_notas_do_perfil`).
 - [ ] **Domínio em arquivos**: `dominio/entidades.py` e `dominio/portas.py` juntam todos os
       subdomínios — separar (vagas, buscas, perfil, análise, coleta/execução, avisos, agenda).
 - [ ] **I** (interfaces enxutas): `RepositorioVagas` faz buscas, vagas, análises, perfis e
