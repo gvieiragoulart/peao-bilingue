@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 @llms.registrar("ollama")
 class Ollama(ProvedorLLM):
-    """LLM local via Ollama. Grátis; pensado para a triagem em GPUs modestas."""
+    """LLM local via Ollama. Grátis; roda em GPUs modestas com modelos de 7–8B."""
 
     nome = "ollama"
     rotulo = "Ollama (local, grátis)"

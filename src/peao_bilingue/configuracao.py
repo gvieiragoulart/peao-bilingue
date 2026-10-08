@@ -82,12 +82,11 @@ class Settings(BaseSettings):
 
     # Quais adapters usar, pelo nome registrado nas fábricas.
     fontes_habilitadas: list[str] = ["vanhack"]
+    # O LLM que já vem escolhido na tela de vagas; a análise é pedida vaga a vaga.
     llm_analise: str = "anthropic"
-    # Opcional: um LLM barato (ex.: "ollama") dá uma nota rápida a cada vaga nova,
-    # e só as que passam do limiar seguem para a análise completa.
-    llm_triagem: str | None = None
-    limiar_triagem: int = 60
-    notificadores: list[str] = ["email", "whatsapp"]
+    # Avisos de vagas novas após a coleta agendada. Começam desligados: ligar um
+    # canal sem preenchê-lo faria toda coleta registrar a falha do aviso.
+    notificadores: list[str] = []
 
     # VanHack
     # O login é passwordless (magic link / Google / LinkedIn) e protegido por
@@ -116,11 +115,8 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_modelo: str = ""
 
-    # Análise
+    # Análise: notas que complementam o perfil em toda análise.
     profile_notes_path: str = "profile_notes.md"
-    reanalyze_on_profile_change: bool = True
-    max_reanalyses_on_change: int = 10
-    max_analyses_per_run: int = 10
 
     # Email
     smtp_host: str = "smtp.gmail.com"
@@ -134,8 +130,6 @@ class Settings(BaseSettings):
     twilio_token: str = ""
     twilio_whatsapp_from: str = "whatsapp:+14155238886"
     whatsapp_to: str = ""
-
-    dry_run: bool = False
 
 
 settings = Settings()

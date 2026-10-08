@@ -1,13 +1,13 @@
 """Transforma entidades em texto e linhas de tabela. Sem Tk: testável direto."""
 
-from peao_bilingue.adaptadores.notificacao.formatacao import montar_email
 from peao_bilingue.dominio.entidades import (
     AnaliseSalva,
     Busca,
     Execucao,
-    ResultadoAnalise,
+    JobAnalysis,
     SituacaoAgenda,
     StatusVaga,
+    Vaga,
     VagaListada,
 )
 
@@ -17,41 +17,80 @@ TAMANHO_ERRO_NA_TABELA = 80
 
 
 def linha_de_vaga(item: VagaListada) -> tuple[str, ...]:
-    triagem = ""
-    if item.triagem is not None:
-        marca = "passou" if item.triagem.passou else "barrada"
-        triagem = f"{item.triagem.triagem.fit_score} ({marca})"
     return (
         "" if item.fit_score is None else str(item.fit_score),
         item.vaga.titulo,
         item.vaga.local or "",
         item.vaga.fonte,
         item.status.value,
-        triagem,
+    )
+
+
+def texto_da_analise(vaga: Vaga, analise: JobAnalysis) -> str:
+    detalhes = " | ".join(
+        parte
+        for parte in (
+            vaga.empresa,
+            vaga.local,
+            vaga.modalidade,
+            vaga.salario,
+            vaga.extras.get("local_exigido"),
+        )
+        if parte
+    )
+    return "\n".join(
+        [
+            vaga.titulo,
+            detalhes,
+            vaga.url,
+            "",
+            f"Fit: {analise.fit_score}/100",
+            "",
+            "RESUMO",
+            analise.resumo,
+            "",
+            "PREPARAÇÃO",
+            *(f"- {passo}" for passo in analise.preparacao),
+            "",
+            f"PERGUNTAS DE ENTREVISTA ({len(analise.perguntas)})",
+            *(f"{n}. {pergunta}" for n, pergunta in enumerate(analise.perguntas, 1)),
+            "",
+            "GAPS",
+            *(f"- {gap}" for gap in analise.gaps or ["(nenhum identificado)"]),
+            "",
+            "O QUE MELHORAR NO PERFIL",
+            *(f"- {melhoria}" for melhoria in analise.melhorias_perfil),
+        ]
     )
 
 
 def detalhe_da_vaga(item: VagaListada, analise: AnaliseSalva | None) -> str:
-    if analise is not None:
-        _, corpo = montar_email(
-            ResultadoAnalise(vaga=item.vaga, analise=analise.analise)
+    if analise is None:
+        return "\n".join(
+            [
+                item.vaga.titulo,
+                item.vaga.url,
+                "",
+                "Ainda não analisada: escolha o LLM e o perfil e clique em Analisar.",
+                "",
+                "DESCRIÇÃO",
+                item.vaga.descricao or "(sem descrição)",
+            ]
         )
-        rodape = (
-            f"Análise por {analise.provedor} ({analise.modelo}) "
-            f"em {analise.criada_em:%d/%m/%Y %H:%M}."
-        )
-        return f"{corpo}\n\n{rodape}"
 
-    partes = [item.vaga.titulo, item.vaga.url, ""]
-    if item.triagem is not None and not item.triagem.passou:
-        partes.append(
-            f"Barrada na triagem com nota {item.triagem.triagem.fit_score} "
-            f"({item.triagem.provedor}): {item.triagem.triagem.motivo}"
+    rodape = (
+        f"Análise por {analise.provedor} ({analise.modelo}) "
+        f"em {analise.criada_em:%d/%m/%Y %H:%M}"
+    )
+    if analise.perfil_fonte:
+        rodape += f", com o perfil da fonte {analise.perfil_fonte}"
+    rodape += "."
+    if analise.perfil_desatualizado:
+        rodape += (
+            f"\nO perfil da fonte {analise.perfil_fonte} mudou depois desta análise: "
+            "analise de novo para atualizar."
         )
-    else:
-        partes.append("Ainda não analisada.")
-    partes += ["", "DESCRIÇÃO", item.vaga.descricao or "(sem descrição)"]
-    return "\n".join(partes)
+    return f"{texto_da_analise(item.vaga, analise.analise)}\n\n{rodape}"
 
 
 def linha_de_busca(busca: Busca) -> tuple[str, ...]:
@@ -74,8 +113,6 @@ def linha_de_execucao(execucao: Execucao) -> tuple[str, ...]:
         execucao.status.value,
         str(execucao.vagas_listadas),
         str(execucao.vagas_novas),
-        str(execucao.vagas_analisadas),
-        str(execucao.vagas_barradas_na_triagem),
         erro,
     )
 

@@ -1,10 +1,11 @@
 # Peão Bilíngue
 
-Radar pessoal de vagas: coleta em vários sites, filtra pelas suas buscas, analisa o encaixe de
-cada vaga nova com um LLM e avisa por email (análise completa) e WhatsApp (resumo).
+Radar pessoal de vagas: coleta em vários sites, filtra pelas suas buscas e avisa das vagas
+novas por email e WhatsApp. Você escolhe quais analisar, com qual LLM e com o perfil de qual
+fonte.
 
-Para cada vaga nova a análise traz fit score, resumo do encaixe, passos de preparação,
-exatamente 20 perguntas de entrevista, gaps e o que melhorar no seu perfil.
+A análise traz fit score, resumo do encaixe, passos de preparação, exatamente 20 perguntas de
+entrevista, gaps e o que melhorar no seu perfil.
 
 ## Instalação
 
@@ -21,20 +22,25 @@ funcionando como alternativa para quem prefere a linha de comando.
 
 | Aba | Para quê |
 |---|---|
-| Vagas | lista com fit e triagem, filtros, análise completa, marcar como estudando/aplicada/descartada |
+| Vagas | lista com fit e filtros; escolha o LLM e o perfil e clique em **Analisar**; marcar como estudando/aplicada/descartada |
 | Buscas | palavras-chave, termos excluídos e quais fontes cada busca usa |
 | Fontes | liga/desliga cada site; login manual e verificação de sessão |
-| LLMs | quem analisa, quem faz a triagem, modelos e chaves |
-| Perfil | o perfil usado nas análises (sem dados pessoais) e o histórico de mudanças |
-| Execuções | "Coletar agora", histórico e o registro ao vivo |
-| Configurações | limites da coleta e canais de aviso (email, WhatsApp) |
+| LLMs | o LLM que já vem escolhido na aba Vagas, modelos e chaves |
+| Perfil | o perfil de cada fonte (sem dados pessoais) e o histórico de mudanças dele |
+| Execuções | "Coletar agora", coleta diária automática, histórico e o registro ao vivo |
+| Configurações | limites da coleta e canais de aviso das vagas novas (email, WhatsApp) |
+
+**Cada fonte tem o seu perfil** — o cadastrado na VanHack não é o do LinkedIn — e a análise de
+uma vaga usa, por padrão, o perfil da fonte dela. A coleta não chama LLM: nada é gasto até você
+clicar em Analisar.
 
 O projeto usa o **Chrome instalado na máquina**, não o Chromium do Playwright: o Cloudflare da
 VanHack recusa navegadores atípicos.
 
 ## Pela linha de comando
 
-Tudo que a interface faz também existe na CLI — é ela que a coleta agendada usa.
+A CLI faz login, buscas, coleta e agendamento — é ela que a coleta agendada usa. A análise fica
+no app.
 
 **1. Login na VanHack (manual, sempre).** O login é sem senha (link por email, Google ou
 LinkedIn) e protegido por verificação humana, então não existe login automático:
@@ -58,16 +64,15 @@ uv run peao buscas                    # lista
 Cuidado com `--exclude`: o filtro olha a descrição inteira, e vaga sênior costuma dizer
 "mentor junior engineers" — excluir "junior" descartaria justamente essas.
 
-**3. Rode:**
+**3. Colete:**
 
 ```bash
-uv run peao run --sem-analise    # só coleta e salva; não chama LLM, não gasta crédito
-uv run peao run --dry-run        # analisa, mas não notifica
-uv run peao run                  # coleta, analisa e notifica
+uv run peao run                  # coleta e salva as vagas novas; não chama LLM
+uv run peao run --avisar         # e manda o resumo das vagas novas pelos canais ligados
 ```
 
-`--sem-analise` é o jeito de validar a coleta de graça. Para limitar fontes ou trocar o LLM:
-`--fonte vanhack --llm anthropic`. `uv run peao adaptadores` lista o que está disponível.
+Para limitar as fontes: `--fonte vanhack`. `uv run peao adaptadores` lista o que está
+disponível.
 
 ## Coleta diária automática
 
@@ -80,27 +85,25 @@ uv run peao agenda desativar
 ```
 
 A tarefa fica no Agendador de Tarefas do Windows ("Peao Bilingue - coleta diaria") e roda com o
-app fechado; se o PC estiver desligado na hora marcada, ela roda assim que ele ligar. Faz a
-mesma coleta do `uv run peao run`. Como roda sem janela, o registro fica em `data/coleta.log`.
-Só uma coleta roda por vez: se a tarefa começar enquanto você coleta pelo app (ou o contrário),
-a segunda é recusada.
+app fechado; se o PC estiver desligado na hora marcada, ela roda assim que ele ligar. Coleta
+como o `uv run peao run` e **avisa das vagas novas** (título, fonte e link) pelos canais ligados
+em Configurações — eles começam desligados; ligue os que já tiver preenchido. Como roda sem
+janela, o registro fica em `data/coleta.log`. Só uma coleta roda por vez: se a tarefa começar
+enquanto você coleta pelo app (ou o contrário), a segunda é recusada.
 
 ## Escolhendo o LLM
 
 Quatro provedores: **Claude** (`anthropic`, padrão), **Ollama** (local e grátis), **OpenAI** e
-**Gemini**. Escolha com `LLM_ANALISE` no `.env` ou `--llm` na linha de comando.
+**Gemini**. A escolha é feita na aba Vagas, a cada análise; o último escolhido vira o padrão.
 
-Para gastar menos, use um modelo local na **triagem**: ele dá uma nota rápida a cada vaga nova,
-e só as que passam de `LIMIAR_TRIAGEM` vão para a análise completa no provedor pago.
+Para não gastar nada, instale o Ollama e baixe um modelo que caiba numa GPU de 6 GB:
 
 ```bash
-ollama pull qwen3:8b                                  # uma vez; cabe numa GPU de 6 GB
-uv run peao run --dry-run --llm ollama                # tudo local
-uv run peao run --triagem ollama --llm anthropic      # Ollama filtra, Claude analisa
+ollama pull qwen3:8b
 ```
 
 Modelos locais de 7–8B são mais fracos na análise fina (as 20 perguntas e as melhorias de
-perfil); para triagem eles servem bem.
+perfil): bons para uma primeira olhada, e o Claude para as vagas que interessarem de verdade.
 
 ## Como funciona
 

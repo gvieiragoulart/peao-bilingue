@@ -1,7 +1,8 @@
-"""Caso de uso principal: uma execução de coleta, análise e notificação.
+"""Caso de uso principal: uma coleta — buscar, filtrar, guardar e avisar.
 
-Só conhece portas. Quais fontes, LLM e notificadores entram é decidido na
-composição (`peao_bilingue.composicao`), a partir da configuração.
+Nenhum LLM é chamado aqui: a análise é pedida vaga a vaga, na interface
+(`aplicacao.analise.analisar_vaga`). Só conhece portas; quais fontes e
+notificadores entram é decidido na composição (`peao_bilingue.composicao`).
 """
 
 import logging
@@ -9,30 +10,20 @@ import threading
 from dataclasses import dataclass, field
 
 from peao_bilingue.aplicacao import filtros
-from peao_bilingue.aplicacao.analise import analisar
-from peao_bilingue.aplicacao.triagem import triar
 from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import (
     Busca,
     Execucao,
     Gatilho,
-    Perfil,
-    ResultadoAnalise,
     StatusExecucao,
-    TriagemSalva,
     Vaga,
     VagaResumo,
 )
-from peao_bilingue.dominio.erros import (
-    AnaliseInvalida,
-    ExecucaoEmAndamento,
-    SessaoExpirada,
-)
+from peao_bilingue.dominio.erros import ExecucaoEmAndamento, SessaoExpirada
 from peao_bilingue.dominio.portas import (
     FonteDePerfil,
     FonteDeVagas,
     Notificador,
-    ProvedorLLM,
     RepositorioVagas,
     Trava,
 )
@@ -67,16 +58,12 @@ _TRAVA_DO_PROCESSO = TravaDoProcesso()
 class Servicos:
     repositorio: RepositorioVagas
     fontes: list[FonteDeVagas]
-    analise: ProvedorLLM | None = None
     notificadores: list[Notificador] = field(default_factory=list)
-    triagem: ProvedorLLM | None = None
     trava: Trava = field(default_factory=lambda: _TRAVA_DO_PROCESSO)
 
 
 @dataclass
 class _Estado:
-    perfil_id: int | None = None
-    perfil: Perfil | None = None
     novas: list[Vaga] = field(default_factory=list)
     falhas: list[str] = field(default_factory=list)
     excecoes: list[Exception] = field(default_factory=list)
@@ -86,9 +73,10 @@ async def executar(
     servicos: Servicos,
     gatilho: Gatilho = Gatilho.manual,
     *,
-    dry_run: bool | None = None,
-    analisar_vagas: bool = True,
+    avisar: bool = False,
 ) -> Execucao:
+    """`avisar` manda o resumo das vagas novas pelos notificadores: a coleta
+    agendada avisa; a pedida no app não, porque quem pediu está olhando."""
     if not servicos.trava.adquirir():
         raise ExecucaoEmAndamento(
             "Já existe uma execução em andamento (no app ou na tarefa agendada)."
@@ -104,9 +92,7 @@ async def executar(
             )
         execucao = repositorio.iniciar_execucao(gatilho)
         try:
-            await _rodar(
-                servicos, execucao, dry_run=dry_run, analisar_vagas=analisar_vagas
-            )
+            await _rodar(servicos, execucao, avisar=avisar)
             execucao.status = StatusExecucao.ok
         except SessaoExpirada as falha:
             execucao.status = StatusExecucao.login_required
@@ -123,13 +109,7 @@ async def executar(
         servicos.trava.liberar()
 
 
-async def _rodar(
-    servicos: Servicos,
-    execucao: Execucao,
-    *,
-    dry_run: bool | None,
-    analisar_vagas: bool,
-) -> None:
+async def _rodar(servicos: Servicos, execucao: Execucao, *, avisar: bool) -> None:
     repositorio = servicos.repositorio
     buscas = repositorio.listar_buscas(so_ativas=True)
     if not buscas:
@@ -143,18 +123,10 @@ async def _rodar(
     # Uma fonte com problema não derruba as outras; só falha se todas falharem.
     if estado.excecoes and len(estado.excecoes) == len(servicos.fontes):
         raise estado.excecoes[0]
-
-    try:
-        if analisar_vagas:
-            await _analisar_e_notificar(servicos, execucao, estado, dry_run)
-        else:
-            logger.info(
-                "Coleta sem análise: %d vaga(s) nova(s) salva(s); nada foi enviado a LLM.",
-                len(estado.novas),
-            )
-    finally:
-        if estado.falhas:
-            execucao.erro = "Falhas parciais: " + " | ".join(estado.falhas)
+    if avisar:
+        await _avisar(servicos.notificadores, estado)
+    if estado.falhas:
+        execucao.erro = "Falhas parciais: " + " | ".join(estado.falhas)
 
 
 async def _coletar_da_fonte(
@@ -166,8 +138,7 @@ async def _coletar_da_fonte(
 ) -> None:
     try:
         async with fonte:
-            if estado.perfil is None and isinstance(fonte, FonteDePerfil):
-                await _sincronizar_perfil(repositorio, execucao, fonte, estado)
+            await _sincronizar_perfil(repositorio, fonte)
             estado.novas += await _coletar(repositorio, execucao, fonte, buscas)
     # Registrada; _rodar decide se é fatal.
     except Exception as falha:  # noqa: BLE001
@@ -178,20 +149,24 @@ async def _coletar_da_fonte(
 
 
 async def _sincronizar_perfil(
-    repositorio: RepositorioVagas,
-    execucao: Execucao,
-    fonte: FonteDePerfil,
-    estado: _Estado,
+    repositorio: RepositorioVagas, fonte: FonteDeVagas
 ) -> None:
+    """Cada fonte com perfil guarda o seu: a análise de uma vaga usa o perfil
+    cadastrado na fonte dela."""
+    if not isinstance(fonte, FonteDePerfil):
+        return
     try:
         perfil = await fonte.ler_perfil()
-        estado.perfil_id, execucao.perfil_mudou = repositorio.salvar_perfil(perfil)
-        estado.perfil = perfil
     except SessaoExpirada:
         raise
-    # Segue com o último perfil válido.
+    # A coleta segue; a análise usa o último perfil salvo desta fonte.
     except Exception as falha:  # noqa: BLE001
-        logger.warning("Falha ao ler o perfil; usando o último salvo: %s", falha)
+        logger.warning(
+            "Falha ao ler o perfil de %s; fica o último salvo: %s", fonte.nome, falha
+        )
+        return
+    if repositorio.salvar_perfil(perfil)[1]:
+        logger.info("O perfil de %s mudou desde a última leitura.", fonte.nome)
 
 
 async def _coletar(
@@ -226,143 +201,14 @@ async def _coletar(
     return novas
 
 
-async def _analisar_e_notificar(
-    servicos: Servicos, execucao: Execucao, estado: _Estado, dry_run: bool | None
-) -> None:
-    repositorio = servicos.repositorio
-    if servicos.analise is None:
-        raise RuntimeError("Nenhum provedor de LLM configurado para a análise.")
-
-    if estado.perfil is None:
-        salvo = repositorio.ultimo_perfil()
-        if salvo is None:
-            raise RuntimeError("Sem perfil para analisar e nenhum snapshot salvo.")
-        estado.perfil_id, estado.perfil = salvo
-
-    reanalises = []
-    if execucao.perfil_mudou and settings.reanalyze_on_profile_change:
-        chaves_novas = {vaga.chave for vaga in estado.novas}
-        reanalises = [
-            vaga
-            for vaga in repositorio.vagas_para_reanalisar(
-                settings.max_reanalyses_on_change
-            )
-            if vaga.chave not in chaves_novas
-        ]
-
-    aprovadas = await _triar(servicos, execucao, estado)
-    resultados = await analisar_vagas(
-        servicos, (aprovadas + reanalises)[: settings.max_analyses_per_run], estado
-    )
-    execucao.vagas_analisadas = len(resultados)
-    await _notificar(servicos, resultados, execucao.perfil_mudou, dry_run)
-
-
-async def _triar(servicos: Servicos, execucao: Execucao, estado: _Estado) -> list[Vaga]:
-    """Nota rápida nas vagas novas; só as que passam do limiar seguem.
-
-    Reanálises não passam por aqui: já foram julgadas relevantes antes.
-    Erro de formato deixa a vaga passar (perder uma vaga boa custa mais que uma
-    análise), mas provedor fora do ar derruba a execução: mandar tudo para a
-    análise paga seria justamente o gasto que a triagem existe para evitar.
-    """
-    if servicos.triagem is None:
-        return estado.novas
-
-    aprovadas = []
-    for vaga in estado.novas:
-        try:
-            triagem = await triar(vaga, estado.perfil.texto, servicos.triagem)
-        except AnaliseInvalida as falha:
-            estado.falhas.append(f"triagem de {vaga.chave}: {falha}")
-            aprovadas.append(vaga)
-            continue
-
-        passou = triagem.fit_score >= settings.limiar_triagem
-        servicos.repositorio.salvar_triagem(
-            vaga.chave,
-            TriagemSalva(
-                triagem=triagem, provedor=servicos.triagem.nome, passou=passou
-            ),
-        )
-        if passou:
-            aprovadas.append(vaga)
-        else:
-            execucao.vagas_barradas_na_triagem += 1
-            logger.info(
-                "Triagem barrou %s (nota %d): %s",
-                vaga.chave,
-                triagem.fit_score,
-                triagem.motivo,
-            )
-    return aprovadas
-
-
-async def analisar_vagas(
-    servicos: Servicos, vagas: list[Vaga], estado: _Estado
-) -> list[ResultadoAnalise]:
-    repositorio, provedor = servicos.repositorio, servicos.analise
-    resultados = []
-    for vaga in vagas:
-        anterior = repositorio.analise_vigente(vaga.chave)
-        try:
-            analise = await analisar(vaga, estado.perfil.texto, provedor)
-        except AnaliseInvalida as falha:
-            estado.falhas.append(f"análise de {vaga.chave}: {falha}")
-            logger.warning("Análise de %s falhou: %s", vaga.chave, falha)
-            continue
-        repositorio.salvar_analise(
-            vaga.chave,
-            analise,
-            provedor=provedor.nome,
-            modelo=provedor.modelo,
-            perfil_id=estado.perfil_id,
-        )
-        resultados.append(
-            ResultadoAnalise(
-                vaga=vaga,
-                analise=analise,
-                fit_anterior=anterior.analise.fit_score if anterior else None,
-            )
-        )
-    return resultados
-
-
-async def _notificar(
-    servicos: Servicos,
-    resultados: list[ResultadoAnalise],
-    perfil_mudou: bool,
-    dry_run: bool | None,
-) -> None:
-    if not resultados:
-        logger.info("Nada a notificar.")
+async def _avisar(notificadores: list[Notificador], estado: _Estado) -> None:
+    if not estado.novas:
+        logger.info("Nenhuma vaga nova; nada a avisar.")
         return
-    if settings.dry_run if dry_run is None else dry_run:
-        for resultado in resultados:
-            logger.info(
-                "[dry-run] %s · fit %s · %s",
-                resultado.vaga.titulo,
-                resultado.analise.fit_score,
-                resultado.vaga.url,
-            )
-        return
-    for notificador in servicos.notificadores:
+    for notificador in notificadores:
         try:
-            await notificador.notificar(resultados, perfil_mudou=perfil_mudou)
-        # A análise já está salva; só avisar.
+            await notificador.notificar(estado.novas)
+        # As vagas já estão salvas; o aviso que falhou fica registrado na execução.
         except Exception as falha:  # noqa: BLE001
+            estado.falhas.append(f"aviso por {notificador.nome}: {falha}")
             logger.warning("Notificador %s falhou: %s", notificador.nome, falha)
-
-
-async def reanalisar_vaga(
-    servicos: Servicos, chave: str, *, dry_run: bool | None = None
-) -> None:
-    """Nova análise de uma vaga só, sem abrir nenhuma fonte."""
-    vaga = servicos.repositorio.obter_vaga(chave)
-    salvo = servicos.repositorio.ultimo_perfil()
-    if vaga is None or salvo is None:
-        logger.warning("Reanálise ignorada: vaga ou perfil ausente (%s).", chave)
-        return
-    estado = _Estado(perfil_id=salvo[0], perfil=salvo[1])
-    resultados = await analisar_vagas(servicos, [vaga], estado)
-    await _notificar(servicos, resultados, perfil_mudou=False, dry_run=dry_run)

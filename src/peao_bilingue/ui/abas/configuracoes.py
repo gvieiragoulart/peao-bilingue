@@ -11,14 +11,7 @@ if TYPE_CHECKING:
 
 LIMITES = [
     Campo("max_details_per_run", "Vagas detalhadas por fonte, por execução", "inteiro"),
-    Campo("max_analyses_per_run", "Análises por execução", "inteiro"),
     Campo("max_listing_scrolls", "Rolagens máximas da listagem", "inteiro"),
-    Campo(
-        "reanalyze_on_profile_change",
-        "Reanalisar vagas quando o perfil mudar",
-        "booleano",
-    ),
-    Campo("max_reanalyses_on_change", "Reanálises por mudança de perfil", "inteiro"),
     Campo("headless", "Navegador escondido durante a coleta", "booleano"),
     Campo("profile_notes_path", "Arquivo de notas do perfil"),
 ]
@@ -34,6 +27,14 @@ class AbaConfiguracoes(ctk.CTkScrollableFrame):
         self.limites.pack(fill="x", pady=(6, 16))
 
         self._titulo("Avisos")
+        ctk.CTkLabel(
+            self,
+            text="Depois da coleta agendada, um resumo das vagas novas (título, fonte e "
+            "link) pelos canais ligados. Ligue só os que já estiverem preenchidos.",
+            wraplength=900,
+            justify="left",
+            text_color="gray55",
+        ).pack(anchor="w")
         self.ligados: dict[str, ctk.CTkSwitch] = {}
         self.formularios = [self.limites]
         for nome in fabricas.notificadores.disponiveis():

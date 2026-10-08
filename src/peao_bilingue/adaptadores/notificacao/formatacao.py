@@ -1,73 +1,44 @@
-from peao_bilingue.dominio.entidades import ResultadoAnalise
+"""Texto dos avisos de vagas novas. A análise não vai no aviso: é pedida no app."""
+
+from peao_bilingue.dominio.entidades import Vaga
 
 LIMITE_WHATSAPP = 1_500
 
 
-def montar_email(resultado: ResultadoAnalise) -> tuple[str, str]:
-    """Assunto e corpo do email de uma vaga analisada."""
-    vaga, analise, anterior = resultado.vaga, resultado.analise, resultado.fit_anterior
+def _onde(vaga: Vaga, *partes_extras: str | None) -> str:
+    # Cita a empresa só quando a fonte publica: várias (como a VanHack) não publicam.
+    partes = (vaga.empresa, vaga.local, *partes_extras)
+    return " | ".join(parte for parte in partes if parte)
 
-    if anterior is None:
-        assunto = f"[{analise.fit_score}] {vaga.titulo} · {vaga.fonte}"
-        linha_fit = f"Fit: {analise.fit_score}/100"
-    else:
-        assunto = f"[{anterior}→{analise.fit_score}] {vaga.titulo} · {vaga.fonte}"
-        linha_fit = f"Fit: {anterior} → {analise.fit_score}/100 (reanálise após mudança no perfil)"
 
-    detalhes = " | ".join(
-        parte
-        for parte in (
-            vaga.empresa,
-            vaga.local,
-            vaga.modalidade,
-            vaga.salario,
-            vaga.extras.get("local_exigido"),
+def montar_email(vagas: list[Vaga]) -> tuple[str, str]:
+    """Assunto e corpo de um email com todas as vagas novas de uma coleta."""
+    assunto = f"Peão Bilíngue — {len(vagas)} vaga(s) nova(s)"
+    blocos = []
+    for vaga in vagas:
+        linhas = [f"{vaga.titulo} ({vaga.fonte})"]
+        detalhes = _onde(
+            vaga, vaga.modalidade, vaga.salario, vaga.extras.get("local_exigido")
         )
-        if parte
-    )
-    corpo = [
-        vaga.titulo,
-        detalhes,
-        vaga.url,
-        "",
-        linha_fit,
-        "",
-        "RESUMO",
-        analise.resumo,
-        "",
-        "PREPARAÇÃO",
-        *(f"- {passo}" for passo in analise.preparacao),
-        "",
-        f"PERGUNTAS DE ENTREVISTA ({len(analise.perguntas)})",
-        *(f"{n}. {pergunta}" for n, pergunta in enumerate(analise.perguntas, 1)),
-        "",
-        "GAPS",
-        *(f"- {gap}" for gap in analise.gaps or ["(nenhum identificado)"]),
-        "",
-        "O QUE MELHORAR NO PERFIL",
-        *(f"- {melhoria}" for melhoria in analise.melhorias_perfil),
-    ]
-    return assunto, "\n".join(corpo)
+        if detalhes:
+            linhas.append(detalhes)
+        if vaga.skills_obrigatorias:
+            skills = ", ".join(skill.nome for skill in vaga.skills_obrigatorias)
+            linhas.append(f"Skills: {skills}")
+        linhas.append(vaga.url)
+        blocos.append("\n".join(linhas))
+    blocos.append("Abra o app para analisar as que interessarem.")
+    return assunto, "\n\n".join(blocos)
 
 
-def montar_digest(
-    resultados: list[ResultadoAnalise], perfil_mudou: bool = False
-) -> str:
-    """Resumo curto, ordenado por fit e cortado no limite do WhatsApp.
-
-    Cita a empresa só quando a fonte publica: várias (como a VanHack) não publicam.
-    """
-    ordenados = sorted(resultados, key=lambda r: r.analise.fit_score, reverse=True)
-    texto = f"Peão Bilíngue — {len(ordenados)} vaga(s) nova(s)"
-    if perfil_mudou:
-        texto += "\nPerfil atualizado: vagas anteriores foram reanalisadas."
-
-    for indice, resultado in enumerate(ordenados):
-        vaga = resultado.vaga
-        onde = " — ".join(parte for parte in (vaga.empresa, vaga.local) if parte)
+def montar_digest(vagas: list[Vaga]) -> str:
+    """Resumo curto para o WhatsApp, cortado no limite da mensagem."""
+    texto = f"Peão Bilíngue — {len(vagas)} vaga(s) nova(s)"
+    for indice, vaga in enumerate(vagas):
+        onde = _onde(vaga).replace(" | ", " — ")
         onde = f" — {onde}" if onde else ""
-        bloco = f"\n\n{resultado.analise.fit_score} · {vaga.titulo}{onde} ({vaga.fonte})\n{vaga.url}"
-        sufixo = f"\n\n+{len(ordenados) - indice} vaga(s) no app"
+        bloco = f"\n\n{vaga.titulo}{onde} ({vaga.fonte})\n{vaga.url}"
+        sufixo = f"\n\n+{len(vagas) - indice} vaga(s) no app"
         if len(texto) + len(bloco) + len(sufixo) > LIMITE_WHATSAPP:
             return texto + sufixo
         texto += bloco

@@ -16,7 +16,6 @@ from peao_bilingue.dominio.entidades import (
     Perfil,
     StatusExecucao,
     StatusVaga,
-    TriagemSalva,
     Vaga,
     VagaListada,
 )
@@ -52,13 +51,15 @@ class VagaTabela(SQLModel, table=True):
     buscas: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     status: StatusVaga = StatusVaga.nova
     vista_em: datetime = Field(default_factory=agora)
-    triagem: dict | None = Field(default=None, sa_column=Column(JSON))
 
 
 class PerfilTabela(SQLModel, table=True):
     __tablename__ = "perfil"
 
     id: int | None = Field(default=None, primary_key=True)
+    # O padrão só vale para a migração: antes do perfil por fonte, todos os
+    # snapshots vinham da VanHack. Os novos sempre gravam a fonte.
+    fonte: str = "vanhack"
     dados: dict = Field(default_factory=dict, sa_column=Column(JSON))
     texto: str = ""
     content_hash: str = Field(index=True)
@@ -87,8 +88,9 @@ class ExecucaoTabela(SQLModel, table=True):
     finalizada_em: datetime | None = None
     vagas_listadas: int = 0
     vagas_novas: int = 0
+    # Sem uso desde que a análise saiu da coleta. Ficam no model porque os bancos
+    # criados antes têm essas colunas NOT NULL sem default: sem elas, o INSERT falha.
     vagas_analisadas: int = 0
-    vagas_barradas_na_triagem: int = 0
     perfil_mudou: bool = False
     erro: str | None = None
     artefato: str | None = None
@@ -240,8 +242,8 @@ class RepositorioSQLite(RepositorioVagas):
             for linha in sessao.exec(consulta):
                 if busca and busca not in (linha.buscas or []):
                     continue
-                vigente = self._analise_vigente(sessao, linha.chave)
-                fit = vigente.analise.fit_score if vigente else None
+                vigente = self._ultima_analise(sessao, linha.chave)
+                fit = vigente.dados["fit_score"] if vigente else None
                 if min_score is not None and (fit is None or fit < min_score):
                     continue
                 vagas.append(
@@ -251,9 +253,6 @@ class RepositorioSQLite(RepositorioVagas):
                         fit_score=fit,
                         buscas=linha.buscas or [],
                         vista_em=linha.vista_em,
-                        triagem=TriagemSalva.model_validate(linha.triagem)
-                        if linha.triagem
-                        else None,
                     )
                 )
         return vagas[offset : offset + limite]
@@ -266,16 +265,6 @@ class RepositorioSQLite(RepositorioVagas):
             linha.status = status
             sessao.add(linha)
             sessao.commit()
-
-    def vagas_para_reanalisar(self, limite: int) -> list[Vaga]:
-        consulta = (
-            select(VagaTabela)
-            .where(VagaTabela.status.in_([StatusVaga.nova, StatusVaga.estudando]))
-            .order_by(VagaTabela.vista_em.desc())
-            .limit(limite)
-        )
-        with self._sessao() as sessao:
-            return [Vaga.model_validate(linha.dados) for linha in sessao.exec(consulta)]
 
     # análises ---------------------------------------------------------------
 
@@ -300,70 +289,80 @@ class RepositorioSQLite(RepositorioVagas):
             )
             sessao.commit()
 
-    def salvar_triagem(self, chave: str, triagem: TriagemSalva) -> None:
-        with self._sessao() as sessao:
-            linha = sessao.get(VagaTabela, chave)
-            if linha is None:
-                raise LookupError(f"Vaga {chave} não encontrada.")
-            linha.triagem = triagem.model_dump()
-            sessao.add(linha)
-            sessao.commit()
-
     def analise_vigente(self, chave: str) -> AnaliseSalva | None:
         with self._sessao() as sessao:
-            return self._analise_vigente(sessao, chave)
+            linha = self._ultima_analise(sessao, chave)
+            if linha is None:
+                return None
+            perfil = (
+                sessao.get(PerfilTabela, linha.perfil_id) if linha.perfil_id else None
+            )
+            # Um snapshot mais novo da mesma fonte: a análise usou um perfil antigo.
+            desatualizado = (
+                perfil is not None
+                and self._ultimo_perfil(sessao, perfil.fonte).id != perfil.id
+            )
+            return AnaliseSalva(
+                analise=JobAnalysis.model_validate(linha.dados),
+                provedor=linha.provedor,
+                modelo=linha.modelo,
+                criada_em=linha.criada_em,
+                perfil_fonte=perfil.fonte if perfil else None,
+                perfil_desatualizado=desatualizado,
+            )
 
     @staticmethod
-    def _analise_vigente(sessao: Session, chave: str) -> AnaliseSalva | None:
+    def _ultima_analise(sessao: Session, chave: str) -> AnaliseTabela | None:
         consulta = (
             select(AnaliseTabela)
             .where(AnaliseTabela.vaga_chave == chave)
             .order_by(AnaliseTabela.id.desc())
         )
-        linha = sessao.exec(consulta).first()
-        if linha is None:
-            return None
-        return AnaliseSalva(
-            analise=JobAnalysis.model_validate(linha.dados),
-            provedor=linha.provedor,
-            modelo=linha.modelo,
-            criada_em=linha.criada_em,
-        )
+        return sessao.exec(consulta).first()
 
     # perfil -----------------------------------------------------------------
 
+    @staticmethod
+    def _ultimo_perfil(sessao: Session, fonte: str) -> PerfilTabela | None:
+        consulta = (
+            select(PerfilTabela)
+            .where(PerfilTabela.fonte == fonte)
+            .order_by(PerfilTabela.id.desc())
+        )
+        return sessao.exec(consulta).first()
+
     def salvar_perfil(self, perfil: Perfil) -> tuple[int, bool]:
         with self._sessao() as sessao:
-            atual = sessao.exec(
-                select(PerfilTabela).order_by(PerfilTabela.id.desc())
-            ).first()
+            atual = self._ultimo_perfil(sessao, perfil.fonte)
             if atual and atual.content_hash == perfil.content_hash:
                 return atual.id, False
-            linha = PerfilTabela(
-                dados=perfil.dados, texto=perfil.texto, content_hash=perfil.content_hash
-            )
+            linha = PerfilTabela(**perfil.model_dump())
             sessao.add(linha)
             sessao.commit()
             sessao.refresh(linha)
             return linha.id, True
 
-    def ultimo_perfil(self) -> tuple[int, Perfil] | None:
+    def ultimo_perfil(self, fonte: str) -> tuple[int, Perfil] | None:
         with self._sessao() as sessao:
-            linha = sessao.exec(
-                select(PerfilTabela).order_by(PerfilTabela.id.desc())
-            ).first()
+            linha = self._ultimo_perfil(sessao, fonte)
             if linha is None:
                 return None
-            return linha.id, Perfil(
-                dados=linha.dados, texto=linha.texto, content_hash=linha.content_hash
-            )
+            return linha.id, Perfil.model_validate(linha, from_attributes=True)
 
-    def historico_perfil(self) -> list[dict]:
-        """Snapshots do mais novo ao mais antigo, com os campos que mudaram."""
+    def fontes_com_perfil(self) -> list[str]:
+        consulta = select(PerfilTabela.fonte).distinct().order_by(PerfilTabela.fonte)
         with self._sessao() as sessao:
-            linhas = list(
-                sessao.exec(select(PerfilTabela).order_by(PerfilTabela.id.desc()))
-            )
+            return list(sessao.exec(consulta))
+
+    def historico_perfil(self, fonte: str) -> list[dict]:
+        """Snapshots da fonte, do mais novo ao mais antigo, com os campos que mudaram."""
+        consulta = (
+            select(PerfilTabela)
+            .where(PerfilTabela.fonte == fonte)
+            .order_by(PerfilTabela.id.desc())
+        )
+        with self._sessao() as sessao:
+            linhas = list(sessao.exec(consulta))
         historico = []
         for indice, linha in enumerate(linhas):
             anterior = linhas[indice + 1] if indice + 1 < len(linhas) else None

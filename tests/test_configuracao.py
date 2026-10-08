@@ -30,7 +30,7 @@ def test_padroes():
     padrao = Settings(_env_file=None)
     assert padrao.vanhack_login_url == "https://auth.vanhack.com"
     assert padrao.timezone == "America/Sao_Paulo"
-    assert padrao.llm_triagem is None
+    assert padrao.notificadores == []  # cada canal é ligado à mão, já preenchido
 
 
 def test_salvar_grava_publico_no_json_e_segredo_no_cofre():
@@ -43,14 +43,14 @@ def test_salvar_grava_publico_no_json_e_segredo_no_cofre():
 
 def test_salvar_atualiza_o_settings_que_os_modulos_ja_importaram():
     # vários módulos fazem `from configuracao import settings`
-    configuracao.salvar({"limiar_triagem": 75, "gemini_api_key": "g-teste"})
-    assert settings.limiar_triagem == 75
+    configuracao.salvar({"max_details_per_run": 7, "gemini_api_key": "g-teste"})
+    assert settings.max_details_per_run == 7
     assert settings.gemini_api_key == "g-teste"
 
 
 def test_config_json_vence_o_env(tmp_path):
     env = tmp_path / ".env"
-    env.write_text("LLM_ANALISE=openai\nMAX_ANALYSES_PER_RUN=3\n", encoding="utf-8")
+    env.write_text("LLM_ANALISE=openai\nMAX_DETAILS_PER_RUN=3\n", encoding="utf-8")
     configuracao.CONFIG_PATH.write_text(
         json.dumps({"llm_analise": "gemini"}), encoding="utf-8"
     )
@@ -58,7 +58,7 @@ def test_config_json_vence_o_env(tmp_path):
     lido = Settings(_env_file=env)
 
     assert lido.llm_analise == "gemini"  # alteração feita na tela não é ignorada
-    assert lido.max_analyses_per_run == 3  # o que a tela não mexeu ainda vem do .env
+    assert lido.max_details_per_run == 3  # o que a tela não mexeu ainda vem do .env
 
 
 def test_cofre_vence_o_env_mas_vazio_cai_no_env(tmp_path):
@@ -82,9 +82,9 @@ def test_apagar_segredo_remove_do_cofre():
 
 def test_salvar_preserva_o_que_ja_estava_no_json():
     configuracao.salvar({"llm_analise": "ollama"})
-    configuracao.salvar({"limiar_triagem": 70})
+    configuracao.salvar({"max_details_per_run": 7})
     gravado = json.loads(configuracao.CONFIG_PATH.read_text(encoding="utf-8"))
-    assert gravado == {"llm_analise": "ollama", "limiar_triagem": 70}
+    assert gravado == {"llm_analise": "ollama", "max_details_per_run": 7}
 
 
 def test_campo_desconhecido_e_recusado():

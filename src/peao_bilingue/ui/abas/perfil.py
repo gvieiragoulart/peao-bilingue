@@ -10,22 +10,32 @@ from peao_bilingue.ui.componentes import Tabela
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import Aplicativo
 
+NENHUMA = "(nenhuma)"
 
-def fonte_de_perfil() -> str | None:
-    """Primeira fonte ligada que sabe ler o perfil do candidato."""
-    for nome in settings.fontes_habilitadas:
-        if issubclass(fabricas.fontes.classe(nome), FonteDePerfil):
-            return nome
-    return None
+
+def fontes_que_leem_perfil() -> list[str]:
+    """Fontes ligadas que sabem ler o perfil cadastrado nelas."""
+    return [
+        nome
+        for nome in settings.fontes_habilitadas
+        if issubclass(fabricas.fontes.classe(nome), FonteDePerfil)
+    ]
 
 
 class AbaPerfil(ctk.CTkFrame):
+    """Um perfil por fonte: o cadastrado na VanHack não é o do LinkedIn."""
+
     def __init__(self, mestre: Any, app: "Aplicativo") -> None:
         super().__init__(mestre, fg_color="transparent")
         self.app = app
 
         topo = ctk.CTkFrame(self, fg_color="transparent")
         topo.pack(fill="x", pady=(0, 8))
+        ctk.CTkLabel(topo, text="Fonte").pack(side="left", padx=(0, 4))
+        self.fonte = ctk.CTkOptionMenu(
+            topo, values=[NENHUMA], width=140, command=lambda _: self.atualizar()
+        )
+        self.fonte.pack(side="left", padx=(0, 12))
         self.situacao = ctk.CTkLabel(topo, text="")
         self.situacao.pack(side="left")
         self.botao = ctk.CTkButton(
@@ -47,17 +57,28 @@ class AbaPerfil(ctk.CTkFrame):
         self.historico.grid(row=0, column=1, sticky="nsew")
 
     def atualizar(self) -> None:
-        salvo = self.app.repositorio.ultimo_perfil()
+        repositorio = self.app.repositorio
+        # As que leem perfil hoje e as que já têm um salvo (mesmo se desligadas).
+        fontes = sorted(
+            set(fontes_que_leem_perfil()) | set(repositorio.fontes_com_perfil())
+        )
+        self.fonte.configure(values=fontes or [NENHUMA])
+        if self.fonte.get() not in fontes:
+            self.fonte.set(fontes[0] if fontes else NENHUMA)
+        nome = self.fonte.get()
+
+        salvo = repositorio.ultimo_perfil(nome) if fontes else None
         self.texto.configure(state="normal")
         self.texto.delete("1.0", "end")
-        if salvo is None:
-            self.situacao.configure(text="Nenhum perfil lido ainda.")
-            self.texto.insert(
-                "1.0", "O perfil é lido da fonte com perfil (hoje, a VanHack)."
-            )
+        if not fontes:
+            self.situacao.configure(text="Nenhuma fonte ligada lê perfil.")
+        elif salvo is None:
+            self.situacao.configure(text=f"Nenhum perfil da fonte {nome} lido ainda.")
+            self.texto.insert("1.0", "Clique em Ler perfil agora.")
         else:
             self.situacao.configure(
-                text="Perfil usado nas análises (sem dados pessoais):"
+                text=f"Perfil da fonte {nome}, usado nas análises das vagas dela "
+                "(sem dados pessoais):"
             )
             self.texto.insert("1.0", salvo[1].texto)
         self.texto.configure(state="disabled")
@@ -71,14 +92,16 @@ class AbaPerfil(ctk.CTkFrame):
                         ", ".join(item["campos_alterados"]),
                     ),
                 )
-                for item in self.app.repositorio.historico_perfil()
+                for item in (repositorio.historico_perfil(nome) if fontes else [])
             ]
         )
 
     def _ler(self) -> None:
-        nome = fonte_de_perfil()
-        if nome is None:
-            self.app.mostrar_erro(ValueError("Nenhuma fonte ligada sabe ler o perfil."))
+        nome = self.fonte.get()
+        if nome not in fontes_que_leem_perfil():
+            self.app.mostrar_erro(
+                ValueError(f"A fonte {nome} não está ligada ou não lê perfil.")
+            )
             return
         self.botao.configure(state="disabled", text="Lendo…")
         repositorio = self.app.repositorio
@@ -92,8 +115,12 @@ class AbaPerfil(ctk.CTkFrame):
 
         def terminar(mudou: bool) -> None:
             self.botao.configure(state="normal", text="Ler perfil agora")
-            self.atualizar()
-            self.app.informar("Perfil atualizado." if mudou else "Perfil sem mudanças.")
+            self.app.ao_mudar_dados()
+            self.app.informar(
+                f"Perfil da fonte {nome} atualizado."
+                if mudou
+                else "Perfil sem mudanças."
+            )
 
         def falhar(falha: BaseException) -> None:
             self.botao.configure(state="normal", text="Ler perfil agora")

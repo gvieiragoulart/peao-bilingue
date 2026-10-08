@@ -44,8 +44,9 @@ def analise(fit: int = 82, **ajustes) -> JobAnalysis:
     return JobAnalysis(**{**base, **ajustes})
 
 
-def perfil(cargo: str = "Software Developer") -> Perfil:
+def perfil(cargo: str = "Software Developer", *, fonte: str = "vanhack") -> Perfil:
     return Perfil(
+        fonte=fonte,
         dados={"cargo": cargo},
         texto=f"Cargo: {cargo}\nSkills principais: Python (5 years)",
         content_hash=f"hash-{cargo}",

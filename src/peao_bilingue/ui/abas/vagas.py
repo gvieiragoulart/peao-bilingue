@@ -3,10 +3,11 @@ from typing import TYPE_CHECKING, Any
 
 import customtkinter as ctk
 
-from peao_bilingue import fabricas
-from peao_bilingue.aplicacao.execucao import reanalisar_vaga
-from peao_bilingue.composicao import montar_servicos
-from peao_bilingue.dominio.entidades import StatusVaga, VagaListada
+from peao_bilingue import configuracao, fabricas
+from peao_bilingue.aplicacao.analise import analisar_vaga
+from peao_bilingue.composicao import montar_llm
+from peao_bilingue.configuracao import settings
+from peao_bilingue.dominio.entidades import JobAnalysis, StatusVaga, VagaListada
 from peao_bilingue.ui import apresentacao
 from peao_bilingue.ui.componentes import Tabela
 
@@ -14,13 +15,13 @@ if TYPE_CHECKING:
     from peao_bilingue.ui.app import Aplicativo
 
 LIMITE = 500
+SEM_PERFIL = "(nenhum)"
 COLUNAS = [
     ("fit", "Fit", 45),
-    ("titulo", "Vaga", 280),
-    ("local", "Local", 150),
-    ("fonte", "Fonte", 75),
-    ("status", "Status", 80),
-    ("triagem", "Triagem", 100),
+    ("titulo", "Vaga", 300),
+    ("local", "Local", 160),
+    ("fonte", "Fonte", 80),
+    ("status", "Status", 90),
 ]
 
 
@@ -29,6 +30,12 @@ class AbaVagas(ctk.CTkFrame):
         super().__init__(mestre, fg_color="transparent")
         self.app = app
         self._vagas: dict[str, VagaListada] = {}
+        self._fontes_com_perfil: list[str] = []
+        # O seletor mostra o rótulo ("Ollama (local, grátis)"): o custo fica à vista.
+        self._llms = {
+            fabricas.llms.classe(nome).rotulo: nome
+            for nome in fabricas.llms.disponiveis()
+        }
 
         filtros = ctk.CTkFrame(self, fg_color="transparent")
         filtros.pack(fill="x", pady=(0, 8))
@@ -66,16 +73,32 @@ class AbaVagas(ctk.CTkFrame):
         self.detalhe.pack(fill="both", expand=True)
         self.detalhe.configure(state="disabled")
 
-        # Duas linhas: cinco botões numa só não cabem no painel e cortavam o texto.
+        # Em linhas: seletores e botões juntos não cabem na largura do painel.
+        escolha = ctk.CTkFrame(lado, fg_color="transparent")
+        escolha.pack(fill="x", pady=(8, 0))
+        ctk.CTkLabel(escolha, text="LLM").pack(side="left", padx=(0, 4))
+        self.llm = ctk.CTkOptionMenu(
+            escolha, values=list(self._llms), width=180, command=self._lembrar_llm
+        )
+        self.llm.pack(side="left", padx=(0, 12))
+        ctk.CTkLabel(escolha, text="Perfil").pack(side="left", padx=(0, 4))
+        self.perfil = ctk.CTkOptionMenu(escolha, values=[SEM_PERFIL], width=120)
+        self.perfil.pack(side="left")
+
         acoes = ctk.CTkFrame(lado, fg_color="transparent")
-        acoes.pack(fill="x", pady=(8, 0))
-        ctk.CTkButton(acoes, text="Abrir vaga", width=110, command=self._abrir).pack(
-            side="left"
+        acoes.pack(fill="x", pady=(6, 0))
+        self.botao_analisar = ctk.CTkButton(
+            acoes, text="Analisar", width=110, command=self._analisar
         )
-        self.botao_reanalisar = ctk.CTkButton(
-            acoes, text="Analisar de novo", width=140, command=self._reanalisar
-        )
-        self.botao_reanalisar.pack(side="left", padx=6)
+        self.botao_analisar.pack(side="left")
+        ctk.CTkButton(
+            acoes,
+            text="Abrir vaga",
+            width=110,
+            fg_color="transparent",
+            border_width=1,
+            command=self._abrir,
+        ).pack(side="left", padx=6)
 
         marcar = ctk.CTkFrame(lado, fg_color="transparent")
         marcar.pack(fill="x", pady=(6, 0))
@@ -101,6 +124,7 @@ class AbaVagas(ctk.CTkFrame):
         self.fonte.configure(
             values=[apresentacao.TODAS, *fabricas.fontes.disponiveis()]
         )
+        self._atualizar_seletores()
 
         try:
             minimo = apresentacao.score_minimo(self.score.get())
@@ -128,18 +152,40 @@ class AbaVagas(ctk.CTkFrame):
             ]
         )
         self._escrever_detalhe(
-            f"{len(vagas)} vaga(s). Selecione uma para ver a análise."
+            f"{len(vagas)} vaga(s). Selecione uma para ver a análise ou analisar."
         )
+
+    def _atualizar_seletores(self) -> None:
+        self._fontes_com_perfil = self.app.repositorio.fontes_com_perfil()
+        self.perfil.configure(values=self._fontes_com_perfil or [SEM_PERFIL])
+        if self.perfil.get() not in self._fontes_com_perfil:
+            self.perfil.set(
+                self._fontes_com_perfil[0] if self._fontes_com_perfil else SEM_PERFIL
+            )
+        rotulos = {nome: rotulo for rotulo, nome in self._llms.items()}
+        self.llm.set(rotulos.get(settings.llm_analise, next(iter(self._llms))))
+
+    def _lembrar_llm(self, rotulo: str) -> None:
+        # O último escolhido vira o padrão da próxima vez.
+        configuracao.salvar({"llm_analise": self._llms[rotulo]})
 
     def _selecionada(self) -> VagaListada | None:
         chave = self.tabela.selecionado()
         return self._vagas.get(chave) if chave else None
 
+    def _selecionar(self, chave: str) -> None:
+        if self.tabela.arvore.exists(chave):
+            self.tabela.arvore.selection_set(chave)
+
     def _mostrar_detalhe(self) -> None:
         item = self._selecionada()
-        if item is not None:
-            analise = self.app.repositorio.analise_vigente(item.vaga.chave)
-            self._escrever_detalhe(apresentacao.detalhe_da_vaga(item, analise))
+        if item is None:
+            return
+        # Por padrão, a vaga é analisada com o perfil cadastrado na fonte dela.
+        if item.vaga.fonte in self._fontes_com_perfil:
+            self.perfil.set(item.vaga.fonte)
+        analise = self.app.repositorio.analise_vigente(item.vaga.chave)
+        self._escrever_detalhe(apresentacao.detalhe_da_vaga(item, analise))
 
     def _escrever_detalhe(self, texto: str) -> None:
         self.detalhe.configure(state="normal")
@@ -159,31 +205,46 @@ class AbaVagas(ctk.CTkFrame):
         chave = item.vaga.chave
         self.app.repositorio.mudar_status(chave, status)
         self.atualizar()
-        if self.tabela.arvore.exists(chave):
-            self.tabela.arvore.selection_set(chave)
+        self._selecionar(chave)
 
-    def _reanalisar(self) -> None:
+    def _analisar(self) -> None:
         item = self._selecionada()
         if item is None:
+            self.app.mostrar_erro(ValueError("Selecione uma vaga para analisar."))
             return
+        nome_llm = self._llms[self.llm.get()]
         try:
-            servicos = montar_servicos(repositorio=self.app.repositorio)
+            provedor = montar_llm(nome_llm)
         except Exception as falha:  # noqa: BLE001 - provedor mal configurado vira aviso
             self.app.mostrar_erro(falha)
             return
-        self.botao_reanalisar.configure(state="disabled", text="Analisando…")
+        perfil = self.perfil.get()
+        vaga = item.vaga
+        self.botao_analisar.configure(state="disabled", text="Analisando…")
+        self.app.registrar(f"Analisando {vaga.titulo} ({vaga.chave}) com {nome_llm}…")
 
-        def terminar(_resultado: object = None) -> None:
-            self.botao_reanalisar.configure(state="normal", text="Analisar de novo")
+        def liberar() -> None:
+            self.botao_analisar.configure(state="normal", text="Analisar")
+
+        def terminar(analise: JobAnalysis) -> None:
+            liberar()
+            self.app.registrar(
+                f"Análise pronta: {vaga.titulo} — fit {analise.fit_score}."
+            )
             self.atualizar()
+            self._selecionar(vaga.chave)
 
         def falhar(falha: BaseException) -> None:
-            terminar()
+            liberar()
             self.app.mostrar_erro(falha)
 
-        # Reanálise avulsa nunca notifica: quem pediu está olhando a tela.
         self.app.rodar(
-            reanalisar_vaga(servicos, item.vaga.chave, dry_run=True),
+            analisar_vaga(
+                self.app.repositorio,
+                provedor,
+                vaga.chave,
+                perfil_de=None if perfil == SEM_PERFIL else perfil,
+            ),
             ao_terminar=terminar,
             ao_falhar=falhar,
         )
