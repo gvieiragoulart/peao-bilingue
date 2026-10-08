@@ -1,0 +1,84 @@
+# Verificação de todo PR (e de cada push na main): lint e tipagem, testes de
+# unidade e testes de integração. Todos offline: nenhum teste acessa site,
+# LLM, SMTP ou o Agendador do Windows de verdade.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Um push novo no mesmo PR cancela a rodada anterior, que ficou velha.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  lint:
+    name: Lint e tipagem (ruff, mypy)
+    # Nada aqui depende do SO; o mypy já é fixado em win32 no pyproject.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: "0.12.5"
+          python-version: "3.12"
+          enable-cache: true
+      - name: Instalar dependências (exatamente as do uv.lock)
+        run: uv sync --locked
+      - name: ruff — regras
+        run: uv run ruff check . --output-format=github
+      - name: ruff — formatação
+        run: uv run ruff format --check .
+      - name: mypy (estrito)
+        run: uv run mypy
+
+  unidade:
+    name: Testes de unidade
+    # O app é para Windows: os testes rodam no mesmo SO.
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: "0.12.5"
+          python-version: "3.12"
+          enable-cache: true
+      - name: Instalar dependências (exatamente as do uv.lock)
+        run: uv sync --locked
+      - name: pytest — unidade
+        run: uv run pytest -m "not integracao"
+
+  integracao:
+    name: Testes de integração
+    # Chromium do Playwright, janela Tk, PowerShell e outro processo: Windows.
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: "0.12.5"
+          python-version: "3.12"
+          enable-cache: true
+      - name: Instalar dependências (exatamente as do uv.lock)
+        run: uv sync --locked
+      # O Chromium do Playwright muda junto com a versão do pacote, que está no uv.lock.
+      - name: Cache do Chromium do Playwright
+        uses: actions/cache@v6
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('uv.lock') }}
+      - name: Instalar o Chromium do Playwright
+        run: uv run playwright install chromium
+      - name: pytest — integração
+        run: uv run pytest -m integracao

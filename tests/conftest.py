@@ -44,6 +44,13 @@ from peao_bilingue.adaptadores.persistencia.sqlite import (
 )
 
 
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Quem usa o Chromium de verdade é teste de integração, sem precisar marcar."""
+    for item in items:
+        if "page" in getattr(item, "fixturenames", ()):
+            item.add_marker(pytest.mark.integracao)
+
+
 @pytest_asyncio.fixture
 async def page() -> AsyncIterator[Page]:
     """Página em branco no Chromium empacotado, sem rede."""

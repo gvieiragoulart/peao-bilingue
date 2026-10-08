@@ -32,6 +32,7 @@ def test_a_mesma_trava_nao_entra_duas_vezes(caminho):
     trava.liberar()
 
 
+@pytest.mark.integracao  # sobe outro processo Python
 def test_outro_processo_fica_bloqueado(caminho):
     trava = TravaDeArquivo(caminho)
     assert trava.adquirir()
