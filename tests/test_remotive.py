@@ -5,8 +5,8 @@ import os
 import time
 from pathlib import Path
 
-import httpx
 import pytest
+from dubles import ApiFalsa
 
 from peao_bilingue.adaptadores.fontes.html import html_para_texto
 from peao_bilingue.adaptadores.fontes.remotive import URL, Remotive
@@ -15,28 +15,13 @@ from peao_bilingue.dominio.erros import ErroDeColeta
 FIXTURE = Path(__file__).parent / "fixtures" / "remotive" / "remote-jobs.json"
 
 
-class ApiFalsa:
-    """Responde como a API e conta as chamadas: o limite é ~4 por dia."""
-
-    def __init__(self, status: int = 200) -> None:
-        self.status = status
-        self.chamadas: list[httpx.Request] = []
-
-    def __call__(self, requisicao: httpx.Request) -> httpx.Response:
-        self.chamadas.append(requisicao)
-        if self.status != 200:
-            return httpx.Response(self.status, json={})
-        return httpx.Response(200, content=FIXTURE.read_bytes())
-
-
 @pytest.fixture
 def api() -> ApiFalsa:
-    return ApiFalsa()
+    return ApiFalsa(FIXTURE)
 
 
 def remotive(api: ApiFalsa, cache: Path) -> Remotive:
-    cliente = httpx.AsyncClient(transport=httpx.MockTransport(api))
-    return Remotive(categoria="software-dev", cliente=cliente, cache=cache)
+    return Remotive(categoria="software-dev", cliente=api.cliente(), cache=cache)
 
 
 async def test_uma_chamada_por_coleta_qualquer_que_seja_o_numero_de_termos(
@@ -104,15 +89,16 @@ async def test_cache_vencido_ou_de_outra_categoria_chama_de_novo(api, tmp_path):
         await fonte.buscar("python")
     assert len(api.chamadas) == 2
 
-    dados = json.loads(cache.read_text(encoding="utf-8"))
-    cache.write_text(json.dumps({**dados, "categoria": "design"}), encoding="utf-8")
+    salvo = json.loads(cache.read_text(encoding="utf-8"))
+    salvo["consulta"]["parametros"]["category"] = "design"
+    cache.write_text(json.dumps(salvo), encoding="utf-8")
     async with remotive(api, cache) as fonte:
         await fonte.buscar("python")
     assert len(api.chamadas) == 3
 
 
 async def test_limite_excedido_vira_erro_de_coleta_legivel(tmp_path):
-    api = ApiFalsa(status=429)
+    api = ApiFalsa(FIXTURE, status=429)
     with pytest.raises(ErroDeColeta, match="excesso de chamadas"):
         async with remotive(api, tmp_path / "cache.json") as fonte:
             await fonte.buscar("python")

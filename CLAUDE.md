@@ -248,7 +248,13 @@ Seletores **somente** em `selectors.py`, documentados. Fixtures reais anonimizad
 Sem login e sem perfil: a análise de uma vaga delas usa o perfil escolhido no seletor (o padrão
 cai no primeiro perfil salvo, hoje o da VanHack). Descrição em HTML vira texto com uma linha por
 parágrafo (`adaptadores/fontes/html.py`). Fixture = resposta real salva em
-`tests/fixtures/<fonte>/`; os testes usam `httpx.MockTransport`, sem rede.
+`tests/fixtures/<fonte>/`; os testes usam `ApiFalsa` (em `dubles.py`, sobre
+`httpx.MockTransport`), sem rede, e contam as chamadas.
+
+**Base `FonteDeApi`** (`adaptadores/fontes/api.py`): uma chamada por coleta (a lista vem
+inteira e cada termo é filtrado localmente com o mesmo texto do filtro das buscas), cache em
+`data/cache/<fonte>.json` válido por 6 h e só para a mesma consulta, `detalhar` sem chamada.
+Cada fonte só define `url`, `parametros()` e `converter()`. 429 vira `ErroDeColeta` legível.
 
 **Remotive** (`GET https://remotive.com/api/remote-jobs?category=software-dev`). Termos, no
 aviso legal da própria resposta: linkar a vaga no Remotive **e** citar o Remotive como fonte;
@@ -258,6 +264,18 @@ categoria vem inteira — 17 vagas em 07/10 — e cada termo é filtrado localme
 texto do filtro das buscas) e **cache de 6 h** em `data/cache/remotive.json`. O `limit` da API
 foi ignorado no teste real. Salário vem `""` quando não informado. A listagem já traz a vaga
 inteira: `detalhar` não chama a API. Desligada por padrão: liga na aba Fontes.
+
+**Remote OK** (`GET https://remoteok.com/api`). Termos no primeiro item da resposta: linkar a
+vaga no Remote OK (sem `nofollow`) e citar "Remote OK"; não usar o logo. Sem limite declarado;
+a base já faz uma chamada por coleta. Vêm as ~100 vagas mais recentes de **todas as áreas**,
+com a descrição **resumida** (o texto inteiro só no site, que não é raspado). Três armadilhas:
+- toda descrição termina com uma frase anti-spam ("Please mention the word **X** and tag R…")
+  cujo token é o **IP de quem chamou** em base64 — `limpar_descricao` tira a frase e qualquer
+  token solto; na fixture o token é o de `2001:db8::1` (documentação);
+- texto em UTF-8 lido como Latin-1 ("â€“"), vindo do próprio servidor — `consertar_codificacao`;
+- `<img>` com imagem em base64 escapado no meio do texto, às vezes cortado — removido.
+Salário em `salary_min`/`salary_max` (0 = não informado); `location` vem `""` quando a vaga não
+diz. 12 vagas na primeira coleta real (07/10).
 
 ---
 
@@ -282,7 +300,7 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `u
 - [x] **Análise sob demanda e perfil por fonte** (pedido de 07/10): a coleta não chama LLM;
       botão Analisar com seletor de LLM e de perfil; um perfil por fonte; triagem e reanálise
       automática removidas; avisos viraram resumo das vagas novas após a coleta agendada.
-- [ ] **Fase 5 — APIs públicas:** ~~Remotive~~ (feito, 07/10), RemoteOK, Arbeitnow, Himalayas,
+- [ ] **Fase 5 — APIs públicas:** ~~Remotive~~, ~~Remote OK~~ (feitos, 07/10), Arbeitnow, Himalayas,
       We Work Remotely. Antes de cada uma: endpoint, limites e termos (ver "Fontes por API").
 - [ ] **Fase 6 — Sites brasileiros:** investigar endpoint e termos antes de implementar.
 - [ ] **Fase 7 — LinkedIn/Indeed:** opt-in, desligados por padrão, mesmas regras da VanHack. Os
