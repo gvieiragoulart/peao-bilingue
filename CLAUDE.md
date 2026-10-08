@@ -260,10 +260,14 @@ parágrafo (`adaptadores/fontes/html.py`). Fixture = resposta real salva em
 `tests/fixtures/<fonte>/`; os testes usam `ApiFalsa` (em `dubles.py`, sobre
 `httpx.MockTransport`), sem rede, e contam as chamadas.
 
-**Base `FonteDeApi`** (`adaptadores/fontes/api.py`): uma chamada por coleta (a lista vem
-inteira e cada termo é filtrado localmente com o mesmo texto do filtro das buscas), cache em
-`data/cache/<fonte>.json` válido por 6 h e só para a mesma consulta, `detalhar` sem chamada.
-Cada fonte só define `url`, `parametros()` e `converter()`. 429 vira `ErroDeColeta` legível.
+**Base `FonteDeApi`** (`adaptadores/fontes/api.py`), dois jeitos de consultar:
+- **lista inteira** (`parametros()`): uma chamada por coleta, e cada termo é filtrado localmente
+  com o mesmo texto do filtro das buscas — Remotive, Remote OK, Arbeitnow;
+- **por termo** (`parametros_do_termo()`): a API já busca, uma chamada por termo, com `pausa_s`
+  entre chamadas de verdade — Himalayas.
+Cache por consulta em `data/cache/<fonte>[-<hash>].json` (`validade_s`, padrão 6 h; só vale para
+a mesma consulta); `detalhar` não chama a API. Cada fonte define `url`, os parâmetros e
+`converter()`. 429 vira `ErroDeColeta` legível.
 
 **Remotive** (`GET https://remotive.com/api/remote-jobs?category=software-dev`). Termos, no
 aviso legal da própria resposta: linkar a vaga no Remotive **e** citar o Remotive como fonte;
@@ -296,6 +300,16 @@ vezes só em parte (`&lt;p&gt;` dentro de tags de verdade): `descricao_em_texto`
 sobrar tag de fechamento, converte de novo. `created_at` é epoch. Primeira coleta real (08/10):
 93 vagas casaram com as buscas, 15 novas (o limite por fonte).
 
+**Himalayas** (`GET https://himalayas.app/jobs/api/search?q=<termo>&country=BR&sort=recent`).
+Termos (https://himalayas.app/api): linkar a vaga no Himalayas **e** citar o Himalayas; não
+republicar em outros sites; abuso dá 429. **No máximo 20 vagas por chamada** e mais de 5.000 na
+lista inteira, então a busca é **por termo** (`parametros_do_termo` na base): uma chamada por
+palavra-chave das buscas (8 hoje), **2 s de pausa** entre chamadas de verdade e cache de **12 h por
+termo** (os dados mudam a cada 24 h). `country=BR` (`HIMALAYAS_PAIS`) traz só vagas abertas ao
+Brasil ou ao mundo — sem ele, 3 de 18 serviam. O id é `empresa/slug`: o slug sozinho se repete
+entre empresas. `locationRestrictions` vira o "local" (até 3 países; acima disso, a contagem) e
+fica inteiro em `extras["paises"]`. Primeira coleta real (08/10): 117 listadas, 15 novas.
+
 ---
 
 ## Roteiro
@@ -319,7 +333,7 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `u
 - [x] **Análise sob demanda e perfil por fonte** (pedido de 07/10): a coleta não chama LLM;
       botão Analisar com seletor de LLM e de perfil; um perfil por fonte; triagem e reanálise
       automática removidas; avisos viraram resumo das vagas novas após a coleta agendada.
-- [ ] **Fase 5 — APIs públicas:** ~~Remotive~~, ~~Remote OK~~, ~~Arbeitnow~~ (feitos, 07–08/10), Himalayas,
+- [ ] **Fase 5 — APIs públicas:** ~~Remotive~~, ~~Remote OK~~, ~~Arbeitnow~~, ~~Himalayas~~ (feitos, 07–08/10),
       We Work Remotely. Antes de cada uma: endpoint, limites e termos (ver "Fontes por API").
 - [ ] **Fase 6 — Sites brasileiros:** investigar endpoint e termos antes de implementar.
 - [ ] **Fase 7 — LinkedIn/Indeed:** opt-in, desligados por padrão, mesmas regras da VanHack. Os
