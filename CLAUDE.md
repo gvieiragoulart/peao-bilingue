@@ -31,7 +31,7 @@ intocado) com 18 vagas reais, nenhuma analisada ainda. Três buscas cadastradas:
 PHP/Laravel, React/TypeScript — sem `exclude`, porque filtrar "junior" descartaria vaga sênior
 que diz "mentor junior engineers".
 
-O banco evolui por **migração aditiva automática** (`_migrar` em `persistencia/sqlite.py`): o
+O banco evolui por **migração aditiva automática** (`migrar` em `persistencia/sqlite/banco.py`): o
 `create_all` não acrescenta colunas a tabelas existentes, então campo novo em model ganha
 `ALTER TABLE ADD COLUMN` com o default do model. Mudança não aditiva exige migração à mão.
 
@@ -84,7 +84,8 @@ src/peao_bilingue/
 │   ├── llm/anthropic.py
 │   ├── notificacao/      # formatacao, email, whatsapp
 │   ├── agendamento/windows.py   # Agendador de Tarefas via PowerShell
-│   └── persistencia/     # sqlite.py (tabelas SQLModel + RepositorioSQLite), trava.py (filelock)
+│   └── persistencia/     # sqlite/ (tabelas, banco, um arquivo por agregado e RepositorioSQLite
+│                         #   juntando os cinco), trava.py (filelock)
 ├── fabricas.py        # Registro[T] + fontes / llms / notificadores
 ├── composicao.py      # raiz de composição: único lugar que liga portas a adapters
 ├── configuracao.py    # Settings: config.json + cofre do Windows + .env (fallback)
@@ -393,8 +394,8 @@ Critérios pedidos: arquivos separados por domínio, SOLID, funções tipadas na
 - [x] **Domínio em arquivos**: um módulo por subdomínio (vagas, buscas, perfil, análise,
       coleta, avisos, agenda), cada um com suas entidades e portas; `entidades.py` e
       `portas.py` saíram. O domínio não importa nada de fora dele.
-- [~] **I** (interfaces enxutas): a porta única virou cinco (`RepositorioBuscas`,
-      `RepositorioVagas`, `RepositorioAnalises`, `RepositorioPerfis`, `RepositorioExecucoes`).
-      **Falta:** cada caso de uso pedir só as que usa (hoje recebem `Repositorio`, a junção)
-      e dividir `sqlite.py` (434 linhas) por agregado (**S**).
+- [x] **I/S** (interfaces enxutas, responsabilidade única): cinco portas de repositório, uma
+      por agregado; os casos de uso pedem só as que usam (`analisar_vaga(vagas=, perfis=,
+      analises=)`, `Servicos(buscas=, vagas=, perfis=, execucoes=)`). `sqlite.py` (434 linhas)
+      virou o pacote `persistencia/sqlite/`, um arquivo por agregado (o maior tem 87 linhas).
 - [ ] Testes tipados (343 pendências no mypy estrito) e `tests/` no mypy do CI.

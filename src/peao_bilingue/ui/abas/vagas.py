@@ -241,9 +241,11 @@ class AbaVagas(ctk.CTkFrame):
 
         self.app.rodar(
             analisar_vaga(
-                self.app.repositorio,
-                provedor,
                 vaga.chave,
+                provedor,
+                vagas=self.app.repositorio,
+                perfis=self.app.repositorio,
+                analises=self.app.repositorio,
                 perfil_de=None if perfil == SEM_PERFIL else perfil,
                 notas=ler_notas_do_perfil(),
             ),

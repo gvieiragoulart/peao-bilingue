@@ -19,7 +19,10 @@ PYTHON = Busca(nome="Python", keywords=["python"])
 
 def servicos(repositorio, *fontes, notificador=None) -> Servicos:
     return Servicos(
-        repositorio=repositorio,
+        buscas=repositorio,
+        vagas=repositorio,
+        perfis=repositorio,
+        execucoes=repositorio,
         fontes=list(fontes),
         notificadores=[notificador] if notificador else [],
     )
@@ -233,7 +236,8 @@ async def test_execucao_que_ficou_pela_metade_e_encerrada_pela_seguinte(com_busc
 async def test_detalha_no_maximo_o_limite_por_fonte(com_busca):
     # comportamento educado: o resto fica para a próxima coleta
     fonte = FonteFake(vagas=[vaga("1"), vaga("2"), vaga("3")])
-    servicos_ = Servicos(repositorio=com_busca, fontes=[fonte], max_detalhes=2)
+    servicos_ = servicos(com_busca, fonte)
+    servicos_.max_detalhes = 2
 
     resultado = await executar(servicos_)
 

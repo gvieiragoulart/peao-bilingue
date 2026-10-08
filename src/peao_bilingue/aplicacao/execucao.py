@@ -11,18 +11,18 @@ from dataclasses import dataclass, field
 
 from peao_bilingue.aplicacao import filtros
 from peao_bilingue.dominio.avisos import Notificador
-from peao_bilingue.dominio.buscas import Busca
+from peao_bilingue.dominio.buscas import Busca, RepositorioBuscas
 from peao_bilingue.dominio.coleta import (
     Execucao,
     FonteDeVagas,
     Gatilho,
+    RepositorioExecucoes,
     StatusExecucao,
     Trava,
 )
 from peao_bilingue.dominio.erros import ExecucaoEmAndamento, SessaoExpirada
-from peao_bilingue.dominio.perfil import FonteDePerfil
-from peao_bilingue.dominio.repositorio import Repositorio
-from peao_bilingue.dominio.vagas import Vaga, VagaResumo
+from peao_bilingue.dominio.perfil import FonteDePerfil, RepositorioPerfis
+from peao_bilingue.dominio.vagas import RepositorioVagas, Vaga, VagaResumo
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,13 @@ _TRAVA_DO_PROCESSO = TravaDoProcesso()
 
 @dataclass
 class Servicos:
-    repositorio: Repositorio
+    """O que a coleta usa — e só isso: cada repositório é uma porta enxuta (no
+    SQLite, os quatro são o mesmo banco)."""
+
+    buscas: RepositorioBuscas
+    vagas: RepositorioVagas
+    perfis: RepositorioPerfis
+    execucoes: RepositorioExecucoes
     fontes: list[FonteDeVagas]
     notificadores: list[Notificador] = field(default_factory=list)
     trava: Trava = field(default_factory=lambda: _TRAVA_DO_PROCESSO)
@@ -80,15 +86,15 @@ async def executar(
             "Já existe uma execução em andamento (no app ou na tarefa agendada)."
         )
     try:
-        repositorio = servicos.repositorio
+        execucoes = servicos.execucoes
         # Com a trava na mão, nenhuma outra execução está viva: o que ainda consta
         # como "rodando" é de um processo que morreu no meio do caminho.
-        orfas = repositorio.encerrar_execucoes_orfas(INTERROMPIDA)
+        orfas = execucoes.encerrar_execucoes_orfas(INTERROMPIDA)
         if orfas:
             logger.warning(
                 "%d execução(ões) anterior(es) marcada(s) como interrompida(s).", orfas
             )
-        execucao = repositorio.iniciar_execucao(gatilho)
+        execucao = execucoes.iniciar_execucao(gatilho)
         try:
             await _rodar(servicos, execucao, avisar=avisar)
             execucao.status = StatusExecucao.ok
@@ -101,15 +107,14 @@ async def executar(
             execucao.erro = f"{type(falha).__name__}: {falha}"
             execucao.artefato = getattr(falha, "artefato", None)
             logger.exception("Execução falhou")
-        repositorio.finalizar_execucao(execucao)
+        execucoes.finalizar_execucao(execucao)
         return execucao
     finally:
         servicos.trava.liberar()
 
 
 async def _rodar(servicos: Servicos, execucao: Execucao, *, avisar: bool) -> None:
-    repositorio = servicos.repositorio
-    buscas = repositorio.listar_buscas(so_ativas=True)
+    buscas = servicos.buscas.listar_buscas(so_ativas=True)
     if not buscas:
         logger.info("Nenhuma busca ativa; nada a fazer.")
         return
@@ -136,10 +141,9 @@ async def _coletar_da_fonte(
 ) -> None:
     try:
         async with fonte:
-            repositorio = servicos.repositorio
-            await _sincronizar_perfil(repositorio, fonte)
+            await _sincronizar_perfil(servicos.perfis, fonte)
             estado.novas += await _coletar(
-                repositorio, execucao, fonte, buscas, servicos.max_detalhes
+                servicos.vagas, execucao, fonte, buscas, servicos.max_detalhes
             )
     # Registrada; _rodar decide se é fatal.
     except Exception as falha:  # noqa: BLE001
@@ -149,7 +153,7 @@ async def _coletar_da_fonte(
         logger.warning("Fonte %s falhou: %s", fonte.nome, falha)
 
 
-async def _sincronizar_perfil(repositorio: Repositorio, fonte: FonteDeVagas) -> None:
+async def _sincronizar_perfil(perfis: RepositorioPerfis, fonte: FonteDeVagas) -> None:
     """Cada fonte com perfil guarda o seu: a análise de uma vaga usa o perfil
     cadastrado na fonte dela."""
     if not isinstance(fonte, FonteDePerfil):
@@ -164,12 +168,12 @@ async def _sincronizar_perfil(repositorio: Repositorio, fonte: FonteDeVagas) -> 
             "Falha ao ler o perfil de %s; fica o último salvo: %s", fonte.nome, falha
         )
         return
-    if repositorio.salvar_perfil(perfil)[1]:
+    if perfis.salvar_perfil(perfil)[1]:
         logger.info("O perfil de %s mudou desde a última leitura.", fonte.nome)
 
 
 async def _coletar(
-    repositorio: Repositorio,
+    vagas: RepositorioVagas,
     execucao: Execucao,
     fonte: FonteDeVagas,
     buscas: list[Busca],
@@ -185,9 +189,7 @@ async def _coletar(
                 resumos.setdefault(resumo.chave, resumo)
     execucao.vagas_listadas += len(resumos)
 
-    desconhecidas = [
-        r for chave, r in resumos.items() if not repositorio.vaga_existe(chave)
-    ]
+    desconhecidas = [r for chave, r in resumos.items() if not vagas.vaga_existe(chave)]
     novas = []
     for resumo in desconhecidas[:max_detalhes]:
         vaga = await fonte.detalhar(resumo)
@@ -195,7 +197,7 @@ async def _coletar(
         if not casadas:
             logger.info("Vaga %s não passou nos filtros.", vaga.chave)
             continue
-        repositorio.salvar_vaga(vaga, casadas)
+        vagas.salvar_vaga(vaga, casadas)
         novas.append(vaga)
     execucao.vagas_novas += len(novas)
     return novas
