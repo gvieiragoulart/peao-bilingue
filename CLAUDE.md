@@ -264,7 +264,9 @@ parágrafo (`adaptadores/fontes/html.py`). Fixture = resposta real salva em
 - **lista inteira** (`parametros()`): uma chamada por coleta, e cada termo é filtrado localmente
   com o mesmo texto do filtro das buscas — Remotive, Remote OK, Arbeitnow;
 - **por termo** (`parametros_do_termo()`): a API já busca, uma chamada por termo, com `pausa_s`
-  entre chamadas de verdade — Himalayas.
+  entre chamadas de verdade — Himalayas;
+- **algumas consultas fixas** (`consultas()`): a lista vem em partes — We Work Remotely, um feed
+  por categoria. `decodificar()` troca o JSON por outro formato (RSS).
 Cache por consulta em `data/cache/<fonte>[-<hash>].json` (`validade_s`, padrão 6 h; só vale para
 a mesma consulta); `detalhar` não chama a API. Cada fonte define `url`, os parâmetros e
 `converter()`. 429 vira `ErroDeColeta` legível.
@@ -310,6 +312,15 @@ Brasil ou ao mundo — sem ele, 3 de 18 serviam. O id é `empresa/slug`: o slug 
 entre empresas. `locationRestrictions` vira o "local" (até 3 países; acima disso, a contagem) e
 fica inteiro em `extras["paises"]`. Primeira coleta real (08/10): 117 listadas, 15 novas.
 
+**We Work Remotely** (RSS: `https://weworkremotely.com/categories/<categoria>.rss`). A página do
+feed diz: *"Anyone can use the feed, all we ask is that you attribute the links back to We Work
+Remotely."* O feed geral (`remote-jobs.rss`) traz só as ~90 mais recentes de **todas** as áreas —
+faltavam nele 38 das 57 vagas de programação —, então são os feeds de back-end, full-stack e
+front-end: **3 chamadas por coleta**, 2 s de pausa, cache de 6 h. O título vem "Empresa: Cargo";
+`skills` vem "A, B, and C". O WebFetch leva 403 do Cloudflare deles, mas o acesso honesto (nosso
+User-Agent) recebe 200 — nada de disfarce. XML pelo `ElementTree` da stdlib (o expat do Python já
+se protege de expansão de entidades). Primeira coleta real (08/10): 27 listadas, 15 novas.
+
 ---
 
 ## Roteiro
@@ -333,8 +344,9 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `u
 - [x] **Análise sob demanda e perfil por fonte** (pedido de 07/10): a coleta não chama LLM;
       botão Analisar com seletor de LLM e de perfil; um perfil por fonte; triagem e reanálise
       automática removidas; avisos viraram resumo das vagas novas após a coleta agendada.
-- [ ] **Fase 5 — APIs públicas:** ~~Remotive~~, ~~Remote OK~~, ~~Arbeitnow~~, ~~Himalayas~~ (feitos, 07–08/10),
-      We Work Remotely. Antes de cada uma: endpoint, limites e termos (ver "Fontes por API").
+- [x] **Fase 5 — APIs públicas:** Remotive, Remote OK, Arbeitnow (Alemanha com visto),
+      Himalayas (aberto ao Brasil) e We Work Remotely (RSS), sobre a base `FonteDeApi`. Termos
+      conferidos um a um e documentados em "Fontes por API"; todas desligadas por padrão.
 - [ ] **Fase 6 — Sites brasileiros:** investigar endpoint e termos antes de implementar.
 - [ ] **Fase 7 — LinkedIn/Indeed:** opt-in, desligados por padrão, mesmas regras da VanHack. Os
       termos proíbem automação (risco de restrição da conta); se bloquearem, **não** escalar para

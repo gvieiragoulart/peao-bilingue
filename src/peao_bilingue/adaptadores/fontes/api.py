@@ -6,6 +6,8 @@ Os termos dessas APIs pedem poucas chamadas, então:
   filtrado aqui, com o mesmo texto que o filtro das buscas olha;
 - **uma chamada por termo** quando a API só busca (ex.: Himalayas, 20 por página):
   a fonte define `parametros_do_termo`, e há pausa entre as chamadas;
+- **algumas chamadas fixas** quando a lista vem em partes (ex.: um feed RSS por
+  categoria no We Work Remotely): a fonte define `consultas`;
 - **cache em disco** por consulta (`validade_s`): coletar várias vezes no dia não
   chama de novo;
 - `detalhar` não chama nada: a listagem já traz a vaga inteira.
@@ -69,6 +71,17 @@ class FonteDeApi(FonteDeVagas):
         """A consulta de um termo, quando a API só busca. None = consulta única."""
         return None
 
+    def consultas(self) -> list[tuple[str, dict[str, str]]]:
+        """(url, parâmetros) de cada chamada que monta a lista inteira."""
+        return [(self.url, self.parametros())]
+
+    def decodificar(self, resposta: httpx.Response) -> Json:
+        """O corpo da resposta como Json; fontes que não falam JSON (RSS) trocam."""
+        dados = resposta.json()
+        if not isinstance(dados, dict | list):
+            raise ValueError("o topo da resposta não é objeto nem lista")
+        return dados
+
     @abstractmethod
     def converter(self, dados: Json) -> list[Vaga]:
         """A resposta da API (já do JSON) vira vagas."""
@@ -89,11 +102,13 @@ class FonteDeApi(FonteDeVagas):
         if do_termo is not None:
             # A própria API já buscou o termo.
             encontradas: list[VagaResumo] = list(
-                (await self._consultar(do_termo)).values()
+                (await self._consultar(self.url, do_termo)).values()
             )
             return encontradas
         if self._todas is None:
-            self._todas = await self._consultar(self.parametros())
+            self._todas = {}
+            for url, parametros in self.consultas():
+                self._todas.update(await self._consultar(url, parametros))
         procurado = termo.lower()
         return [
             vaga
@@ -104,36 +119,36 @@ class FonteDeApi(FonteDeVagas):
     async def detalhar(self, resumo: VagaResumo) -> Vaga:
         return self._vistas[resumo.id_externo]
 
-    async def _consultar(self, parametros: dict[str, str]) -> dict[str, Vaga]:
-        consulta = {"url": self.url, "parametros": parametros}
-        arquivo = self._arquivo_do_cache(parametros)
+    async def _consultar(self, url: str, parametros: dict[str, str]) -> dict[str, Vaga]:
+        consulta = {"url": url, "parametros": parametros}
+        arquivo = self._arquivo_do_cache(url, parametros)
         dados = await asyncio.to_thread(self._ler_cache, arquivo, consulta)
         if dados is None:
-            dados = await self._baixar(parametros)
+            dados = await self._baixar(url, parametros)
             await asyncio.to_thread(self._gravar_cache, arquivo, consulta, dados)
         vagas = {vaga.id_externo: vaga for vaga in self.converter(dados)}
         self._vistas.update(vagas)
         return vagas
 
-    def _arquivo_do_cache(self, parametros: dict[str, str]) -> Path:
-        if parametros == self.parametros():
+    def _arquivo_do_cache(self, url: str, parametros: dict[str, str]) -> Path:
+        if (url, parametros) == self.consultas()[0]:
             return self.cache
-        # Uma consulta por termo: um arquivo para cada, ao lado do principal.
+        # As outras consultas (por termo ou por parte): um arquivo para cada.
         chave = hashlib.sha1(
-            json.dumps(parametros, sort_keys=True).encode("utf-8")
+            json.dumps([url, parametros], sort_keys=True).encode("utf-8")
         ).hexdigest()[:12]
         return self.cache.with_name(f"{self.cache.stem}-{chave}{self.cache.suffix}")
 
-    async def _baixar(self, parametros: dict[str, str]) -> Json:
+    async def _baixar(self, url: str, parametros: dict[str, str]) -> Json:
         if self._cliente is None:
             raise RuntimeError("Use a fonte dentro de `async with`.")
         if self._ja_chamou and self.pausa_s:
             await asyncio.sleep(self.pausa_s)
         self._ja_chamou = True
         try:
-            resposta = await self._cliente.get(self.url, params=parametros)
+            resposta = await self._cliente.get(url, params=parametros)
             resposta.raise_for_status()
-            dados = resposta.json()
+            dados = self.decodificar(resposta)
         except httpx.HTTPStatusError as falha:
             codigo = falha.response.status_code
             if codigo == 429:
