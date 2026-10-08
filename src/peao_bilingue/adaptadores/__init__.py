@@ -1,5 +1,6 @@
 """Importar este pacote registra todos os adapters nas fábricas."""
 
+from peao_bilingue.adaptadores.fontes import arbeitnow as _arbeitnow  # noqa: F401
 from peao_bilingue.adaptadores.fontes import remoteok as _remoteok  # noqa: F401
 from peao_bilingue.adaptadores.fontes import remotive as _remotive  # noqa: F401
 from peao_bilingue.adaptadores.fontes.vanhack import fonte as _vanhack  # noqa: F401
