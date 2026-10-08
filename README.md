@@ -98,6 +98,27 @@ em Configurações — eles começam desligados; ligue os que já tiver preenchi
 janela, o registro fica em `data/coleta.log`. Só uma coleta roda por vez: se a tarefa começar
 enquanto você coleta pelo app (ou o contrário), a segunda é recusada.
 
+## Executável (.exe), sem Python nem uv
+
+```bash
+uv run --group empacotar pyinstaller empacotamento/peao_bilingue.spec --noconfirm
+```
+
+Gera `dist/PeaoBilingue/` (uma pasta, ~170 MB): leve a pasta inteira e abra o
+`PeaoBilingue.exe`. Sem argumentos ele abre o app; com argumentos é a mesma linha de comando
+(`PeaoBilingue.exe run`, `PeaoBilingue.exe login`...). Ao agendar a coleta pelo app aberto do
+.exe, a tarefa passa a chamar o próprio .exe.
+
+Diferenças em relação a rodar pelo projeto:
+
+- **Os dados ficam em `%LOCALAPPDATA%\PeaoBilingue`** (`data/`, `.env`, `profile_notes.md`,
+  `artifacts/`), não na pasta do projeto — o .exe pode estar em qualquer lugar. Para levar o que
+  já existe, copie a pasta `data/` do projeto para lá (com o app fechado). `PEAO_DADOS` continua
+  valendo para apontar outra pasta de dados.
+- As chaves dos LLMs ficam no Cofre do Windows, compartilhado com o projeto: o que foi salvo pela
+  aba LLMs vale nos dois. Chave só no `.env` do projeto **não** chega ao .exe — salve-a na aba.
+- Usa o **Chrome instalado** (o Chromium do Playwright não vai no pacote).
+
 ## Escolhendo o LLM
 
 Quatro provedores: **Claude** (`anthropic`, padrão), **Ollama** (local e grátis), **OpenAI** e
@@ -124,7 +145,8 @@ outras; qualquer falha de leitura deixa screenshot + HTML em `artifacts/`.
 
 ## Sessão expirada
 
-Quando uma execução terminar com `login_required`, rode `uv run peao login` de novo. O
+Quando uma execução terminar com `login_required`, faça o login de novo: **Fazer login**
+na aba Fontes, ou `uv run peao login`. O
 `data/state.json` contém cookies de sessão: trate como senha e nunca versione (já está no
 `.gitignore`).
 

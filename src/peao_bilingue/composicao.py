@@ -11,7 +11,7 @@ from peao_bilingue.adaptadores.agendamento.windows import AgendadorWindows
 from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
 from peao_bilingue.adaptadores.persistencia.trava import TravaDeArquivo
 from peao_bilingue.aplicacao.execucao import Servicos
-from peao_bilingue.configuracao import DIRETORIO_DADOS, settings
+from peao_bilingue.configuracao import DIRETORIO_DADOS, PASTA_BASE, settings
 from peao_bilingue.dominio.agenda import Agendador
 from peao_bilingue.dominio.analise import ProvedorLLM
 from peao_bilingue.dominio.repositorio import Repositorio
@@ -55,6 +55,8 @@ def montar_llm(nome: str | None = None) -> ProvedorLLM:
 def ler_notas_do_perfil() -> str:
     """O complemento que o usuário escreve sobre si (`profile_notes.md`), se houver."""
     caminho = Path(settings.profile_notes_path)
+    # Relativo à pasta base: a do projeto, ou a do usuário no .exe.
+    caminho = caminho if caminho.is_absolute() else PASTA_BASE / caminho
     return caminho.read_text(encoding="utf-8") if caminho.exists() else ""
 
 

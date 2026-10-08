@@ -11,6 +11,7 @@ import pytest
 from peao_bilingue.adaptadores.agendamento.windows import (
     NOME_TAREFA,
     AgendadorWindows,
+    comando_da_coleta,
     executar_powershell,
 )
 from peao_bilingue.dominio.erros import ErroDeAgendamento
@@ -151,3 +152,22 @@ def test_powershell_travado_vira_erro_legivel(monkeypatch: pytest.MonkeyPatch) -
     with pytest.raises(ErroDeAgendamento, match="não respondeu") as erro:
         executar_powershell("Get-ScheduledTask")
     assert "Get-ScheduledTask" not in str(erro.value)  # o script não vaza na tela
+
+
+def test_no_projeto_a_tarefa_roda_o_pythonw_na_pasta_do_projeto(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delattr("sys.frozen", raising=False)
+    programa, argumentos, pasta = comando_da_coleta()
+    assert programa.name == "pythonw.exe"
+    assert argumentos == "-m peao_bilingue.cli run --agendado"
+    assert pasta == Path.cwd()
+
+
+def test_no_executavel_a_tarefa_roda_o_proprio_exe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    exe = Path(r"C:\Programas\PeaoBilingue\PeaoBilingue.exe")
+    monkeypatch.setattr("sys.frozen", True, raising=False)
+    monkeypatch.setattr("sys.executable", str(exe))
+    assert comando_da_coleta() == (exe, "run --agendado", exe.parent)

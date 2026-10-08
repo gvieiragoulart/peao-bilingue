@@ -20,12 +20,12 @@ perguntas de entrevista, gaps e o que melhorar no perfil (CV, LinkedIn, VanHack)
   nem mudar visibilidade.
 - **Hardware:** RTX 3050 Laptop com 6 GB de VRAM — limita o Ollama a modelos de 7–8B quantizados.
 
-## Estado atual (2026-10-07)
+## Estado atual (2026-10-08)
 
-**Fases 1 a 4 do novo roteiro concluídas**, mais a mudança de 07/10 pedida pelo Gabriel: a
+**Fases 1 a 5 e 8 do novo roteiro concluídas** (a 6 aguarda decisão; a 7 não começou), mais a mudança de 07/10 pedida pelo Gabriel: a
 coleta não chama LLM nenhum; cada vaga é analisada pelo botão **Analisar** da aba Vagas, com o
 LLM escolhido (Anthropic, Ollama, OpenAI, Gemini) e o **perfil da fonte** da vaga (cada fonte
-tem o seu). A triagem automática saiu. 201 testes offline; `ruff` e `mypy --strict` limpos.
+tem o seu). A triagem automática saiu. 244 testes offline; `ruff` e `mypy --strict` limpos.
 FastAPI, uvicorn e APScheduler saíram. Banco em `data/peao.db` (o antigo `watcher.db` ficou
 intocado) com 18 vagas reais, nenhuma analisada ainda. Três buscas cadastradas: Python,
 PHP/Laravel, React/TypeScript — sem `exclude`, porque filtrar "junior" descartaria vaga sênior
@@ -145,7 +145,8 @@ repositório guarda, deduplica e mostra histórico **por fonte**. Bancos antigos
 - **Tarefa** registrada pelo PowerShell 5.1 (`Register-ScheduledTask`; o `schtasks` não tem
   `-StartWhenAvailable`): diária, roda ao ligar o PC se a hora passou com ele desligado,
   `-MultipleInstances IgnoreNew`, limite de 2 h. Executa `.venv\Scripts\pythonw.exe -m
-  peao_bilingue.cli run --agendado` (coleta e avisa das vagas novas; nada de LLM) com a
+  peao_bilingue.cli run --agendado` (coleta e avisa das vagas novas; nada de LLM) — ou o
+  próprio `PeaoBilingue.exe run --agendado`, ver "Executável" — com a
   **pasta do projeto como diretório de trabalho** —
   `data/`, `.env` e `profile_notes.md` são relativos a ela. Nome da tarefa em ASCII: a saída
   do PowerShell 5.1 vem na página de código do console.
@@ -167,6 +168,28 @@ repositório guarda, deduplica e mostra histórico **por fonte**. Bancos antigos
 - **PC suspenso no meio da coleta:** o processo volta junto com o PC e o Playwright falha com
   `ERR_NETWORK_IO_SUSPENDED`; a execução fica registrada como erro (visto em 06/10). Sem
   `-WakeToRun` de propósito: acordar o notebook do usuário é invasivo.
+
+---
+
+## Executável (Fase 8)
+
+- `empacotamento/peao_bilingue.spec`, build com
+  `uv run --group empacotar pyinstaller empacotamento/peao_bilingue.spec --noconfirm` →
+  `dist/PeaoBilingue/PeaoBilingue.exe` (~170 MB, a maior parte o driver node do Playwright).
+  O PyInstaller fica no grupo `empacotar`, fora do `uv sync` normal e do CI.
+- **Um .exe para os dois papéis** (`inicio.py`): sem argumentos abre a janela, com argumentos é
+  a CLI. É de janela (`console=False`); a tarefa agendada roda `PeaoBilingue.exe run --agendado`
+  (`comando_da_coleta()` escolhe entre isso e o `pythonw` do projeto por `sys.frozen`).
+- **Dados em `%LOCALAPPDATA%\PeaoBilingue`** quando congelado (`configuracao.pasta_base()`):
+  `data/`, `.env`, `profile_notes.md` e `artifacts/` saem de lá, não da pasta do .exe nem do
+  diretório de trabalho. No projeto continua tudo relativo à pasta atual.
+- Entram à mão no spec: os submódulos de `peao_bilingue` (adapters são importados pelo registro),
+  os backends do `keyring` + metadata (achados por entry points), `win32ctypes.core` e o dialeto
+  `sqlite` do SQLAlchemy. O Chromium do Playwright **não** entra: usa o Chrome instalado.
+- **Bug achado pelo .exe (existia também no projeto):** se o `__aenter__` da VanHack falhava
+  depois de abrir o navegador (sessão expirada, desafio), o `async with` não chamava o
+  `__aexit__` e o Chrome + driver seguravam o processo — a coleta agendada com sessão vencida
+  nunca terminava (até o limite de 2 h). Agora o `__aenter__` fecha tudo antes de relançar.
 
 ---
 
@@ -371,7 +394,8 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `u
 - [ ] **Fase 7 — LinkedIn/Indeed:** opt-in, desligados por padrão, mesmas regras da VanHack. Os
       termos proíbem automação (risco de restrição da conta); se bloquearem, **não** escalar para
       evasão — a alternativa é ler os alertas de vaga por email (IMAP).
-- [ ] **Fase 8 (opcional) — `.exe`** com PyInstaller (sem empacotar Chromium: usa o Chrome).
+- [x] **Fase 8 — `.exe`** com PyInstaller, uma pasta, sem Chromium (ver "Executável").
+      Verificado sem Python/uv no PATH: janela abre, CLI coleta, o Agendador chama o .exe.
 
 Pendências que dependem do Gabriel (custam dinheiro ou exigem ação dele): primeira análise real
 pelo botão Analisar (com o Claude gasta crédito; com o Ollama é grátis, mas precisa instalar),

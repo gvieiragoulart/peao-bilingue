@@ -67,7 +67,10 @@ async def login_manual(aviso: Aviso) -> None:
 async def verificar_sessao(aviso: Aviso, *, headless: bool = True) -> int:
     """0 = sessão válida; 1 = sem sessão; 2 = bloqueado por desafio humano."""
     if not has_state():
-        aviso("Nenhuma sessão salva. Rode `uv run peao login` primeiro.")
+        aviso(
+            "Nenhuma sessão salva. Faça o login primeiro: “Fazer login” na aba Fontes, "
+            "ou `peao login`."
+        )
         return 1
 
     async with open_context(headless=headless) as contexto:
