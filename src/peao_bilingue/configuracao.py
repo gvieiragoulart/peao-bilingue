@@ -102,6 +102,9 @@ class Settings(BaseSettings):
 
     # Remotive (API pública): uma categoria por chamada; "software-dev" cobre dev.
     remotive_categoria: str = "software-dev"
+    # Himalayas (API pública): só vagas abertas a candidatos deste país (código ISO)
+    # ou ao mundo todo; vazio = sem filtro, inclusive vagas só para os EUA.
+    himalayas_pais: str = "BR"
 
     timezone: str = "America/Sao_Paulo"
     horario_coleta: str = "08:00"
