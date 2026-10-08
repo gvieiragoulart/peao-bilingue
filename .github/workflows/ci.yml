@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0  # sem tag móvel de major: versão exata
         with:
           version: "0.12.5"
           python-version: "3.12"
@@ -48,7 +48,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0  # sem tag móvel de major: versão exata
         with:
           version: "0.12.5"
           python-version: "3.12"
@@ -65,7 +65,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0  # sem tag móvel de major: versão exata
         with:
           version: "0.12.5"
           python-version: "3.12"
