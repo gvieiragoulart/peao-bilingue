@@ -13,6 +13,9 @@ from peao_bilingue.dominio.entidades import StatusVaga
 from peao_bilingue.ui.abas import vagas as aba_vagas
 from peao_bilingue.ui.app import ABAS, Aplicativo
 
+# Janela Tk de verdade (escondida): precisa de sessão gráfica.
+pytestmark = pytest.mark.integracao
+
 
 @pytest.fixture
 def janela(repositorio, monkeypatch):

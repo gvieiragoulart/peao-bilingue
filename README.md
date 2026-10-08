@@ -131,9 +131,15 @@ Quando uma execução terminar com `login_required`, rode `uv run peao login` de
 
 ```bash
 uv run pytest                         # todos offline: sem site, sem SMTP, sem LLM
+uv run pytest -m "not integracao"     # só unidade: segundos
+uv run pytest -m integracao           # Chromium, janela Tk, PowerShell, outro processo
 uv run ruff check . && uv run ruff format .
 uv run mypy                           # tipagem estrita do código em src/
 ```
 
 O pipeline inteiro é testado com dublês das portas e um SQLite em memória. Os adapters de
 scraping usam HTML real anonimizado em `tests/fixtures/<fonte>/`.
+
+**CI** (`.github/workflows/ci.yml`): todo PR e todo push na `main` rodam três jobs — lint e
+tipagem (ruff e mypy, no Linux), testes de unidade e testes de integração (no Windows, o SO do
+app; o de integração instala o Chromium do Playwright, com cache).

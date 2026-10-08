@@ -130,6 +130,7 @@ def test_tarefa_que_nunca_rodou_nao_tem_ultima_execucao():
     assert situacao.proxima_execucao is None
 
 
+@pytest.mark.integracao  # chama o PowerShell de verdade
 def test_erro_sem_mensagem_nunca_chega_vazio():
     # foi assim que o primeiro teste real falhou: código 1 e nenhuma saída
     with pytest.raises(ErroDeAgendamento, match="código 3"):

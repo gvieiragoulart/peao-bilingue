@@ -36,7 +36,11 @@ asyncio_mode = "auto"
 # handles de stdout/stderr do processo a cada fase do teste; o Tcl guarda esses
 # handles, e o Windows recicla os valores: a janela seguinte falhava ao ler os
 # próprios arquivos do Tcl ("Can't find a usable init.tcl"), de forma aleatória.
-addopts = "--capture=sys"
+addopts = "--capture=sys --strict-markers"
+markers = [
+    # Testes de unidade são o resto: dublês, SQLite em memória, HTTP local.
+    "integracao: usa componente real fora do Python — Chromium (Playwright), janela Tk, outro processo ou o PowerShell",
+]
 
 [tool.ruff]
 target-version = "py312"
@@ -60,6 +64,8 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.12"
+# O app é para Windows: o resultado não pode depender do SO de quem roda o mypy.
+platform = "win32"
 files = ["src"]
 strict = true
 warn_unreachable = true

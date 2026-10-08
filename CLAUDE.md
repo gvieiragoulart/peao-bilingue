@@ -338,6 +338,14 @@ uv run mypy                          # strict em src/ (configurado no pyproject)
 
 - Todos offline: dublês das portas, SQLite em memória, keyring em memória e `PEAO_DADOS`
   temporário (o `conftest.py` prepara isso **antes** de importar o projeto).
+- **Unidade × integração** pelo marcador `integracao` (`--strict-markers`: nome errado falha).
+  Integração = componente real fora do Python: Chromium do Playwright (todo teste com a fixture
+  `page` é marcado sozinho no `conftest.py`), janela Tk (`test_ui_app.py` inteiro), outro
+  processo (trava entre processos) e o PowerShell. O resto é unidade (~5 s).
+- **CI** em `.github/workflows/ci.yml`, em todo PR e push na `main`: `lint` (ruff + mypy, Linux;
+  o mypy é fixado em `platform = "win32"` para não depender do runner), `unidade` e
+  `integracao` (Windows; instala o Chromium com cache pela hash do `uv.lock`). Tudo com
+  `uv sync --locked`: `uv.lock` desatualizado quebra o CI de propósito.
 - **`--capture=sys` no `pyproject.toml` é obrigatório.** A captura padrão do pytest (fd) troca os
   handles de stdout/stderr do processo a cada fase; o Tcl guarda esses handles e o Windows recicla
   os valores, então a janela do teste seguinte falhava ao ler os próprios arquivos do Tcl
