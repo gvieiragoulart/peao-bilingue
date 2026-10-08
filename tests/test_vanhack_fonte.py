@@ -7,7 +7,8 @@ from playwright.async_api import Page
 
 from peao_bilingue.adaptadores.fontes.vanhack import detail, listing
 from peao_bilingue.adaptadores.fontes.vanhack.fonte import VanHack, _resumo, _vaga
-from peao_bilingue.dominio.portas import FonteDePerfil, FonteDeVagas
+from peao_bilingue.dominio.coleta import FonteDeVagas
+from peao_bilingue.dominio.perfil import FonteDePerfil
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures" / "vanhack"
 

@@ -6,7 +6,8 @@ from typing import Any, Literal
 import customtkinter as ctk
 
 from peao_bilingue.configuracao import SEGREDOS, Settings
-from peao_bilingue.dominio.portas import Notificador, ProvedorLLM
+from peao_bilingue.dominio.analise import ProvedorLLM
+from peao_bilingue.dominio.avisos import Notificador
 
 Tipo = Literal["texto", "inteiro", "booleano", "segredo", "opcoes"]
 

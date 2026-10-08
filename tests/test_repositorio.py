@@ -4,7 +4,9 @@ from pydantic import ValidationError
 from sqlmodel import create_engine
 
 from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
-from peao_bilingue.dominio.entidades import Busca, Gatilho, StatusExecucao, StatusVaga
+from peao_bilingue.dominio.buscas import Busca
+from peao_bilingue.dominio.coleta import Gatilho, StatusExecucao
+from peao_bilingue.dominio.vagas import StatusVaga
 
 # --- buscas -----------------------------------------------------------------
 

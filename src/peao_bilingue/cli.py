@@ -13,7 +13,8 @@ from peao_bilingue.composicao import (
     montar_servicos,
 )
 from peao_bilingue.configuracao import DIRETORIO_DADOS, settings
-from peao_bilingue.dominio.entidades import Busca, Gatilho, StatusExecucao
+from peao_bilingue.dominio.buscas import Busca
+from peao_bilingue.dominio.coleta import Gatilho, SessaoManual, StatusExecucao
 from peao_bilingue.dominio.erros import (
     ErroDeAgendamento,
     ExecucaoEmAndamento,
@@ -21,7 +22,6 @@ from peao_bilingue.dominio.erros import (
     NomeDesconhecido,
     ProvedorIndisponivel,
 )
-from peao_bilingue.dominio.portas import SessaoManual
 from peao_bilingue.textos import descrever_agenda
 
 ARQUIVO_DE_LOG = DIRETORIO_DADOS / "coleta.log"

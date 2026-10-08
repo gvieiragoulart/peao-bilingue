@@ -15,8 +15,8 @@ import httpx
 from peao_bilingue.adaptadores.fontes.api import FonteDeApi, Json
 from peao_bilingue.adaptadores.fontes.html import html_para_texto
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.entidades import Vaga
 from peao_bilingue.dominio.erros import ErroDeColeta
+from peao_bilingue.dominio.vagas import Vaga
 from peao_bilingue.fabricas import fontes
 
 URL = "https://remotive.com/api/remote-jobs"

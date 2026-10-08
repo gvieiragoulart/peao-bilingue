@@ -6,7 +6,8 @@ from dubles import FonteComPerfilFake, FonteFake, NotificadorFake
 
 from peao_bilingue.aplicacao import execucao
 from peao_bilingue.aplicacao.execucao import Servicos, executar
-from peao_bilingue.dominio.entidades import Busca, Gatilho, StatusExecucao
+from peao_bilingue.dominio.buscas import Busca
+from peao_bilingue.dominio.coleta import Gatilho, StatusExecucao
 from peao_bilingue.dominio.erros import (
     ErroDeColeta,
     ExecucaoEmAndamento,

@@ -7,7 +7,8 @@ from peao_bilingue import configuracao, fabricas
 from peao_bilingue.aplicacao.analise import analisar_vaga
 from peao_bilingue.composicao import ler_notas_do_perfil, montar_llm
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.entidades import JobAnalysis, StatusVaga, VagaListada
+from peao_bilingue.dominio.analise import JobAnalysis
+from peao_bilingue.dominio.vagas import StatusVaga, VagaListada
 from peao_bilingue.ui import apresentacao
 from peao_bilingue.ui.componentes import Tabela
 

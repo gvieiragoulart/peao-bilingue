@@ -1,6 +1,6 @@
 """Texto dos avisos de vagas novas. A análise não vai no aviso: é pedida no app."""
 
-from peao_bilingue.dominio.entidades import Vaga
+from peao_bilingue.dominio.vagas import Vaga
 
 LIMITE_WHATSAPP = 1_500
 

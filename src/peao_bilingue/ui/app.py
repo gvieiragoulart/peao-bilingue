@@ -9,7 +9,8 @@ from typing import Any
 import customtkinter as ctk
 
 from peao_bilingue.composicao import montar_agendador, montar_repositorio
-from peao_bilingue.dominio.portas import Agendador, RepositorioVagas
+from peao_bilingue.dominio.agenda import Agendador
+from peao_bilingue.dominio.repositorio import Repositorio
 from peao_bilingue.ui.abas.buscas import AbaBuscas
 from peao_bilingue.ui.abas.configuracoes import AbaConfiguracoes
 from peao_bilingue.ui.abas.execucoes import AbaExecucoes
@@ -36,7 +37,7 @@ ABAS: list[tuple[str, type[Any]]] = [
 class Aplicativo(ctk.CTk):
     def __init__(
         self,
-        repositorio: RepositorioVagas | None = None,
+        repositorio: Repositorio | None = None,
         executor: ExecutorAssincrono | None = None,
         agendador: Agendador | None = None,
     ) -> None:

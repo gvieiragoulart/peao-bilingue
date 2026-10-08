@@ -7,7 +7,8 @@ from peao_bilingue import configuracao
 from peao_bilingue.aplicacao.execucao import executar
 from peao_bilingue.composicao import montar_servicos
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.entidades import Execucao, Gatilho, SituacaoAgenda
+from peao_bilingue.dominio.agenda import SituacaoAgenda
+from peao_bilingue.dominio.coleta import Execucao, Gatilho
 from peao_bilingue.textos import descrever_agenda
 from peao_bilingue.ui import apresentacao
 from peao_bilingue.ui.componentes import Tabela

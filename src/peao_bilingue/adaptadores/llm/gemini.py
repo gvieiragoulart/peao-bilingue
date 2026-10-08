@@ -5,9 +5,8 @@ from google.genai import types
 from pydantic import BaseModel
 
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.entidades import Mensagem, RespostaLLM
+from peao_bilingue.dominio.analise import Mensagem, ProvedorLLM, RespostaLLM
 from peao_bilingue.dominio.erros import ProvedorIndisponivel
-from peao_bilingue.dominio.portas import ProvedorLLM
 from peao_bilingue.fabricas import llms
 
 # Motivos de término que significam recusa por política, não falha técnica.

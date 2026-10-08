@@ -8,8 +8,10 @@ import importlib
 from collections.abc import Callable
 from functools import cache
 
+from peao_bilingue.dominio.analise import ProvedorLLM
+from peao_bilingue.dominio.avisos import Notificador
+from peao_bilingue.dominio.coleta import FonteDeVagas
 from peao_bilingue.dominio.erros import NomeDesconhecido
-from peao_bilingue.dominio.portas import FonteDeVagas, Notificador, ProvedorLLM
 
 
 @cache

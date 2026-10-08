@@ -4,7 +4,7 @@ import customtkinter as ctk
 
 from peao_bilingue import fabricas
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.portas import FonteDePerfil
+from peao_bilingue.dominio.perfil import FonteDePerfil
 from peao_bilingue.ui.componentes import Tabela
 
 if TYPE_CHECKING:

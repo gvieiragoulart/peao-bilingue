@@ -5,20 +5,12 @@ from pathlib import Path
 import httpx
 from construtores import analise
 
-from peao_bilingue.dominio.entidades import (
-    Perfil,
-    RespostaLLM,
-    SituacaoAgenda,
-    Vaga,
-    VagaResumo,
-)
-from peao_bilingue.dominio.portas import (
-    Agendador,
-    FonteDePerfil,
-    FonteDeVagas,
-    Notificador,
-    ProvedorLLM,
-)
+from peao_bilingue.dominio.agenda import Agendador, SituacaoAgenda
+from peao_bilingue.dominio.analise import ProvedorLLM, RespostaLLM
+from peao_bilingue.dominio.avisos import Notificador
+from peao_bilingue.dominio.coleta import FonteDeVagas
+from peao_bilingue.dominio.perfil import FonteDePerfil, Perfil
+from peao_bilingue.dominio.vagas import Vaga, VagaResumo
 
 
 class FonteFake(FonteDeVagas):

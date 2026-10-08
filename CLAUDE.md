@@ -63,9 +63,17 @@ O banco evolui por **migração aditiva automática** (`_migrar` em `persistenci
 ```
 src/peao_bilingue/
 ├── dominio/
-│   ├── entidades.py   # VagaResumo, Vaga, Perfil, JobAnalysis, Busca, Execucao (pydantic, sem SQL)
-│   ├── portas.py      # ABCs: FonteDeVagas, FonteDePerfil, ProvedorLLM, Notificador,
-│   │                  #       RepositorioVagas, Trava, Agendador
+│   │                  # um módulo por subdomínio: entidades (pydantic, sem SQL) + portas (ABCs)
+│   ├── vagas.py       # Vaga, VagaResumo, Skill, StatusVaga, VagaListada · RepositorioVagas
+│   ├── buscas.py      # Busca · RepositorioBuscas
+│   ├── perfil.py      # Perfil · FonteDePerfil, RepositorioPerfis
+│   ├── analise.py     # JobAnalysis, AnaliseSalva, Mensagem, RespostaLLM · ProvedorLLM,
+│   │                  #   RepositorioAnalises
+│   ├── coleta.py      # Execucao, StatusExecucao, Gatilho · FonteDeVagas, SessaoManual, Trava,
+│   │                  #   RepositorioExecucoes
+│   ├── avisos.py      # Notificador
+│   ├── agenda.py      # SituacaoAgenda · Agendador
+│   ├── repositorio.py # Repositorio = as cinco portas de repositório juntas (UI e composição)
 │   └── erros.py       # SessaoExpirada, DesafioHumano, ErroDeColeta, AnaliseInvalida...
 ├── aplicacao/
 │   ├── execucao.py    # coleta: buscar → filtrar → guardar → avisar (sem LLM), com lock
@@ -382,8 +390,11 @@ Critérios pedidos: arquivos separados por domínio, SOLID, funções tipadas na
 - [x] **D** (inversão de dependência): `aplicacao/` não importa mais `configuracao` — o limite
       de detalhes vem em `Servicos.max_detalhes` e as notas do perfil em `notas=`; quem lê
       configuração e arquivo é a composição (`ler_notas_do_perfil`).
-- [ ] **Domínio em arquivos**: `dominio/entidades.py` e `dominio/portas.py` juntam todos os
-      subdomínios — separar (vagas, buscas, perfil, análise, coleta/execução, avisos, agenda).
-- [ ] **I** (interfaces enxutas): `RepositorioVagas` faz buscas, vagas, análises, perfis e
-      execuções — uma porta por agregado; `sqlite.py` (434 linhas) dividido junto (**S**).
+- [x] **Domínio em arquivos**: um módulo por subdomínio (vagas, buscas, perfil, análise,
+      coleta, avisos, agenda), cada um com suas entidades e portas; `entidades.py` e
+      `portas.py` saíram. O domínio não importa nada de fora dele.
+- [~] **I** (interfaces enxutas): a porta única virou cinco (`RepositorioBuscas`,
+      `RepositorioVagas`, `RepositorioAnalises`, `RepositorioPerfis`, `RepositorioExecucoes`).
+      **Falta:** cada caso de uso pedir só as que usa (hoje recebem `Repositorio`, a junção)
+      e dividir `sqlite.py` (434 linhas) por agregado (**S**).
 - [ ] Testes tipados (343 pendências no mypy estrito) e `tests/` no mypy do CI.

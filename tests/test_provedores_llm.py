@@ -15,9 +15,8 @@ from peao_bilingue.adaptadores.llm.gemini import Gemini
 from peao_bilingue.adaptadores.llm.ollama import Ollama
 from peao_bilingue.adaptadores.llm.openai import OpenAI
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.entidades import JobAnalysis, Mensagem
+from peao_bilingue.dominio.analise import JobAnalysis, Mensagem, ProvedorLLM
 from peao_bilingue.dominio.erros import ProvedorIndisponivel
-from peao_bilingue.dominio.portas import ProvedorLLM
 
 JSON = '{"ok": true}'
 CONVERSA = [
