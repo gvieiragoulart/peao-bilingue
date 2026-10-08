@@ -286,6 +286,16 @@ com a descrição **resumida** (o texto inteiro só no site, que não é raspado
 Salário em `salary_min`/`salary_max` (0 = não informado); `location` vem `""` quando a vaga não
 diz. 12 vagas na primeira coleta real (07/10).
 
+**Arbeitnow** (`GET https://www.arbeitnow.com/api/job-board-api?visa_sponsorship=true`). Termos
+(`meta.terms` da resposta e seção 11 dos termos do site): API gratuita, "não abuse", **linkar de
+volta** para o Arbeitnow; o acesso pode ser revogado. Limite de 50 chamadas
+(`X-RateLimit-Limit`). Só vagas **com patrocínio de visto** — o caminho de relocação, como na
+VanHack; a lista padrão é de vagas locais na Alemanha, muitas em alemão. Em 07/10: 312 vagas numa
+página só. `remote=true` é **ignorado** pela API. A descrição vem com o HTML **escapado**, às
+vezes só em parte (`&lt;p&gt;` dentro de tags de verdade): `descricao_em_texto` converte e, se
+sobrar tag de fechamento, converte de novo. `created_at` é epoch. Primeira coleta real (08/10):
+93 vagas casaram com as buscas, 15 novas (o limite por fonte).
+
 ---
 
 ## Roteiro
@@ -309,7 +319,7 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `u
 - [x] **Análise sob demanda e perfil por fonte** (pedido de 07/10): a coleta não chama LLM;
       botão Analisar com seletor de LLM e de perfil; um perfil por fonte; triagem e reanálise
       automática removidas; avisos viraram resumo das vagas novas após a coleta agendada.
-- [ ] **Fase 5 — APIs públicas:** ~~Remotive~~, ~~Remote OK~~ (feitos, 07/10), Arbeitnow, Himalayas,
+- [ ] **Fase 5 — APIs públicas:** ~~Remotive~~, ~~Remote OK~~, ~~Arbeitnow~~ (feitos, 07–08/10), Himalayas,
       We Work Remotely. Antes de cada uma: endpoint, limites e termos (ver "Fontes por API").
 - [ ] **Fase 6 — Sites brasileiros:** investigar endpoint e termos antes de implementar.
 - [ ] **Fase 7 — LinkedIn/Indeed:** opt-in, desligados por padrão, mesmas regras da VanHack. Os

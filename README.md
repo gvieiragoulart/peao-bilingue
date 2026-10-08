@@ -35,7 +35,7 @@ uma vaga usa, por padrão, o perfil da fonte dela. A coleta não chama LLM: nada
 clicar em Analisar.
 
 **Fontes disponíveis:** VanHack (login manual, lê o seu perfil), Remotive e Remote OK (APIs
-públicas de vagas remotas, sem conta). As APIs são consultadas uma vez por coleta, e a resposta
+públicas de vagas remotas, sem conta) e Arbeitnow (vagas na Alemanha com patrocínio de visto). As APIs são consultadas uma vez por coleta, e a resposta
 é reaproveitada por 6 horas — o Remotive pede no máximo ~4 consultas por dia. Cada vaga mantém
 o link original na fonte, como os termos delas pedem. Ligue as fontes na aba Fontes, ou só
 para uma coleta: `uv run peao run --fonte remoteok`.
