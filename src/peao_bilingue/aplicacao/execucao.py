@@ -10,7 +10,6 @@ import threading
 from dataclasses import dataclass, field
 
 from peao_bilingue.aplicacao import filtros
-from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import (
     Busca,
     Execucao,
@@ -60,6 +59,8 @@ class Servicos:
     fontes: list[FonteDeVagas]
     notificadores: list[Notificador] = field(default_factory=list)
     trava: Trava = field(default_factory=lambda: _TRAVA_DO_PROCESSO)
+    # Comportamento educado: no máximo tantas vagas abertas por fonte em cada coleta.
+    max_detalhes: int = 15
 
 
 @dataclass
@@ -118,7 +119,7 @@ async def _rodar(servicos: Servicos, execucao: Execucao, *, avisar: bool) -> Non
 
     estado = _Estado()
     for fonte in servicos.fontes:
-        await _coletar_da_fonte(repositorio, execucao, fonte, buscas, estado)
+        await _coletar_da_fonte(servicos, execucao, fonte, buscas, estado)
 
     # Uma fonte com problema não derruba as outras; só falha se todas falharem.
     if estado.excecoes and len(estado.excecoes) == len(servicos.fontes):
@@ -130,7 +131,7 @@ async def _rodar(servicos: Servicos, execucao: Execucao, *, avisar: bool) -> Non
 
 
 async def _coletar_da_fonte(
-    repositorio: RepositorioVagas,
+    servicos: Servicos,
     execucao: Execucao,
     fonte: FonteDeVagas,
     buscas: list[Busca],
@@ -138,8 +139,11 @@ async def _coletar_da_fonte(
 ) -> None:
     try:
         async with fonte:
+            repositorio = servicos.repositorio
             await _sincronizar_perfil(repositorio, fonte)
-            estado.novas += await _coletar(repositorio, execucao, fonte, buscas)
+            estado.novas += await _coletar(
+                repositorio, execucao, fonte, buscas, servicos.max_detalhes
+            )
     # Registrada; _rodar decide se é fatal.
     except Exception as falha:  # noqa: BLE001
         estado.excecoes.append(falha)
@@ -174,6 +178,7 @@ async def _coletar(
     execucao: Execucao,
     fonte: FonteDeVagas,
     buscas: list[Busca],
+    max_detalhes: int,
 ) -> list[Vaga]:
     aplicaveis = [
         busca for busca in buscas if filtros.aplica_a_fonte(busca, fonte.nome)
@@ -189,7 +194,7 @@ async def _coletar(
         r for chave, r in resumos.items() if not repositorio.vaga_existe(chave)
     ]
     novas = []
-    for resumo in desconhecidas[: settings.max_details_per_run]:
+    for resumo in desconhecidas[:max_detalhes]:
         vaga = await fonte.detalhar(resumo)
         casadas = filtros.buscas_que_casam(vaga, aplicaveis)
         if not casadas:

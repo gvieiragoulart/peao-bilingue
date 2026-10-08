@@ -5,11 +5,9 @@ O prompt, a validação e o retry ficam aqui, iguais para todos os provedores.
 
 import json
 import re
-from pathlib import Path
 
 from pydantic import BaseModel, ValidationError
 
-from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import JobAnalysis, Mensagem, Vaga
 from peao_bilingue.dominio.erros import AnaliseInvalida, PerfilAusente
 from peao_bilingue.dominio.portas import ProvedorLLM, RepositorioVagas
@@ -35,11 +33,6 @@ Regras da análise:
 Se a vaga não informa a empresa contratante, não invente o nome dela."""
 
 _CERCA_DE_CODIGO = re.compile(r"^```(?:json)?\s*|\s*```$")
-
-
-def _notas_do_usuario() -> str:
-    caminho = Path(settings.profile_notes_path)
-    return caminho.read_text(encoding="utf-8") if caminho.exists() else ""
 
 
 def montar_prompt(vaga: Vaga, perfil_texto: str, notas: str = "") -> str:
@@ -103,9 +96,10 @@ async def analisar(
     perfil_texto: str,
     provedor: ProvedorLLM,
     *,
-    notas: str | None = None,
+    notas: str = "",
 ) -> JobAnalysis:
-    notas = _notas_do_usuario() if notas is None else notas
+    """`notas`: complemento que o usuário escreve sobre si (vem de fora: a
+    aplicação não lê arquivo nem configuração)."""
     prompt = montar_prompt(vaga, perfil_texto, notas)
     return await gerar_validado(provedor, SISTEMA, prompt, JobAnalysis)
 
@@ -116,6 +110,7 @@ async def analisar_vaga(
     chave: str,
     *,
     perfil_de: str | None = None,
+    notas: str = "",
 ) -> JobAnalysis:
     """Analisa uma vaga guardada e grava a análise junto do perfil usado.
 
@@ -133,7 +128,7 @@ async def analisar_vaga(
             "ou escolha o perfil de outra fonte."
         )
     perfil_id, perfil = salvo
-    analise = await analisar(vaga, perfil.texto, provedor)
+    analise = await analisar(vaga, perfil.texto, provedor, notas=notas)
     repositorio.salvar_analise(
         chave,
         analise,
