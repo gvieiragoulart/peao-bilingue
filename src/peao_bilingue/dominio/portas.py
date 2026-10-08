@@ -18,10 +18,8 @@ from peao_bilingue.dominio.entidades import (
     Mensagem,
     Perfil,
     RespostaLLM,
-    ResultadoAnalise,
     SituacaoAgenda,
     StatusVaga,
-    TriagemSalva,
     Vaga,
     VagaListada,
     VagaResumo,
@@ -75,7 +73,8 @@ class FonteDeVagas(ABC):
 
 class FonteDePerfil(ABC):
     @abstractmethod
-    async def ler_perfil(self) -> Perfil: ...
+    async def ler_perfil(self) -> Perfil:
+        """O perfil cadastrado nesta fonte, com `fonte` igual ao nome dela."""
 
 
 class SessaoManual(ABC):
@@ -118,9 +117,8 @@ class Notificador(ABC):
     campos: ClassVar[dict[str, str]] = {}
 
     @abstractmethod
-    async def notificar(
-        self, resultados: list[ResultadoAnalise], *, perfil_mudou: bool
-    ) -> None: ...
+    async def notificar(self, vagas: list[Vaga]) -> None:
+        """Avisa das vagas novas de uma coleta. A análise fica no app."""
 
 
 class RepositorioVagas(ABC):
@@ -159,9 +157,6 @@ class RepositorioVagas(ABC):
     @abstractmethod
     def mudar_status(self, chave: str, status: StatusVaga) -> None: ...
 
-    @abstractmethod
-    def vagas_para_reanalisar(self, limite: int) -> list[Vaga]: ...
-
     # análises
     @abstractmethod
     def salvar_analise(
@@ -177,19 +172,20 @@ class RepositorioVagas(ABC):
     @abstractmethod
     def analise_vigente(self, chave: str) -> AnaliseSalva | None: ...
 
-    @abstractmethod
-    def salvar_triagem(self, chave: str, triagem: TriagemSalva) -> None: ...
-
-    # perfil
+    # perfil: um histórico por fonte
     @abstractmethod
     def salvar_perfil(self, perfil: Perfil) -> tuple[int, bool]:
-        """Grava um snapshot novo só se o conteúdo mudou. Devolve (id, mudou)."""
+        """Grava um snapshot novo só se o conteúdo mudou desde o último da mesma
+        fonte. Devolve (id, mudou)."""
 
     @abstractmethod
-    def ultimo_perfil(self) -> tuple[int, Perfil] | None: ...
+    def ultimo_perfil(self, fonte: str) -> tuple[int, Perfil] | None: ...
 
     @abstractmethod
-    def historico_perfil(self) -> list[dict]: ...
+    def historico_perfil(self, fonte: str) -> list[dict]: ...
+
+    @abstractmethod
+    def fontes_com_perfil(self) -> list[str]: ...
 
     # execuções
     @abstractmethod

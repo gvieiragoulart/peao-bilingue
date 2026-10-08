@@ -12,8 +12,6 @@ from peao_bilingue.dominio.entidades import (
     SituacaoAgenda,
     StatusExecucao,
     StatusVaga,
-    Triagem,
-    TriagemSalva,
     VagaListada,
 )
 from peao_bilingue.ui import apresentacao
@@ -21,23 +19,25 @@ from peao_bilingue.ui import apresentacao
 AGORA = datetime(2026, 10, 6, 9, 30, tzinfo=ZoneInfo("America/Sao_Paulo"))
 
 
-def listada(fit=None, triagem=None, **ajustes) -> VagaListada:
+def listada(fit=None, **ajustes) -> VagaListada:
     return VagaListada(
         vaga=vaga(**ajustes),
         status=StatusVaga.nova,
         fit_score=fit,
         buscas=["Python"],
         vista_em=AGORA,
-        triagem=triagem,
     )
 
 
-def barrada(nota=30) -> TriagemSalva:
-    return TriagemSalva(
-        triagem=Triagem(fit_score=nota, motivo="falta Go"),
-        provedor="ollama",
-        passou=False,
-    )
+def salva(**ajustes) -> AnaliseSalva:
+    base = {
+        "analise": analise(82),
+        "provedor": "anthropic",
+        "modelo": "claude-x",
+        "criada_em": AGORA,
+        "perfil_fonte": "vanhack",
+    }
+    return AnaliseSalva(**{**base, **ajustes})
 
 
 def test_linha_de_vaga_sem_analise_deixa_o_fit_vazio():
@@ -47,32 +47,39 @@ def test_linha_de_vaga_sem_analise_deixa_o_fit_vazio():
     assert linha[3] == "vanhack" and linha[4] == "nova"
 
 
-def test_linha_de_vaga_mostra_fit_e_triagem():
-    linha = apresentacao.linha_de_vaga(listada(fit=82, triagem=barrada(30)))
-    assert linha[0] == "82"
-    assert linha[5] == "30 (barrada)"
+def test_linha_de_vaga_mostra_o_fit():
+    assert apresentacao.linha_de_vaga(listada(fit=82))[0] == "82"
 
 
-def test_detalhe_com_analise_reaproveita_o_email_e_cita_o_provedor():
-    salva = AnaliseSalva(
-        analise=analise(82), provedor="anthropic", modelo="claude-x", criada_em=AGORA
-    )
-    texto = apresentacao.detalhe_da_vaga(listada(fit=82), salva)
+def test_detalhe_com_analise_cita_provedor_e_perfil_usado():
+    texto = apresentacao.detalhe_da_vaga(listada(fit=82), salva())
 
+    assert "Fit: 82/100" in texto
     assert "PERGUNTAS DE ENTREVISTA (20)" in texto
+    assert "20. Pergunta 20" in texto
+    for secao in ("RESUMO", "PREPARAÇÃO", "GAPS", "O QUE MELHORAR NO PERFIL"):
+        assert secao in texto
     assert "anthropic (claude-x)" in texto
     assert "06/10/2026 09:30" in texto
+    assert "com o perfil da fonte vanhack" in texto
+    assert "mudou depois" not in texto
 
 
-def test_detalhe_de_vaga_barrada_explica_o_motivo():
-    texto = apresentacao.detalhe_da_vaga(listada(triagem=barrada(30)), None)
-    assert "Barrada na triagem com nota 30" in texto
-    assert "falta Go" in texto
+def test_detalhe_avisa_quando_o_perfil_mudou_depois_da_analise():
+    texto = apresentacao.detalhe_da_vaga(listada(), salva(perfil_desatualizado=True))
+    assert "O perfil da fonte vanhack mudou depois desta análise" in texto
+
+
+def test_detalhe_cita_empresa_quando_a_fonte_publica():
+    texto = apresentacao.detalhe_da_vaga(listada(empresa="Acme Corp"), salva())
+    assert "Acme Corp" in texto
+
+
+def test_detalhe_de_vaga_nao_analisada_explica_como_analisar():
+    texto = apresentacao.detalhe_da_vaga(listada(), None)
+    assert "Ainda não analisada" in texto
+    assert "Analisar" in texto
     assert "DESCRIÇÃO" in texto
-
-
-def test_detalhe_de_vaga_nao_analisada():
-    assert "Ainda não analisada." in apresentacao.detalhe_da_vaga(listada(), None)
 
 
 def test_linha_de_busca():

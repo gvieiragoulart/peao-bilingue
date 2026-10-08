@@ -20,9 +20,7 @@ COLUNAS = [
     ("status", "Status", 110),
     ("listadas", "Listadas", 70),
     ("novas", "Novas", 60),
-    ("analisadas", "Analisadas", 80),
-    ("barradas", "Barradas", 70),
-    ("erro", "Erro", 340),
+    ("erro", "Erro", 440),
 ]
 LINHAS_DE_LOG = 2_000
 
@@ -34,12 +32,12 @@ class AbaExecucoes(ctk.CTkFrame):
 
         controles = ctk.CTkFrame(self, fg_color="transparent")
         controles.pack(fill="x", pady=(0, 8))
-        self.sem_analise = ctk.CTkSwitch(
-            controles, text="Só coletar (não gasta crédito)"
-        )
-        self.sem_analise.pack(side="left", padx=(0, 16))
-        self.simulacao = ctk.CTkSwitch(controles, text="Analisar sem enviar avisos")
-        self.simulacao.pack(side="left")
+        ctk.CTkLabel(
+            controles,
+            text="A coleta busca e guarda as vagas novas, sem chamar LLM: "
+            "analise as que quiser na aba Vagas.",
+            text_color="gray55",
+        ).pack(side="left")
         self.botao = ctk.CTkButton(
             controles, text="Coletar agora", width=140, command=self._coletar
         )
@@ -140,12 +138,9 @@ class AbaExecucoes(ctk.CTkFrame):
         self.log.configure(state="disabled")
 
     def _coletar(self) -> None:
-        so_coletar = bool(self.sem_analise.get())
         try:
-            servicos = montar_servicos(
-                analisar=not so_coletar, repositorio=self.app.repositorio
-            )
-        except Exception as falha:  # noqa: BLE001 - provedor mal configurado vira aviso
+            servicos = montar_servicos(repositorio=self.app.repositorio)
+        except Exception as falha:  # noqa: BLE001 - fonte mal configurada vira aviso
             self.app.mostrar_erro(falha)
             return
 
@@ -156,21 +151,17 @@ class AbaExecucoes(ctk.CTkFrame):
             self.botao.configure(state="normal", text="Coletar agora")
             self.app.ao_mudar_dados()
             self.app.registrar(
-                f"Coleta {execucao.status.value}: {execucao.vagas_novas} nova(s), "
-                f"{execucao.vagas_analisadas} analisada(s)."
+                f"Coleta {execucao.status.value}: {execucao.vagas_listadas} listada(s), "
+                f"{execucao.vagas_novas} nova(s)."
             )
 
         def falhar(falha: BaseException) -> None:
             self.botao.configure(state="normal", text="Coletar agora")
             self.app.mostrar_erro(falha)
 
+        # Sem avisos: quem pediu a coleta está olhando a tela.
         self.app.rodar(
-            executar(
-                servicos,
-                Gatilho.manual,
-                dry_run=bool(self.simulacao.get()) or None,
-                analisar_vagas=not so_coletar,
-            ),
+            executar(servicos, Gatilho.manual),
             ao_terminar=terminar,
             ao_falhar=falhar,
         )

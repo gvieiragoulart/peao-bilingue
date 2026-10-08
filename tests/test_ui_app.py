@@ -5,11 +5,12 @@ import time
 
 import pytest
 from construtores import analise, perfil, vaga
-from dubles import AgendadorFake
+from dubles import AgendadorFake, ProvedorFake
 
 from peao_bilingue import configuracao
 from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import StatusVaga
+from peao_bilingue.ui.abas import vagas as aba_vagas
 from peao_bilingue.ui.app import ABAS, Aplicativo
 
 
@@ -104,21 +105,21 @@ def test_busca_sem_palavra_chave_avisa(janela, repositorio):
 def test_salva_configuracao_dos_llms(janela):
     aba = janela.paineis["LLMs"]
     aba.geral._widgets["llm_analise"].set("ollama")
-    aba.geral._widgets["llm_triagem"].set("(nenhuma)")
     aba._salvar()
 
     gravado = json.loads(configuracao.CONFIG_PATH.read_text(encoding="utf-8"))
     assert gravado["llm_analise"] == "ollama"
-    assert gravado["llm_triagem"] is None  # "(nenhuma)" vira desligado
     assert settings.llm_analise == "ollama"
     assert (
         "anthropic_api_key" not in gravado
     )  # chave vai para o cofre, nunca para o arquivo
+    # o seletor da aba Vagas passa a mostrar o novo padrão
+    assert janela.paineis["Vagas"].llm.get() == "Ollama (local, grátis)"
 
 
 def test_inteiro_invalido_nas_configuracoes_nao_salva(janela):
     aba = janela.paineis["Configurações"]
-    campo = aba.limites._widgets["max_analyses_per_run"]
+    campo = aba.limites._widgets["max_details_per_run"]
     campo.delete(0, "end")
     campo.insert(0, "dez")
     aba._salvar()
@@ -138,6 +139,21 @@ def test_perfil_mostra_o_ultimo_snapshot(janela, repositorio):
     aba = janela.paineis["Perfil"]
     aba.atualizar()
     assert "Staff Engineer" in aba.texto.get("1.0", "end")
+
+
+def test_perfil_e_mostrado_por_fonte(janela, repositorio):
+    repositorio.salvar_perfil(perfil("Staff Engineer", fonte="vanhack"))
+    repositorio.salvar_perfil(perfil("Tech Lead", fonte="linkedin"))
+    aba = janela.paineis["Perfil"]
+
+    aba.fonte.set("linkedin")
+    aba.atualizar()
+    assert "Tech Lead" in aba.texto.get("1.0", "end")
+
+    aba.fonte.set("vanhack")
+    aba.atualizar()
+    assert "Staff Engineer" in aba.texto.get("1.0", "end")
+    assert "Tech Lead" not in aba.texto.get("1.0", "end")
 
 
 def processar_ate(janela, condicao, limite=5.0):
@@ -179,3 +195,73 @@ def test_horario_invalido_avisa(janela):
 
     assert processar_ate(janela, lambda: bool(janela.avisos["erros"]))
     assert janela.agendador.situacao() is None
+
+
+# --- análise pedida na tela -------------------------------------------------
+
+
+@pytest.fixture
+def llms_pedidos(monkeypatch) -> list[str]:
+    """Nenhum LLM de verdade: a tela recebe um dublê com o nome escolhido."""
+    pedidos: list[str] = []
+
+    def montar(nome):
+        pedidos.append(nome)
+        return ProvedorFake(fit=74, nome=nome)
+
+    monkeypatch.setattr(aba_vagas, "montar_llm", montar)
+    return pedidos
+
+
+def selecionar(janela, chave):
+    aba = janela.paineis["Vagas"]
+    aba.atualizar()
+    aba.tabela.arvore.selection_set(chave)
+    janela.update()
+    return aba
+
+
+def test_analisar_usa_o_llm_e_o_perfil_escolhidos(janela, repositorio, llms_pedidos):
+    repositorio.salvar_perfil(perfil("Staff Engineer"))
+    repositorio.salvar_vaga(vaga("1"), ["Python"])
+    aba = selecionar(janela, "vanhack:1")
+    assert aba.perfil.get() == "vanhack"  # por padrão, o da fonte da vaga
+
+    aba.llm.set("Ollama (local, grátis)")
+    aba._analisar()
+
+    assert processar_ate(
+        janela, lambda: "PERGUNTAS DE ENTREVISTA" in aba.detalhe.get("1.0", "end")
+    )
+    assert llms_pedidos == ["ollama"]
+    salva = repositorio.analise_vigente("vanhack:1")
+    assert (salva.analise.fit_score, salva.provedor, salva.perfil_fonte) == (
+        74,
+        "ollama",
+        "vanhack",
+    )
+    assert aba.botao_analisar.cget("state") == "normal"
+
+
+def test_analisar_sem_perfil_lido_explica_o_que_fazer(
+    janela, repositorio, llms_pedidos
+):
+    repositorio.salvar_vaga(vaga("1"), ["Python"])
+    aba = selecionar(janela, "vanhack:1")
+
+    aba._analisar()
+
+    assert processar_ate(janela, lambda: bool(janela.avisos["erros"]))
+    assert "aba Perfil" in janela.avisos["erros"][0]
+    assert repositorio.analise_vigente("vanhack:1") is None
+
+
+def test_analisar_sem_vaga_selecionada_avisa(janela, llms_pedidos):
+    janela.paineis["Vagas"]._analisar()
+    assert janela.avisos["erros"] == ["Selecione uma vaga para analisar."]
+    assert llms_pedidos == []
+
+
+def test_llm_escolhido_vira_o_padrao(janela):
+    janela.paineis["Vagas"]._lembrar_llm("Ollama (local, grátis)")
+    assert settings.llm_analise == "ollama"

@@ -1,7 +1,9 @@
 import pytest
 from construtores import analise, perfil, vaga
 from pydantic import ValidationError
+from sqlmodel import create_engine
 
+from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
 from peao_bilingue.dominio.entidades import Busca, Gatilho, StatusExecucao, StatusVaga
 
 # --- buscas -----------------------------------------------------------------
@@ -113,14 +115,6 @@ def test_mudar_status_de_vaga_inexistente_avisa(repositorio):
         repositorio.mudar_status("vanhack:999", StatusVaga.aplicada)
 
 
-def test_reanalise_pega_so_vagas_em_aberto(repositorio):
-    aberta = _com_analise(repositorio, "1")
-    fechada = _com_analise(repositorio, "2")
-    repositorio.mudar_status(fechada.chave, StatusVaga.descartada)
-
-    assert [v.chave for v in repositorio.vagas_para_reanalisar(10)] == [aberta.chave]
-
-
 # --- perfil -----------------------------------------------------------------
 
 
@@ -133,20 +127,85 @@ def test_perfil_so_grava_quando_o_conteudo_muda(repositorio):
 
     _, mudou = repositorio.salvar_perfil(perfil("Staff"))
     assert mudou is True
-    assert repositorio.ultimo_perfil()[1].dados == {"cargo": "Staff"}
+    assert repositorio.ultimo_perfil("vanhack")[1].dados == {"cargo": "Staff"}
 
 
-def test_historico_do_perfil_mostra_campos_alterados(repositorio):
+def test_cada_fonte_tem_o_proprio_perfil(repositorio):
+    repositorio.salvar_perfil(perfil("Staff", fonte="vanhack"))
+    # mesmo conteúdo em outra fonte: é outro perfil, não uma repetição
+    _, mudou = repositorio.salvar_perfil(perfil("Staff", fonte="linkedin"))
+    repositorio.salvar_perfil(perfil("Tech Lead", fonte="linkedin"))
+
+    assert mudou is True
+    assert repositorio.fontes_com_perfil() == ["linkedin", "vanhack"]
+    assert repositorio.ultimo_perfil("vanhack")[1].dados == {"cargo": "Staff"}
+    assert repositorio.ultimo_perfil("linkedin")[1].dados == {"cargo": "Tech Lead"}
+    assert repositorio.ultimo_perfil("linkedin")[1].fonte == "linkedin"
+
+
+def test_historico_do_perfil_e_por_fonte(repositorio):
     repositorio.salvar_perfil(perfil("Dev"))
+    repositorio.salvar_perfil(perfil("Outro", fonte="linkedin"))
     repositorio.salvar_perfil(perfil("Staff"))
 
-    [recente, antigo] = repositorio.historico_perfil()
+    [recente, antigo] = repositorio.historico_perfil("vanhack")
     assert recente["campos_alterados"] == ["cargo"]
     assert antigo["campos_alterados"] == ["cargo"]  # contra o vazio
+    assert len(repositorio.historico_perfil("linkedin")) == 1
 
 
 def test_sem_perfil_salvo_devolve_none(repositorio):
-    assert repositorio.ultimo_perfil() is None
+    assert repositorio.ultimo_perfil("vanhack") is None
+    assert repositorio.fontes_com_perfil() == []
+
+
+def test_analise_sabe_o_perfil_usado_e_se_ele_mudou_depois(repositorio):
+    perfil_id, _ = repositorio.salvar_perfil(perfil("Dev"))
+    nova = _com_analise(repositorio, "1")
+    repositorio.salvar_analise(
+        nova.chave, analise(70), provedor="fake", modelo="m", perfil_id=perfil_id
+    )
+    salva = repositorio.analise_vigente(nova.chave)
+    assert (salva.perfil_fonte, salva.perfil_desatualizado) == ("vanhack", False)
+
+    # perfil de outra fonte mudou: não afeta
+    repositorio.salvar_perfil(perfil("Outro", fonte="linkedin"))
+    assert repositorio.analise_vigente(nova.chave).perfil_desatualizado is False
+
+    repositorio.salvar_perfil(perfil("Staff"))
+    assert repositorio.analise_vigente(nova.chave).perfil_desatualizado is True
+
+
+def test_banco_antigo_ganha_a_fonte_do_perfil_e_continua_gravando(tmp_path):
+    # Como o data/peao.db de antes do perfil por fonte: perfil sem a coluna
+    # `fonte` e execucao com colunas NOT NULL que saíram do domínio.
+    engine = create_engine(f"sqlite:///{tmp_path / 'antigo.db'}")
+    with engine.begin() as conexao:
+        conexao.exec_driver_sql(
+            "CREATE TABLE perfil (id INTEGER PRIMARY KEY, dados JSON, "
+            "texto VARCHAR NOT NULL, content_hash VARCHAR NOT NULL, "
+            "lido_em DATETIME NOT NULL)"
+        )
+        conexao.exec_driver_sql(
+            "INSERT INTO perfil (dados, texto, content_hash, lido_em) "
+            "VALUES ('{\"cargo\": \"Dev\"}', 'Cargo: Dev', 'h1', '2026-10-06 10:00:00')"
+        )
+        conexao.exec_driver_sql(
+            "CREATE TABLE execucao (id INTEGER PRIMARY KEY, gatilho VARCHAR NOT NULL, "
+            "status VARCHAR NOT NULL, iniciada_em DATETIME NOT NULL, "
+            "finalizada_em DATETIME, vagas_listadas INTEGER NOT NULL, "
+            "vagas_novas INTEGER NOT NULL, vagas_analisadas INTEGER NOT NULL, "
+            "perfil_mudou BOOLEAN NOT NULL, erro VARCHAR, artefato VARCHAR)"
+        )
+
+    repositorio = RepositorioSQLite(engine)
+
+    assert repositorio.fontes_com_perfil() == ["vanhack"]
+    assert repositorio.ultimo_perfil("vanhack")[1].texto == "Cargo: Dev"
+    execucao = repositorio.iniciar_execucao(Gatilho.manual)  # o INSERT não quebra
+    execucao.status = StatusExecucao.ok
+    repositorio.finalizar_execucao(execucao)
+    assert repositorio.listar_execucoes()[0].status == StatusExecucao.ok
 
 
 # --- execuções --------------------------------------------------------------

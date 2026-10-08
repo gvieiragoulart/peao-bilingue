@@ -1,3 +1,8 @@
+"""Análise de uma vaga por um LLM, pedida pelo usuário vaga a vaga.
+
+O prompt, a validação e o retry ficam aqui, iguais para todos os provedores.
+"""
+
 import json
 import re
 from pathlib import Path
@@ -6,8 +11,8 @@ from pydantic import BaseModel, ValidationError
 
 from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import JobAnalysis, Mensagem, Vaga
-from peao_bilingue.dominio.erros import AnaliseInvalida
-from peao_bilingue.dominio.portas import ProvedorLLM
+from peao_bilingue.dominio.erros import AnaliseInvalida, PerfilAusente
+from peao_bilingue.dominio.portas import ProvedorLLM, RepositorioVagas
 
 TENTATIVAS = 3
 
@@ -103,3 +108,37 @@ async def analisar(
     notas = _notas_do_usuario() if notas is None else notas
     prompt = montar_prompt(vaga, perfil_texto, notas)
     return await gerar_validado(provedor, SISTEMA, prompt, JobAnalysis)
+
+
+async def analisar_vaga(
+    repositorio: RepositorioVagas,
+    provedor: ProvedorLLM,
+    chave: str,
+    *,
+    perfil_de: str | None = None,
+) -> JobAnalysis:
+    """Analisa uma vaga guardada e grava a análise junto do perfil usado.
+
+    O perfil é o cadastrado na fonte da própria vaga; `perfil_de` escolhe o de
+    outra fonte (o caminho para fontes sem perfil, como as APIs públicas).
+    """
+    vaga = repositorio.obter_vaga(chave)
+    if vaga is None:
+        raise LookupError(f"Vaga {chave} não encontrada.")
+    fonte = perfil_de or vaga.fonte
+    salvo = repositorio.ultimo_perfil(fonte)
+    if salvo is None:
+        raise PerfilAusente(
+            f"Nenhum perfil da fonte {fonte} foi lido ainda. Leia na aba Perfil "
+            "ou escolha o perfil de outra fonte."
+        )
+    perfil_id, perfil = salvo
+    analise = await analisar(vaga, perfil.texto, provedor)
+    repositorio.salvar_analise(
+        chave,
+        analise,
+        provedor=provedor.nome,
+        modelo=provedor.modelo,
+        perfil_id=perfil_id,
+    )
+    return analise

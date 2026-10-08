@@ -44,19 +44,16 @@ def main() -> None:
     check.add_argument("--fonte", default="vanhack")
     check.add_argument("--headed", action="store_true", help="mostra o navegador")
 
-    run = comandos.add_parser("run", help="executa uma coleta agora")
-    run.add_argument("--dry-run", action="store_true", help="analisa, mas não notifica")
-    run.add_argument(
-        "--sem-analise",
-        action="store_true",
-        help="só coleta e salva; não chama LLM nem notifica",
+    run = comandos.add_parser(
+        "run", help="coleta agora (sem LLM: a análise é pedida na interface)"
     )
     run.add_argument(
         "--fonte", action="append", help="limita a estas fontes (repetível)"
     )
-    run.add_argument("--llm", help="provedor de LLM para a análise")
     run.add_argument(
-        "--triagem", help="provedor barato que filtra antes da análise (ex.: ollama)"
+        "--avisar",
+        action="store_true",
+        help="manda o resumo das vagas novas, como a coleta agendada",
     )
     run.add_argument("--agendado", action="store_true", help=argparse.SUPPRESS)
 
@@ -144,27 +141,19 @@ def _executar_comando(args: argparse.Namespace) -> None:
 
 
 def _run(args: argparse.Namespace) -> None:
-    servicos = montar_servicos(
-        fontes=args.fonte,
-        llm=args.llm,
-        triagem=args.triagem,
-        analisar=not args.sem_analise,
-    )
+    servicos = montar_servicos(fontes=args.fonte)
     execucao = asyncio.run(
         executar(
             servicos,
             Gatilho.agendado if args.agendado else Gatilho.manual,
-            dry_run=args.dry_run or None,
-            analisar_vagas=not args.sem_analise,
+            # A coleta agendada roda sem ninguém olhando: é ela que avisa.
+            avisar=args.agendado or args.avisar,
         )
     )
     resumo = (
         f"Execução {execucao.id}: {execucao.status.value} — "
-        f"{execucao.vagas_listadas} listadas, {execucao.vagas_novas} novas, "
-        f"{execucao.vagas_analisadas} analisadas."
+        f"{execucao.vagas_listadas} listadas, {execucao.vagas_novas} novas."
     )
-    if execucao.vagas_barradas_na_triagem:
-        resumo += f" {execucao.vagas_barradas_na_triagem} barradas na triagem."
     logging.getLogger(__name__).info("%s", resumo)
     print(resumo)
     if execucao.erro:

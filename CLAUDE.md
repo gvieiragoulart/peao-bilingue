@@ -1,11 +1,12 @@
 # Peão Bilíngue
 
 Radar pessoal de vagas para o Gabriel: coleta vagas em vários sites, filtra por buscas
-configuráveis, analisa o encaixe de cada vaga nova com um LLM e avisa por email e WhatsApp.
-Vira app desktop Windows (CustomTkinter), com a coleta diária disparada pelo Agendador do Windows.
+configuráveis e avisa das vagas novas por email e WhatsApp. A análise de encaixe por LLM é
+**pedida vaga a vaga** no app, com o LLM e o perfil escolhidos na hora. App desktop Windows
+(CustomTkinter), com a coleta diária disparada pelo Agendador do Windows.
 
-Para cada vaga nova a análise traz: fit score (0–100), resumo do encaixe, passos de preparação,
-**exatamente 20** perguntas de entrevista, gaps e o que melhorar no perfil (CV, LinkedIn, VanHack).
+Cada análise traz: fit score (0–100), resumo do encaixe, passos de preparação, **exatamente 20**
+perguntas de entrevista, gaps e o que melhorar no perfil (CV, LinkedIn, VanHack).
 
 ## Contexto
 
@@ -21,14 +22,14 @@ Para cada vaga nova a análise traz: fit score (0–100), resumo do encaixe, pas
 
 ## Estado atual (2026-10-07)
 
-**Fases 1 a 4 do novo roteiro concluídas:** núcleo hexagonal, quatro provedores de LLM
-(Anthropic, Ollama, OpenAI, Gemini) com triagem opcional, o app desktop CustomTkinter
-(`uv run peao-ui`) e a coleta diária pelo Agendador do Windows; 198 testes offline, `ruff`
-limpo.
+**Fases 1 a 4 do novo roteiro concluídas**, mais a mudança de 07/10 pedida pelo Gabriel: a
+coleta não chama LLM nenhum; cada vaga é analisada pelo botão **Analisar** da aba Vagas, com o
+LLM escolhido (Anthropic, Ollama, OpenAI, Gemini) e o **perfil da fonte** da vaga (cada fonte
+tem o seu). A triagem automática saiu. 201 testes offline, `ruff` limpo.
 FastAPI, uvicorn e APScheduler saíram. Banco em `data/peao.db` (o antigo `watcher.db` ficou
-intocado) com 15 vagas da primeira coleta real. Três buscas cadastradas: Python, PHP/Laravel,
-React/TypeScript — sem `exclude`, porque filtrar "junior" descartaria vaga sênior que diz
-"mentor junior engineers".
+intocado) com 18 vagas reais, nenhuma analisada ainda. Três buscas cadastradas: Python,
+PHP/Laravel, React/TypeScript — sem `exclude`, porque filtrar "junior" descartaria vaga sênior
+que diz "mentor junior engineers".
 
 O banco evolui por **migração aditiva automática** (`_migrar` em `persistencia/sqlite.py`): o
 `create_all` não acrescenta colunas a tabelas existentes, então campo novo em model ganha
@@ -67,8 +68,8 @@ src/peao_bilingue/
 │   │                  #       RepositorioVagas, Trava, Agendador
 │   └── erros.py       # SessaoExpirada, DesafioHumano, ErroDeColeta, AnaliseInvalida...
 ├── aplicacao/
-│   ├── execucao.py    # caso de uso: coleta → filtro → análise → notificação, com lock
-│   ├── analise.py     # prompt, validação Pydantic e retry — agnóstico de provedor
+│   ├── execucao.py    # coleta: buscar → filtrar → guardar → avisar (sem LLM), com lock
+│   ├── analise.py     # análise sob demanda: prompt, validação e retry — agnóstico de provedor
 │   └── filtros.py     # keywords / exclude / fontes da busca
 ├── adaptadores/       # importar o pacote registra todos nas fábricas
 │   ├── fontes/vanhack/   # Playwright: auth, listing, detail, profile, selectors, sessao, fonte
@@ -115,10 +116,18 @@ adapters concretos.
 A vaga é guardada inteira em JSON (`VagaTabela.dados`); campos próprios de cada fonte vão em
 `Vaga.extras`.
 
-**Execução:** fontes rodam uma por vez (um navegador aberto de cada vez). Uma fonte que falha
-não derruba as outras — vira "Falhas parciais" na execução; só falha tudo se todas falharem.
-Uma análise inválida ou um notificador fora do ar também não perdem o resto. O perfil vem da
-primeira fonte que implementa `FonteDePerfil`; se a leitura falhar, usa o último snapshot salvo.
+**Coleta (`executar`):** buscar → filtrar → guardar → avisar; **não chama LLM**. Fontes rodam
+uma por vez (um navegador aberto de cada vez). Uma fonte que falha não derruba as outras — vira
+"Falhas parciais" na execução; só falha tudo se todas falharem. Cada fonte que implementa
+`FonteDePerfil` lê e guarda **o próprio perfil** a cada coleta; se a leitura falhar, fica o
+último salvo dela. **Avisos** (resumo das vagas novas: título, fonte, link) só com
+`avisar=True` — a coleta agendada e `peao run --avisar`; a do botão não avisa, porque quem
+pediu está olhando. Aviso que falha também vira "Falhas parciais" (as vagas ficam salvas). Os
+canais começam desligados (`NOTIFICADORES=[]`): ligado sem estar preenchido, todo aviso falharia.
+
+**Perfil por fonte:** o perfil cadastrado na VanHack não é o do LinkedIn. `Perfil.fonte`; o
+repositório guarda, deduplica e mostra histórico **por fonte**. Bancos antigos ganharam a coluna
+`fonte` com `vanhack` (era a única fonte com perfil) — conferido numa cópia do banco real.
 
 ---
 
@@ -127,7 +136,8 @@ primeira fonte que implementa `FonteDePerfil`; se a leitura falhar, usa o últim
 - **Tarefa** registrada pelo PowerShell 5.1 (`Register-ScheduledTask`; o `schtasks` não tem
   `-StartWhenAvailable`): diária, roda ao ligar o PC se a hora passou com ele desligado,
   `-MultipleInstances IgnoreNew`, limite de 2 h. Executa `.venv\Scripts\pythonw.exe -m
-  peao_bilingue.cli run --agendado` com a **pasta do projeto como diretório de trabalho** —
+  peao_bilingue.cli run --agendado` (coleta e avisa das vagas novas; nada de LLM) com a
+  **pasta do projeto como diretório de trabalho** —
   `data/`, `.env` e `profile_notes.md` são relativos a ela. Nome da tarefa em ASCII: a saída
   do PowerShell 5.1 vem na página de código do console.
 - **Script sempre com `$ErrorActionPreference = 'Stop'` e `exit 0` no fim.** Sem isso,
@@ -153,6 +163,12 @@ primeira fonte que implementa `FonteDePerfil`; se a leitura falhar, usa o últim
 
 ## Análise com LLMs
 
+- **Sob demanda:** `analisar_vaga(repositorio, provedor, chave, perfil_de=None)`, chamada pelo
+  botão Analisar da aba Vagas. Usa o perfil da **fonte da vaga**; o seletor de perfil escolhe o
+  de outra fonte (o caminho para fontes sem perfil, como as APIs públicas da Fase 5). Sem perfil
+  lido → `PerfilAusente`, antes de gastar com o LLM. A análise guarda o `perfil_id`: quando a
+  mesma fonte ganha snapshot mais novo, `AnaliseSalva.perfil_desatualizado` e a tela sugere
+  analisar de novo — não há mais reanálise automática.
 - O provedor só traduz a chamada (`gerar_json(sistema, mensagens, schema)` → texto JSON ou
   recusa). **Validação e retry ficam em `aplicacao/analise.py`**, iguais para todos.
 - **Nenhum provedor garante `minItems`/`maxItems` no servidor.** Na Anthropic, o
@@ -175,11 +191,8 @@ primeira fonte que implementa `FonteDePerfil`; se a leitura falhar, usa o últim
   chega como resposta sem texto e `finish_reason` `SAFETY`/`PROHIBITED_CONTENT`/`BLOCKLIST`.
 - **OpenAI e Gemini não têm modelo padrão** (`OPENAI_MODELO`/`GEMINI_MODELO` obrigatórios): o
   catálogo muda e um nome inventado só falharia na hora de rodar.
-- **Triagem** (`aplicacao/triagem.py`, `LLM_TRIAGEM` + `LIMIAR_TRIAGEM`): nota rápida nas vagas
-  novas; só as acima do limiar vão para a análise completa. Resultado salvo na vaga. Formato
-  inválido **deixa passar** (perder vaga boa custa mais que uma análise); provedor fora do ar
-  **derruba a execução** (mandar tudo para o provedor pago é o gasto que a triagem evita).
-  Reanálises não passam pela triagem.
+- **Triagem removida em 07/10:** com a análise pedida vaga a vaga, o filtro automático por LLM
+  barato perdeu a razão de existir.
 - **Antes de escrever um adapter novo:** conferir a API no SDK instalado (introspecção) e na doc
   oficial. Nunca supor nome de método ou parâmetro.
 - Prompt em PT-BR; `melhorias_perfil` cita itens concretos do perfil, não conselho genérico.
@@ -237,9 +250,9 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, co
 - [x] **Fase 1 — Núcleo hexagonal.** Domínio, portas, fábricas, composição; VanHack e Anthropic
       como adapters; FastAPI/APScheduler removidos; bug da listagem corrigido (busca vazia e
       renderização lenta); evidência salva em qualquer falha de leitura.
-- [x] **Fase 2 — LLMs:** Ollama, OpenAI, Gemini; provedor de triagem separado do de análise;
-      contrato comum testado contra os quatro. **Falta validar contra os serviços reais:** o
-      Ollama não está instalado na máquina, e OpenAI/Gemini precisam de chave.
+- [x] **Fase 2 — LLMs:** Ollama, OpenAI, Gemini; contrato comum testado contra os quatro.
+      **Falta validar contra os serviços reais:** o Ollama não está instalado na máquina, e
+      OpenAI/Gemini precisam de chave.
 - [x] **Fase 3 — UI CustomTkinter:** abas Vagas/Buscas/Fontes/LLMs/Perfil/Execuções/
       Configurações; executor assíncrono em thread própria; segredos no cofre; janela conferida
       por captura de tela (corrigidos botões cortados e coluna fora da borda). A descrição da vaga
@@ -248,6 +261,9 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, co
       entre processos com `filelock`; SQLite em WAL; execuções órfãs encerradas. Verificado de
       ponta a ponta: a tarefa roda o `pythonw` na pasta certa, grava em `coleta.log`, e app e
       tarefa se excluem. Corrigido de quebra o teste de interface intermitente (ver "Testes").
+- [x] **Análise sob demanda e perfil por fonte** (pedido de 07/10): a coleta não chama LLM;
+      botão Analisar com seletor de LLM e de perfil; um perfil por fonte; triagem e reanálise
+      automática removidas; avisos viraram resumo das vagas novas após a coleta agendada.
 - [ ] **Fase 5 — APIs públicas:** Remotive, RemoteOK, Arbeitnow, Himalayas, We Work Remotely.
 - [ ] **Fase 6 — Sites brasileiros:** investigar endpoint e termos antes de implementar.
 - [ ] **Fase 7 — LinkedIn/Indeed:** opt-in, desligados por padrão, mesmas regras da VanHack. Os
@@ -255,9 +271,10 @@ Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, co
       evasão — a alternativa é ler os alertas de vaga por email (IMAP).
 - [ ] **Fase 8 (opcional) — `.exe`** com PyInstaller (sem empacotar Chromium: usa o Chrome).
 
-Pendências que dependem do Gabriel (custam dinheiro ou exigem ação dele): análise real
-(`peao run --dry-run`, gasta crédito), email de teste real (SMTP no `.env`), e editar o perfil na
-VanHack para validar a reanálise.
+Pendências que dependem do Gabriel (custam dinheiro ou exigem ação dele): primeira análise real
+pelo botão Analisar (com o Claude gasta crédito; com o Ollama é grátis, mas precisa instalar),
+aviso real por email (preencher o SMTP, ligar o canal em Configurações e rodar
+`peao run --avisar`), e editar o perfil na VanHack para ver o aviso de perfil desatualizado.
 
 ---
 
@@ -270,11 +287,9 @@ uv run peao login                    # login manual na VanHack (--fonte para out
 uv run peao check                    # a sessão salva ainda vale?
 uv run peao buscas                   # lista; `buscas adicionar NOME kw1 kw2 --exclude x`
 uv run peao adaptadores              # fontes, LLMs e notificadores registrados
-uv run peao run --sem-analise        # só coleta e salva; não chama LLM (não gasta crédito)
-uv run peao run --dry-run            # analisa, mas não notifica
-uv run peao run --fonte vanhack --llm anthropic
-uv run peao run --dry-run --llm ollama               # análise local, grátis
-uv run peao run --triagem ollama --llm anthropic     # Ollama filtra, Claude analisa
+uv run peao run                      # coleta e salva; não chama LLM (análise é no app)
+uv run peao run --fonte vanhack      # só uma fonte
+uv run peao run --avisar             # também manda o resumo das vagas novas
 uv run peao agenda                   # situação da coleta diária
 uv run peao agenda ativar --horario 08:00            # ou `agenda desativar`
 uv run pytest

@@ -59,6 +59,8 @@ class Vaga(VagaResumo):
 
 
 class Perfil(BaseModel):
+    # Cada fonte tem o seu: o perfil cadastrado na VanHack não é o do LinkedIn.
+    fonte: str
     dados: dict
     texto: str  # versão legível, usada no prompt
     content_hash: str
@@ -77,13 +79,6 @@ class JobAnalysis(BaseModel):
     perguntas: list[str] = Field(min_length=20, max_length=20)
     gaps: list[str]
     melhorias_perfil: list[str] = Field(min_length=3)
-
-
-class Triagem(BaseModel):
-    """Nota rápida de um LLM barato, para decidir se vale a análise completa."""
-
-    fit_score: int = Field(ge=0, le=100)
-    motivo: str = Field(min_length=1)
 
 
 class Mensagem(BaseModel):
@@ -119,12 +114,9 @@ class AnaliseSalva(BaseModel):
     provedor: str
     modelo: str
     criada_em: datetime
-
-
-class TriagemSalva(BaseModel):
-    triagem: Triagem
-    provedor: str
-    passou: bool
+    # De qual fonte veio o perfil usado e se ele mudou depois da análise.
+    perfil_fonte: str | None = None
+    perfil_desatualizado: bool = False
 
 
 class VagaListada(BaseModel):
@@ -133,8 +125,6 @@ class VagaListada(BaseModel):
     fit_score: int | None
     buscas: list[str]
     vista_em: datetime
-    # Sem análise e com triagem reprovada: explica por que a vaga ficou de fora.
-    triagem: TriagemSalva | None = None
 
 
 class Execucao(BaseModel):
@@ -145,9 +135,6 @@ class Execucao(BaseModel):
     finalizada_em: datetime | None = None
     vagas_listadas: int = 0
     vagas_novas: int = 0
-    vagas_analisadas: int = 0
-    vagas_barradas_na_triagem: int = 0
-    perfil_mudou: bool = False
     erro: str | None = None
     artefato: str | None = None
 
@@ -159,9 +146,3 @@ class SituacaoAgenda(BaseModel):
     ultima_execucao: datetime | None = None
     # Código de saída da última execução (0 = sucesso), como o Windows informa.
     ultimo_resultado: int | None = None
-
-
-class ResultadoAnalise(BaseModel):
-    vaga: Vaga
-    analise: JobAnalysis
-    fit_anterior: int | None = None

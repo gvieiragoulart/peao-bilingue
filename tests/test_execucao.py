@@ -2,11 +2,11 @@ import asyncio
 
 import pytest
 from construtores import perfil, vaga
-from dubles import FonteComPerfilFake, FonteFake, NotificadorFake, ProvedorFake
+from dubles import FonteComPerfilFake, FonteFake, NotificadorFake
 
 from peao_bilingue.aplicacao import execucao
-from peao_bilingue.aplicacao.execucao import Servicos, executar, reanalisar_vaga
-from peao_bilingue.dominio.entidades import Busca, Gatilho, RespostaLLM, StatusExecucao
+from peao_bilingue.aplicacao.execucao import Servicos, executar
+from peao_bilingue.dominio.entidades import Busca, Gatilho, StatusExecucao
 from peao_bilingue.dominio.erros import (
     ErroDeColeta,
     ExecucaoEmAndamento,
@@ -16,11 +16,10 @@ from peao_bilingue.dominio.erros import (
 PYTHON = Busca(nome="Python", keywords=["python"])
 
 
-def servicos(repositorio, *fontes, provedor=None, notificador=None) -> Servicos:
+def servicos(repositorio, *fontes, notificador=None) -> Servicos:
     return Servicos(
         repositorio=repositorio,
         fontes=list(fontes),
-        analise=provedor or ProvedorFake(),
         notificadores=[notificador] if notificador else [],
     )
 
@@ -39,7 +38,7 @@ async def test_salva_so_as_vagas_que_casam_com_a_busca(com_busca):
         ]
     )
 
-    resultado = await executar(servicos(com_busca, fonte), analisar_vagas=False)
+    resultado = await executar(servicos(com_busca, fonte))
 
     assert resultado.status == StatusExecucao.ok
     assert resultado.vagas_listadas == 2
@@ -48,51 +47,95 @@ async def test_salva_so_as_vagas_que_casam_com_a_busca(com_busca):
     assert not fonte.aberta  # o recurso da fonte foi fechado
 
 
+async def test_coleta_nao_analisa_nada(com_busca):
+    # a análise é pedida vaga a vaga, na interface
+    await executar(servicos(com_busca, FonteComPerfilFake(perfil(), vagas=[vaga("1")])))
+    assert com_busca.analise_vigente("fake:1") is None
+
+
 async def test_nao_detalha_de_novo_vaga_ja_conhecida(com_busca):
     com_busca.salvar_vaga(vaga("1", fonte="fake"), ["Python"])
     fonte = FonteFake(vagas=[vaga("1", fonte="fake"), vaga("2", fonte="fake")])
 
-    await executar(servicos(com_busca, fonte), analisar_vagas=False)
+    await executar(servicos(com_busca, fonte))
 
     assert fonte.detalhadas == ["2"]
 
 
-async def test_sem_analise_nao_chama_o_llm(com_busca):
-    provedor = ProvedorFake()
+async def test_coleta_com_aviso_manda_as_vagas_novas(com_busca):
+    notificador = NotificadorFake()
+    fonte = FonteFake(vagas=[vaga("1"), vaga("2")])
+
     await executar(
-        servicos(com_busca, FonteFake(vagas=[vaga("1")]), provedor=provedor),
-        analisar_vagas=False,
+        servicos(com_busca, fonte, notificador=notificador),
+        Gatilho.agendado,
+        avisar=True,
     )
-    assert provedor.chamadas == []
+
+    [vagas] = notificador.recebido
+    assert [v.chave for v in vagas] == ["fake:1", "fake:2"]
 
 
-async def test_analisa_salva_e_notifica(com_busca):
+async def test_coleta_pelo_app_nao_avisa(com_busca):
     notificador = NotificadorFake()
-    fonte = FonteComPerfilFake(perfil(), vagas=[vaga("1")])
-
-    resultado = await executar(
-        servicos(com_busca, fonte, notificador=notificador), dry_run=False
+    await executar(
+        servicos(com_busca, FonteFake(vagas=[vaga("1")]), notificador=notificador)
     )
-
-    assert resultado.vagas_analisadas == 1
-    salva = com_busca.analise_vigente("fake:1")
-    assert salva.analise.fit_score == 82 and salva.provedor == "fake"
-    [(resultados, perfil_mudou)] = notificador.recebido
-    assert (
-        len(resultados) == 1 and perfil_mudou is True
-    )  # primeiro snapshot conta como mudança
-
-
-async def test_dry_run_analisa_mas_nao_notifica(com_busca):
-    notificador = NotificadorFake()
-    fonte = FonteComPerfilFake(perfil(), vagas=[vaga("1")])
-
-    resultado = await executar(
-        servicos(com_busca, fonte, notificador=notificador), dry_run=True
-    )
-
-    assert resultado.vagas_analisadas == 1
     assert notificador.recebido == []
+
+
+async def test_sem_vagas_novas_nao_avisa(com_busca):
+    com_busca.salvar_vaga(vaga("1", fonte="fake"), ["Python"])
+    notificador = NotificadorFake()
+
+    await executar(
+        servicos(com_busca, FonteFake(vagas=[vaga("1")]), notificador=notificador),
+        avisar=True,
+    )
+
+    assert notificador.recebido == []
+
+
+async def test_aviso_que_falha_fica_registrado_e_as_vagas_ficam(com_busca):
+    notificador = NotificadorFake(falha=ConnectionError("SMTP fora"))
+
+    resultado = await executar(
+        servicos(com_busca, FonteFake(vagas=[vaga("1")]), notificador=notificador),
+        avisar=True,
+    )
+
+    assert resultado.status == StatusExecucao.ok
+    assert "aviso por fake: SMTP fora" in resultado.erro
+    assert com_busca.vaga_existe("fake:1")
+
+
+async def test_cada_fonte_guarda_o_proprio_perfil(com_busca):
+    vanhack = FonteComPerfilFake(perfil("Staff"), nome="vanhack")
+    linkedin = FonteComPerfilFake(perfil("Tech Lead"), nome="linkedin")
+
+    await executar(servicos(com_busca, vanhack, linkedin))
+
+    assert com_busca.fontes_com_perfil() == ["linkedin", "vanhack"]
+    assert com_busca.ultimo_perfil("vanhack")[1].dados == {"cargo": "Staff"}
+    assert com_busca.ultimo_perfil("linkedin")[1].dados == {"cargo": "Tech Lead"}
+
+
+async def test_falha_ao_ler_o_perfil_nao_derruba_a_coleta(com_busca):
+    fonte = FonteComPerfilFake(
+        perfil(), vagas=[vaga("1")], falha_no_perfil=RuntimeError("página mudou")
+    )
+
+    resultado = await executar(servicos(com_busca, fonte))
+
+    assert resultado.status == StatusExecucao.ok
+    assert com_busca.vaga_existe("fake:1")
+    assert com_busca.fontes_com_perfil() == []
+
+
+async def test_sessao_expirada_ao_ler_o_perfil_vira_login_required(com_busca):
+    fonte = FonteComPerfilFake(perfil(), falha_no_perfil=SessaoExpirada("faça login"))
+    resultado = await executar(servicos(com_busca, fonte))
+    assert resultado.status == StatusExecucao.login_required
 
 
 async def test_fonte_que_falha_nao_derruba_as_outras(com_busca):
@@ -101,7 +144,7 @@ async def test_fonte_que_falha_nao_derruba_as_outras(com_busca):
     )
     boa = FonteFake(nome="boa", vagas=[vaga("1", fonte="boa")])
 
-    resultado = await executar(servicos(com_busca, quebrada, boa), analisar_vagas=False)
+    resultado = await executar(servicos(com_busca, quebrada, boa))
 
     assert resultado.status == StatusExecucao.ok
     assert resultado.vagas_novas == 1
@@ -111,85 +154,16 @@ async def test_fonte_que_falha_nao_derruba_as_outras(com_busca):
 
 async def test_se_todas_as_fontes_falham_a_execucao_falha(com_busca):
     fonte = FonteFake(falha=ErroDeColeta("fora do ar"))
-    resultado = await executar(servicos(com_busca, fonte), analisar_vagas=False)
+    resultado = await executar(servicos(com_busca, fonte))
     assert resultado.status == StatusExecucao.erro
 
 
 async def test_sessao_expirada_vira_login_required(com_busca):
     fonte = FonteFake(falha=SessaoExpirada("rode peao login"))
-    resultado = await executar(servicos(com_busca, fonte), analisar_vagas=False)
+    resultado = await executar(servicos(com_busca, fonte))
 
     assert resultado.status == StatusExecucao.login_required
     assert "peao login" in resultado.erro
-
-
-async def test_perfil_alterado_reanalisa_vagas_em_aberto_com_fit_anterior(com_busca):
-    notificador = NotificadorFake()
-    fonte_v1 = FonteComPerfilFake(perfil("Dev"), vagas=[vaga("1")])
-    await executar(
-        servicos(com_busca, fonte_v1, provedor=ProvedorFake(fit=60)), dry_run=False
-    )
-
-    # mesmo conjunto de vagas, perfil novo: nada novo para coletar, só reanálise
-    fonte_v2 = FonteComPerfilFake(perfil("Staff"), vagas=[vaga("1")])
-    resultado = await executar(
-        servicos(
-            com_busca, fonte_v2, provedor=ProvedorFake(fit=88), notificador=notificador
-        ),
-        dry_run=False,
-    )
-
-    assert resultado.perfil_mudou is True
-    [(resultados, _)] = notificador.recebido
-    assert resultados[0].fit_anterior == 60 and resultados[0].analise.fit_score == 88
-
-
-async def test_perfil_igual_nao_dispara_reanalise(com_busca):
-    fonte = FonteComPerfilFake(perfil("Dev"), vagas=[vaga("1")])
-    await executar(servicos(com_busca, fonte), dry_run=True)
-
-    provedor = ProvedorFake()
-    resultado = await executar(
-        servicos(com_busca, fonte, provedor=provedor), dry_run=True
-    )
-
-    assert resultado.perfil_mudou is False
-    assert provedor.chamadas == []
-
-
-async def test_sem_perfil_nenhum_a_analise_falha_com_mensagem_clara(com_busca):
-    resultado = await executar(
-        servicos(com_busca, FonteFake(vagas=[vaga("1")])), dry_run=True
-    )
-
-    assert resultado.status == StatusExecucao.erro
-    assert "Sem perfil" in resultado.erro
-
-
-async def test_analise_invalida_de_uma_vaga_nao_derruba_as_outras(com_busca):
-    invalidas = [RespostaLLM(texto="{}")] * 3  # esgota as tentativas da primeira vaga
-    provedor = ProvedorFake(respostas=invalidas)
-    fonte = FonteComPerfilFake(perfil(), vagas=[vaga("1"), vaga("2")])
-
-    resultado = await executar(
-        servicos(com_busca, fonte, provedor=provedor), dry_run=True
-    )
-
-    assert resultado.status == StatusExecucao.ok
-    assert resultado.vagas_analisadas == 1
-    assert "análise de fake:1" in resultado.erro
-
-
-async def test_notificador_que_falha_nao_perde_a_analise(com_busca):
-    fonte = FonteComPerfilFake(perfil(), vagas=[vaga("1")])
-    notificador = NotificadorFake(falha=ConnectionError("SMTP fora"))
-
-    resultado = await executar(
-        servicos(com_busca, fonte, notificador=notificador), dry_run=False
-    )
-
-    assert resultado.status == StatusExecucao.ok
-    assert com_busca.analise_vigente("fake:1") is not None
 
 
 async def test_sem_buscas_ativas_nao_abre_nenhuma_fonte(repositorio):
@@ -199,7 +173,7 @@ async def test_sem_buscas_ativas_nao_abre_nenhuma_fonte(repositorio):
 
 
 async def test_execucao_fica_registrada_no_historico(com_busca):
-    await executar(servicos(com_busca, FonteFake()), analisar_vagas=False)
+    await executar(servicos(com_busca, FonteFake()))
     [registrada] = com_busca.listar_execucoes()
     assert (
         registrada.status == StatusExecucao.ok and registrada.finalizada_em is not None
@@ -247,21 +221,9 @@ async def test_execucao_que_ficou_pela_metade_e_encerrada_pela_seguinte(com_busc
     # o processo anterior morreu sem finalizar (app fechado, PC desligado...)
     com_busca.iniciar_execucao(Gatilho.agendado)
 
-    await executar(servicos(com_busca, FonteFake()), analisar_vagas=False)
+    await executar(servicos(com_busca, FonteFake()))
 
     nova, orfa = com_busca.listar_execucoes()
     assert nova.status == StatusExecucao.ok
     assert orfa.status == StatusExecucao.erro
     assert orfa.erro.startswith("Interrompida")
-
-
-async def test_reanalise_avulsa_usa_o_ultimo_perfil(com_busca):
-    com_busca.salvar_perfil(perfil())
-    com_busca.salvar_vaga(vaga("1", fonte="fake"), ["Python"])
-    provedor = ProvedorFake(fit=77)
-
-    await reanalisar_vaga(
-        servicos(com_busca, provedor=provedor), "fake:1", dry_run=True
-    )
-
-    assert com_busca.analise_vigente("fake:1").analise.fit_score == 77

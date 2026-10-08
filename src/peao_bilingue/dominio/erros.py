@@ -34,5 +34,9 @@ class AnaliseInvalida(RuntimeError):
     """O provedor de LLM não produziu uma análise válida dentro das tentativas."""
 
 
+class PerfilAusente(LookupError):
+    """Nenhum perfil lido da fonte pedida, e a análise precisa de um."""
+
+
 class NomeDesconhecido(LookupError):
     """Nenhum adapter registrado com esse nome."""

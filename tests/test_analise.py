@@ -1,11 +1,11 @@
 import pytest
-from construtores import analise, vaga
+from construtores import analise, perfil, vaga
 from dubles import ProvedorFake
 from pydantic import ValidationError
 
 from peao_bilingue.aplicacao import analise as modulo
 from peao_bilingue.dominio.entidades import JobAnalysis, RespostaLLM
-from peao_bilingue.dominio.erros import AnaliseInvalida
+from peao_bilingue.dominio.erros import AnaliseInvalida, PerfilAusente
 
 PERFIL = "Cargo: Software Developer\nSkills principais: Python (5 years)"
 
@@ -103,3 +103,69 @@ def test_schema_exige_preparacao_e_melhorias():
         analise(preparacao=["só um passo"])
     with pytest.raises(ValidationError):
         analise(melhorias_perfil=["só uma melhoria"])
+
+
+# --- análise pedida na interface, vaga a vaga ---------------------------------
+
+
+@pytest.fixture
+def sem_notas(monkeypatch):
+    # o profile_notes.md da pasta do projeto não entra no prompt dos testes
+    monkeypatch.setattr(modulo, "_notas_do_usuario", lambda: "")
+
+
+def prompt_enviado(provedor: ProvedorFake) -> str:
+    return provedor.chamadas[0]["mensagens"][0].content
+
+
+async def test_usa_o_perfil_da_fonte_da_vaga(repositorio, sem_notas):
+    repositorio.salvar_perfil(perfil("Staff Engineer", fonte="vanhack"))
+    repositorio.salvar_perfil(perfil("Tech Lead", fonte="linkedin"))
+    repositorio.salvar_vaga(vaga("1", fonte="vanhack"), ["Python"])
+    provedor = ProvedorFake(fit=77)
+
+    resultado = await modulo.analisar_vaga(repositorio, provedor, "vanhack:1")
+
+    assert resultado.fit_score == 77
+    assert "Staff Engineer" in prompt_enviado(provedor)
+    assert "Tech Lead" not in prompt_enviado(provedor)
+    salva = repositorio.analise_vigente("vanhack:1")
+    assert (salva.provedor, salva.perfil_fonte) == ("fake", "vanhack")
+
+
+async def test_perfil_de_outra_fonte_quando_pedido(repositorio, sem_notas):
+    repositorio.salvar_perfil(perfil("Tech Lead", fonte="linkedin"))
+    # ex.: vaga de uma API pública, fonte que não tem perfil
+    repositorio.salvar_vaga(vaga("1", fonte="remotive"), ["Python"])
+    provedor = ProvedorFake()
+
+    await modulo.analisar_vaga(
+        repositorio, provedor, "remotive:1", perfil_de="linkedin"
+    )
+
+    assert "Tech Lead" in prompt_enviado(provedor)
+    assert repositorio.analise_vigente("remotive:1").perfil_fonte == "linkedin"
+
+
+async def test_sem_perfil_da_fonte_explica_o_que_fazer(repositorio, sem_notas):
+    repositorio.salvar_vaga(vaga("1", fonte="remotive"), ["Python"])
+    provedor = ProvedorFake()
+
+    with pytest.raises(PerfilAusente, match="aba Perfil"):
+        await modulo.analisar_vaga(repositorio, provedor, "remotive:1")
+    assert provedor.chamadas == []  # nem chega a gastar com o LLM
+
+
+async def test_vaga_inexistente_avisa(repositorio, sem_notas):
+    with pytest.raises(LookupError, match="não encontrada"):
+        await modulo.analisar_vaga(repositorio, ProvedorFake(), "vanhack:999")
+
+
+async def test_analise_invalida_nao_grava_nada(repositorio, sem_notas):
+    repositorio.salvar_perfil(perfil())
+    repositorio.salvar_vaga(vaga("1"), ["Python"])
+    provedor = ProvedorFake(respostas=[RespostaLLM(texto="{}")] * 3)
+
+    with pytest.raises(AnaliseInvalida):
+        await modulo.analisar_vaga(repositorio, provedor, "vanhack:1")
+    assert repositorio.analise_vigente("vanhack:1") is None

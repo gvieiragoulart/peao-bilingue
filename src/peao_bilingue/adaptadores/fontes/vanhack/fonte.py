@@ -98,6 +98,7 @@ class VanHack(FonteDeVagas, FonteDePerfil, SessaoManual):
     async def ler_perfil(self) -> Perfil:
         dados = await self._com_evidencia("perfil", profile.scrape(self.pagina))
         return Perfil(
+            fonte=self.nome,
             dados=dados,
             texto=profile.to_text(dados),
             content_hash=profile.content_hash(dados),

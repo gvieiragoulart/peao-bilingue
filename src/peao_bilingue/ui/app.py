@@ -105,6 +105,12 @@ class Aplicativo(ctk.CTk):
     def fechar(self) -> None:
         logging.getLogger().removeHandler(self._log)
         self.executor.encerrar()
+        # Timers pendentes (o do registro e os do CustomTkinter) disparariam depois
+        # do destroy, e o Tcl reclamaria de comando inexistente no stderr. Só o timer
+        # é cancelado: o comando é de quem agendou e sai no destroy de cada widget
+        # (o `after_cancel` o apagaria antes, e o destroy do dono falharia).
+        for pendente in self.tk.splitlist(self.tk.call("after", "info")):
+            self.tk.call("after", "cancel", pendente)
         self.destroy()
 
 
