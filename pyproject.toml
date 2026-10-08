@@ -93,3 +93,6 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "ruff>=0.16.10",
 ]
+empacotar = [
+    "pyinstaller>=6.22.3",
+]

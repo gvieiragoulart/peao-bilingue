@@ -60,15 +60,22 @@ class VanHack(FonteDeVagas, FonteDePerfil, SessaoManual):
     async def __aenter__(self) -> Self:
         self._navegador = open_context(headless=self.headless)
         contexto = await self._navegador.__aenter__()
-        self._pagina = await contexto.new_page()
+        try:
+            self._pagina = await contexto.new_page()
 
-        await auth.goto(self._pagina, settings.vanhack_jobs_url)
-        desafio = await auth.detect_challenge(self._pagina)
-        if desafio:
-            artefato = await self._salvar_evidencia("desafio")
-            raise DesafioHumano(f"{desafio} (evidência em {artefato})")
-        await auth.ensure_logged_in(self._pagina)
-        await save_state(contexto)
+            await auth.goto(self._pagina, settings.vanhack_jobs_url)
+            desafio = await auth.detect_challenge(self._pagina)
+            if desafio:
+                artefato = await self._salvar_evidencia("desafio")
+                raise DesafioHumano(f"{desafio} (evidência em {artefato})")
+            await auth.ensure_logged_in(self._pagina)
+            await save_state(contexto)
+        except BaseException:
+            # Se a entrada falha, o `async with` não chama o __aexit__. Sem fechar
+            # aqui, o Chrome e o driver do Playwright seguravam o processo aberto
+            # (a coleta agendada com sessão expirada nunca terminava).
+            await self.__aexit__(None, None, None)
+            raise
         return self
 
     async def __aexit__(self, *excecao: object) -> None:

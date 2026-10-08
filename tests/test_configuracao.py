@@ -91,3 +91,17 @@ def test_salvar_preserva_o_que_ja_estava_no_json() -> None:
 def test_campo_desconhecido_e_recusado() -> None:
     with pytest.raises(KeyError, match="nao_existe"):
         configuracao.salvar({"nao_existe": 1})
+
+
+def test_no_projeto_a_pasta_base_e_a_atual(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delattr("sys.frozen", raising=False)
+    assert configuracao.pasta_base() == Path.cwd()
+
+
+def test_no_executavel_a_pasta_base_e_a_do_usuario(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # o .exe pode ser aberto de qualquer pasta: os dados não podem depender disso
+    monkeypatch.setattr("sys.frozen", True, raising=False)
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    assert configuracao.pasta_base() == tmp_path / "PeaoBilingue"

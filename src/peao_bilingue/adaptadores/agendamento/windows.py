@@ -12,12 +12,15 @@ from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
+from peao_bilingue.configuracao import executavel
 from peao_bilingue.dominio.agenda import Agendador, SituacaoAgenda
 from peao_bilingue.dominio.erros import ErroDeAgendamento
 
 # ASCII de propósito: a saída do PowerShell 5.1 vem na página de código do console.
 NOME_TAREFA = "Peao Bilingue - coleta diaria"
+# No projeto, o pythonw roda o módulo; no .exe, o próprio executável vira CLI.
 ARGUMENTOS = "-m peao_bilingue.cli run --agendado"
+ARGUMENTOS_EXE = "run --agendado"
 DESCRICAO = "Coleta diaria de vagas do Peao Bilingue."
 HORARIO = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 LIMITE_EXECUCAO_HORAS = 2
@@ -70,9 +73,18 @@ def _script(*linhas: str) -> str:
     return "\n".join(["$ErrorActionPreference = 'Stop'", *linhas, "exit 0"])
 
 
-def _interpretador_sem_console() -> Path:
-    """O pythonw do mesmo ambiente: roda a coleta sem abrir janela de console."""
-    return Path(sys.executable).with_name("pythonw.exe")
+def comando_da_coleta() -> tuple[Path, str, Path]:
+    """(programa, argumentos, pasta de trabalho) que a tarefa agendada roda.
+
+    No .exe: o próprio executável (sem janela), que com argumentos vira a CLI; a
+    pasta dele, porque os dados ficam em %LOCALAPPDATA%. No projeto: o pythonw do
+    mesmo ambiente (sem janela de console), na pasta do projeto — onde estão
+    data/, .env e profile_notes.md.
+    """
+    if executavel():
+        exe = Path(sys.executable)
+        return exe, ARGUMENTOS_EXE, exe.parent
+    return Path(sys.executable).with_name("pythonw.exe"), ARGUMENTOS, Path.cwd()
 
 
 def _data(texto: str | None) -> datetime | None:
@@ -91,14 +103,14 @@ class AgendadorWindows(Agendador):
         interpretador: Path | None = None,
         diretorio: Path | None = None,
         nome_tarefa: str = NOME_TAREFA,
-        argumentos: str = ARGUMENTOS,
+        argumentos: str | None = None,
     ) -> None:
         self._executar = executar
-        self.interpretador = interpretador or _interpretador_sem_console()
-        # A coleta lê .env, data/ e profile_notes.md relativos à pasta do projeto.
-        self.diretorio = diretorio or Path.cwd()
+        programa, argumentos_padrao, pasta = comando_da_coleta()
+        self.interpretador = interpretador or programa
+        self.diretorio = diretorio or pasta
         self.nome_tarefa = nome_tarefa
-        self.argumentos = argumentos
+        self.argumentos = argumentos or argumentos_padrao
 
     @property
     def _tarefa(self) -> str:

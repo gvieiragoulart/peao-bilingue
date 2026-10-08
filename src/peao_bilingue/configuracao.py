@@ -7,6 +7,7 @@ feita na tela seria ignorada em silêncio. CLI e tarefa agendada leem o mesmo.
 
 import json
 import os
+import sys
 from contextlib import suppress
 from pathlib import Path
 from typing import Any
@@ -21,8 +22,27 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-# PEAO_DADOS isola os testes da configuração real e servirá ao .exe (Fase 8).
-DIRETORIO_DADOS = Path(os.environ.get("PEAO_DADOS", "data"))
+
+def executavel() -> bool:
+    """Rodando de dentro do .exe (PyInstaller), e não do projeto com `uv run`."""
+    return bool(getattr(sys, "frozen", False))
+
+
+def pasta_base() -> Path:
+    """Onde ficam `data/`, o `.env`, o `profile_notes.md` e `artifacts/`.
+
+    No projeto, a pasta de onde se roda (a do projeto). No .exe, uma pasta do
+    usuário que sobrevive a reinstalações e não depende de onde o .exe foi aberto.
+    """
+    if executavel():
+        local = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+        return Path(local) / "PeaoBilingue"
+    return Path.cwd()
+
+
+PASTA_BASE = pasta_base()
+# PEAO_DADOS vence: isola os testes da configuração real.
+DIRETORIO_DADOS = Path(os.environ.get("PEAO_DADOS") or PASTA_BASE / "data")
 CONFIG_PATH = DIRETORIO_DADOS / "config.json"
 
 SERVICO_KEYRING = "peao-bilingue"
@@ -57,7 +77,7 @@ class _Cofre(PydanticBaseSettingsSource):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=PASTA_BASE / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
         json_file=CONFIG_PATH,

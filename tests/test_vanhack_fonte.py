@@ -5,9 +5,11 @@ import pathlib
 import pytest
 from playwright.async_api import Page
 
-from peao_bilingue.adaptadores.fontes.vanhack import detail, listing
+from peao_bilingue.adaptadores.fontes.vanhack import auth, detail, listing
+from peao_bilingue.adaptadores.fontes.vanhack import fonte as modulo_fonte
 from peao_bilingue.adaptadores.fontes.vanhack.fonte import VanHack, _resumo, _vaga
 from peao_bilingue.dominio.coleta import FonteDeVagas
+from peao_bilingue.dominio.erros import DesafioHumano, SessaoExpirada
 from peao_bilingue.dominio.perfil import FonteDePerfil
 from peao_bilingue.dominio.vagas import VagaResumo
 
@@ -57,3 +59,48 @@ async def test_detalhe_preserva_o_resumo_e_completa(
 def test_usar_fora_do_async_with_avisa() -> None:
     with pytest.raises(RuntimeError, match="async with"):
         _ = VanHack().pagina
+
+
+class NavegadorFalso:
+    """O `open_context` sem Chrome: só registra se foi fechado."""
+
+    def __init__(self) -> None:
+        self.fechado = False
+
+    async def __aenter__(self) -> "ContextoFalso":
+        return ContextoFalso()
+
+    async def __aexit__(self, *excecao: object) -> None:
+        self.fechado = True
+
+
+class ContextoFalso:
+    async def new_page(self) -> object:
+        return object()
+
+
+@pytest.mark.parametrize(
+    "falha", [SessaoExpirada("faça login"), DesafioHumano("captcha")]
+)
+async def test_entrada_que_falha_fecha_o_navegador(
+    monkeypatch: pytest.MonkeyPatch, falha: Exception
+) -> None:
+    # Sem isto o Chrome e o driver do Playwright ficavam abertos e a coleta agendada
+    # com sessão expirada nunca terminava (o `async with` não chama o __aexit__).
+    navegador = NavegadorFalso()
+    monkeypatch.setattr(modulo_fonte, "open_context", lambda **_: navegador)
+
+    async def nada(*_: object) -> None:
+        return None
+
+    async def falhar(*_: object) -> None:
+        raise falha
+
+    monkeypatch.setattr(auth, "goto", nada)
+    monkeypatch.setattr(auth, "detect_challenge", nada)
+    monkeypatch.setattr(auth, "ensure_logged_in", falhar)
+
+    with pytest.raises(type(falha)):
+        async with VanHack():
+            pass
+    assert navegador.fechado

@@ -53,5 +53,6 @@ async def detect_challenge(page: Page) -> str | None:
 async def ensure_logged_in(page: Page) -> None:
     if not await has_valid_session(page):
         raise SessaoExpirada(
-            "Sessão da VanHack expirada. Rode `uv run peao login` e faça o login manualmente."
+            "Sessão da VanHack expirada. Faça o login manual de novo: “Fazer login” "
+            "na aba Fontes do app, ou `peao login` na linha de comando."
         )

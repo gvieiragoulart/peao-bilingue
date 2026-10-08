@@ -5,9 +5,9 @@ from zoneinfo import ZoneInfo
 
 from playwright.async_api import Page
 
-from peao_bilingue.configuracao import settings
+from peao_bilingue.configuracao import PASTA_BASE, settings
 
-ARTIFACTS_DIR = Path("artifacts")
+ARTIFACTS_DIR = PASTA_BASE / "artifacts"
 
 
 async def dump(page: Page, label: str) -> Path:
