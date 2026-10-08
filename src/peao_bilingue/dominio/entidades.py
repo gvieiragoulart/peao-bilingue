@@ -57,6 +57,22 @@ class Vaga(VagaResumo):
     skills_desejaveis: list[Skill] = []
     idiomas: list[str] = []
 
+    def texto_pesquisavel(self) -> str:
+        """Título, chamada, skills e descrição, em minúsculas: onde os termos de uma
+        busca são procurados (pelo filtro e pelas fontes que filtram localmente)."""
+        skills = [
+            *self.skills,
+            *(skill.nome for skill in self.skills_obrigatorias),
+            *(skill.nome for skill in self.skills_desejaveis),
+        ]
+        partes = [
+            self.titulo,
+            str(self.extras.get("chamada") or ""),
+            self.descricao,
+            " ".join(skills),
+        ]
+        return " ".join(partes).lower()
+
 
 class Perfil(BaseModel):
     # Cada fonte tem o seu: o perfil cadastrado na VanHack não é o do LinkedIn.

@@ -8,6 +8,7 @@ from peao_bilingue.aplicacao.execucao import executar
 from peao_bilingue.composicao import montar_servicos
 from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.entidades import Execucao, Gatilho, SituacaoAgenda
+from peao_bilingue.textos import descrever_agenda
 from peao_bilingue.ui import apresentacao
 from peao_bilingue.ui.componentes import Tabela
 
@@ -80,7 +81,7 @@ class AbaExecucoes(ctk.CTkFrame):
     # e a consulta não entra no atualizar(), que roda a cada mudança de dados.
     def _consultar_agenda(self) -> None:
         def mostrar(situacao: SituacaoAgenda | None) -> None:
-            self.situacao_agenda.configure(text=apresentacao.descrever_agenda(situacao))
+            self.situacao_agenda.configure(text=descrever_agenda(situacao))
 
         def falhar(falha: BaseException) -> None:
             self.situacao_agenda.configure(

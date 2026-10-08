@@ -19,11 +19,13 @@ from typing import Any, ClassVar, Self
 
 import httpx
 
-from peao_bilingue.aplicacao.filtros import texto_da_vaga
 from peao_bilingue.configuracao import DIRETORIO_DADOS
 from peao_bilingue.dominio.entidades import Vaga, VagaResumo
 from peao_bilingue.dominio.erros import ErroDeColeta
 from peao_bilingue.dominio.portas import FonteDeVagas
+
+# O que um JSON de API devolve no topo; o conteúdo cada fonte confere.
+Json = dict[str, Any] | list[Any]
 
 AGENTE = "peao-bilingue/0.1 (radar pessoal de vagas)"
 TIMEOUT_S = 30
@@ -55,7 +57,7 @@ class FonteDeApi(FonteDeVagas):
         return {}
 
     @abstractmethod
-    def converter(self, dados: Any) -> list[Vaga]:
+    def converter(self, dados: Json) -> list[Vaga]:
         """A resposta da API (já do JSON) vira vagas."""
 
     async def __aenter__(self) -> Self:
@@ -74,7 +76,7 @@ class FonteDeApi(FonteDeVagas):
         encontradas: list[VagaResumo] = [
             vaga
             for vaga in (await self._todas()).values()
-            if procurado in texto_da_vaga(vaga)
+            if procurado in vaga.texto_pesquisavel()
         ]
         return encontradas
 
@@ -90,13 +92,13 @@ class FonteDeApi(FonteDeVagas):
             self._vagas = {vaga.id_externo: vaga for vaga in self.converter(dados)}
         return self._vagas
 
-    async def _baixar(self) -> Any:
+    async def _baixar(self) -> Json:
         if self._cliente is None:
             raise RuntimeError("Use a fonte dentro de `async with`.")
         try:
             resposta = await self._cliente.get(self.url, params=self.parametros())
             resposta.raise_for_status()
-            return resposta.json()
+            dados = resposta.json()
         except httpx.HTTPStatusError as falha:
             codigo = falha.response.status_code
             if codigo == 429:
@@ -108,11 +110,14 @@ class FonteDeApi(FonteDeVagas):
             raise ErroDeColeta(
                 f"{self.marca} fora do ar ou sem rede: {falha}"
             ) from falha
+        if not isinstance(dados, dict | list):
+            raise ErroDeColeta(f"{self.marca} respondeu num formato inesperado.")
+        return dados
 
     def _consulta(self) -> dict[str, Any]:
         return {"url": self.url, "parametros": self.parametros()}
 
-    def _ler_cache(self) -> Any:
+    def _ler_cache(self) -> Json | None:
         if not self.cache.exists():
             return None
         if time.time() - self.cache.stat().st_mtime > self.validade_s:
@@ -121,9 +126,10 @@ class FonteDeApi(FonteDeVagas):
         # Cache de outra consulta (ex.: outra categoria) não serve.
         if salvo.get("consulta") != self._consulta():
             return None
-        return salvo.get("dados")
+        dados = salvo.get("dados")
+        return dados if isinstance(dados, dict | list) else None
 
-    def _gravar_cache(self, dados: Any) -> None:
+    def _gravar_cache(self, dados: Json) -> None:
         self.cache.parent.mkdir(parents=True, exist_ok=True)
         self.cache.write_text(
             json.dumps(

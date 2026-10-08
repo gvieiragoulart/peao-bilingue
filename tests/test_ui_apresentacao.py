@@ -9,7 +9,6 @@ from peao_bilingue.dominio.entidades import (
     Busca,
     Execucao,
     Gatilho,
-    SituacaoAgenda,
     StatusExecucao,
     StatusVaga,
     VagaListada,
@@ -124,21 +123,3 @@ def test_score_minimo_valido(texto, esperado):
 def test_score_minimo_invalido_explica(texto):
     with pytest.raises(ValueError, match="0 a 100"):
         apresentacao.score_minimo(texto)
-
-
-def test_descreve_agenda_vazia():
-    assert apresentacao.descrever_agenda(None) == "Nenhuma coleta agendada."
-
-
-def test_descreve_agenda_com_proxima_e_ultima():
-    situacao = SituacaoAgenda(
-        horario="08:00",
-        estado="Ready",
-        proxima_execucao=AGORA,
-        ultima_execucao=AGORA,
-        ultimo_resultado=1,
-    )
-    texto = apresentacao.descrever_agenda(situacao)
-    assert "Todo dia às 08:00" in texto
-    assert "Próxima: 06/10 09:30" in texto
-    assert "código 1" in texto  # a última execução falhou
