@@ -7,11 +7,11 @@ from peao_bilingue.textos import descrever_agenda
 AGORA = datetime(2026, 10, 6, 9, 30, tzinfo=ZoneInfo("America/Sao_Paulo"))
 
 
-def test_descreve_agenda_vazia():
+def test_descreve_agenda_vazia() -> None:
     assert descrever_agenda(None) == "Nenhuma coleta agendada."
 
 
-def test_descreve_agenda_com_proxima_e_ultima():
+def test_descreve_agenda_com_proxima_e_ultima() -> None:
     situacao = SituacaoAgenda(
         horario="08:00",
         estado="Ready",

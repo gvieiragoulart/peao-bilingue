@@ -15,7 +15,7 @@ class CofreEmMemoria(KeyringBackend):
     priority = 1
 
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__()  # type: ignore[no-untyped-call]  # o keyring não tipa o __init__
         self.senhas: dict[tuple[str, str], str] = {}
 
     def get_password(self, servico: str, usuario: str) -> str | None:

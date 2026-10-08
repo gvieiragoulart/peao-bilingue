@@ -1,4 +1,5 @@
 import pathlib
+from typing import Any
 
 import pytest
 from playwright.async_api import Page
@@ -15,19 +16,19 @@ def html() -> str:
 
 
 @pytest.fixture
-async def dados(page: Page, html: str) -> dict:
+async def dados(page: Page, html: str) -> dict[str, Any]:
     await page.set_content(html)
     return await profile.extract(page)
 
 
-async def test_extrai_cargo_e_senioridade(dados: dict):
+async def test_extrai_cargo_e_senioridade(dados: dict[str, Any]) -> None:
     assert dados["cargo"] == "Software Developer"
     assert dados["anos_como_profissional_ti"] == "5 years"
     assert dados["lideranca"] == "Yes"
     assert dados["formacao"] == "Bachelor's degree"
 
 
-async def test_extrai_skills_com_anos(dados: dict):
+async def test_extrai_skills_com_anos(dados: dict[str, Any]) -> None:
     assert [s["skill"] for s in dados["skills_principais"]] == [
         "Python",
         "Php",
@@ -37,7 +38,7 @@ async def test_extrai_skills_com_anos(dados: dict):
     assert len(dados["skills_secundarias"]) == 5
 
 
-async def test_extrai_idiomas_e_nivel_do_video(dados: dict):
+async def test_extrai_idiomas_e_nivel_do_video(dados: dict[str, Any]) -> None:
     assert dados["idiomas"] == [
         {"idioma": "English", "nivel": "Advanced"},
         {"idioma": "Portuguese", "nivel": "Fluent"},
@@ -45,7 +46,7 @@ async def test_extrai_idiomas_e_nivel_do_video(dados: dict):
     assert dados["ingles_avaliado_no_video"] == "Fluent"
 
 
-async def test_extrai_experiencias_com_chips_inteiros(dados: dict):
+async def test_extrai_experiencias_com_chips_inteiros(dados: dict[str, Any]) -> None:
     experiencias = dados["experiencias"]
     assert len(experiencias) == 4
     assert experiencias[0]["empresa"] == "Zoox Smart Data"
@@ -57,7 +58,7 @@ async def test_extrai_experiencias_com_chips_inteiros(dados: dict):
     assert "Accounts" not in skills
 
 
-async def test_campos_multivalorados_viram_lista(dados: dict):
+async def test_campos_multivalorados_viram_lista(dados: dict[str, Any]) -> None:
     campos = dados["outros_campos"]
     assert campos["Where would you like to work?"][:2] == ["Canada", "United States"]
     assert campos["What size company do you prefer?"] == [
@@ -68,7 +69,7 @@ async def test_campos_multivalorados_viram_lista(dados: dict):
     assert campos["Are you actively looking for a job?"] == "Yes"
 
 
-async def test_snapshot_nao_carrega_pii(dados: dict):
+async def test_snapshot_nao_carrega_pii(dados: dict[str, Any]) -> None:
     # Os links sociais entram de propósito (o analisador sugere melhorias neles),
     # e carregam o nome na própria URL; o resto do snapshot não pode ter PII.
     sem_links = {chave: valor for chave, valor in dados.items() if chave != "links"}
@@ -87,19 +88,19 @@ async def test_snapshot_nao_carrega_pii(dados: dict):
     assert "Last Name" not in dados["outros_campos"]
 
 
-async def test_links_profissionais_sao_mantidos(dados: dict):
+async def test_links_profissionais_sao_mantidos(dados: dict[str, Any]) -> None:
     assert dados["links"]["linkedin"].startswith("https://www.linkedin.com/in/")
     assert dados["links"]["github"]
     assert dados["links"]["site"] is None
 
 
-async def test_hash_muda_apenas_quando_o_perfil_muda(dados: dict):
+async def test_hash_muda_apenas_quando_o_perfil_muda(dados: dict[str, Any]) -> None:
     assert profile.content_hash(dados) == profile.content_hash(dict(dados))
     alterado = {**dados, "cargo": "Data Engineer"}
     assert profile.content_hash(alterado) != profile.content_hash(dados)
 
 
-async def test_texto_para_o_prompt_traz_o_essencial(dados: dict):
+async def test_texto_para_o_prompt_traz_o_essencial(dados: dict[str, Any]) -> None:
     texto = profile.to_text(dados)
     assert "Cargo: Software Developer" in texto
     assert "Python" in texto
@@ -109,7 +110,7 @@ async def test_texto_para_o_prompt_traz_o_essencial(dados: dict):
     assert "Canada, United States" in texto
 
 
-async def test_texto_do_prompt_nao_leva_pii(dados: dict):
+async def test_texto_do_prompt_nao_leva_pii(dados: dict[str, Any]) -> None:
     texto = profile.to_text(dados).lower()
     for proibido in ("fulano", "passport", "expiration", "citizenship"):
         assert proibido not in texto

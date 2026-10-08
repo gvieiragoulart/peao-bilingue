@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from construtores import vaga
 
@@ -6,7 +8,7 @@ from peao_bilingue.adaptadores.notificacao.email import Email
 from peao_bilingue.adaptadores.notificacao.whatsapp import WhatsApp
 
 
-def test_email_lista_as_vagas_novas_com_link_e_skills():
+def test_email_lista_as_vagas_novas_com_link_e_skills() -> None:
     assunto, corpo = formatacao.montar_email(
         [vaga("1", "Backend Python"), vaga("2", "Staff Engineer")]
     )
@@ -19,14 +21,14 @@ def test_email_lista_as_vagas_novas_com_link_e_skills():
     assert "analisar" in corpo  # a análise é pedida no app
 
 
-def test_email_cita_empresa_so_quando_a_fonte_publica():
+def test_email_cita_empresa_so_quando_a_fonte_publica() -> None:
     _, com_empresa = formatacao.montar_email([vaga(empresa="Acme Corp")])
     _, sem_empresa = formatacao.montar_email([vaga(empresa=None)])
     assert "Acme Corp" in com_empresa
     assert "None" not in sem_empresa
 
 
-def test_digest_traz_titulo_link_e_fonte():
+def test_digest_traz_titulo_link_e_fonte() -> None:
     digest = formatacao.montar_digest([vaga("1", "Alta"), vaga("2", "Baixa")])
 
     assert digest.startswith("Peão Bilíngue — 2 vaga(s) nova(s)")
@@ -34,7 +36,7 @@ def test_digest_traz_titulo_link_e_fonte():
     assert "https://exemplo.com/job/2" in digest
 
 
-def test_digest_respeita_o_limite_do_whatsapp():
+def test_digest_respeita_o_limite_do_whatsapp() -> None:
     muitas = [vaga(str(n), f"Vaga numero {n} com titulo longo") for n in range(40)]
     digest = formatacao.montar_digest(muitas)
 
@@ -42,19 +44,19 @@ def test_digest_respeita_o_limite_do_whatsapp():
     assert "no app" in digest  # avisa quantas ficaram de fora
 
 
-def test_digest_sem_empresa_nao_imprime_none():
+def test_digest_sem_empresa_nao_imprime_none() -> None:
     # várias fontes não publicam a contratante
     assert "None" not in formatacao.montar_digest([vaga(empresa=None)])
 
 
 @pytest.fixture
-def enviados(monkeypatch: pytest.MonkeyPatch) -> dict:
-    capturado: dict = {"email": [], "whatsapp": []}
+def enviados(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+    capturado: dict[str, Any] = {"email": [], "whatsapp": []}
 
-    async def email_fake(self, assunto, corpo):
+    async def email_fake(self: Email, assunto: str, corpo: str) -> None:
         capturado["email"].append(assunto)
 
-    async def whatsapp_fake(self, texto):
+    async def whatsapp_fake(self: WhatsApp, texto: str) -> None:
         capturado["whatsapp"].append(texto)
 
     monkeypatch.setattr(Email, "enviar", email_fake)
@@ -62,11 +64,11 @@ def enviados(monkeypatch: pytest.MonkeyPatch) -> dict:
     return capturado
 
 
-async def test_email_manda_uma_mensagem_por_coleta(enviados: dict):
+async def test_email_manda_uma_mensagem_por_coleta(enviados: dict[str, Any]) -> None:
     await Email().notificar([vaga("1"), vaga("2")])
     assert enviados["email"] == ["Peão Bilíngue — 2 vaga(s) nova(s)"]
 
 
-async def test_whatsapp_manda_um_unico_resumo(enviados: dict):
+async def test_whatsapp_manda_um_unico_resumo(enviados: dict[str, Any]) -> None:
     await WhatsApp().notificar([vaga("1"), vaga("2")])
     assert len(enviados["whatsapp"]) == 1
