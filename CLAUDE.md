@@ -369,7 +369,8 @@ uv run mypy                          # strict em src/ (configurado no pyproject)
   genérico etc., ver `[tool.ruff.lint]`). Fora de propósito: `E501` (o formatter cuida),
   `RUF001-003` (travessão e aspas tipográficos nos textos em PT-BR), `PT018`. Um `noqa` sempre
   diz o porquê.
-- **mypy `--strict` em `src/`**, com o plugin do pydantic. O CustomTkinter não tem tipos: seus
+- **mypy `--strict` em `src/` e `tests/`**, com o plugin do pydantic (`mypy_path = tests` para
+  `dubles`/`construtores`/`consultas`). O CustomTkinter não tem tipos: seus
   widgets são `Any` e as abas podem herdar deles (override só em `peao_bilingue.ui.*`).
 - Colunas do SQLModel em `order_by`/`.desc()` passam por `col(...)`, senão o mypy as vê como
   `int | None`/`datetime`.
@@ -378,7 +379,7 @@ uv run mypy                          # strict em src/ (configurado no pyproject)
   montado à parte, que o mypy não consegue conferir. Há teste com o SDK de verdade sobre um
   transporte local (`httpx2`, que o SDK usa) provando que o `omit` não chega à API.
 
-## Auditoria de qualidade (07/10, em andamento)
+## Auditoria de qualidade (07–08/10, concluída)
 
 Critérios pedidos: arquivos separados por domínio, SOLID, funções tipadas na entrada e na saída.
 
@@ -398,4 +399,6 @@ Critérios pedidos: arquivos separados por domínio, SOLID, funções tipadas na
       por agregado; os casos de uso pedem só as que usam (`analisar_vaga(vagas=, perfis=,
       analises=)`, `Servicos(buscas=, vagas=, perfis=, execucoes=)`). `sqlite.py` (434 linhas)
       virou o pacote `persistencia/sqlite/`, um arquivo por agregado (o maior tem 87 linhas).
-- [ ] Testes tipados (343 pendências no mypy estrito) e `tests/` no mypy do CI.
+- [x] Testes tipados: `mypy --strict` agora cobre `src/` **e** `tests/` (343 pendências
+      zeradas), inclusive no CI. Restam 4 `type: ignore`, todos comentados (keyring sem tipos,
+      nome por instância nos dublês, teste que instancia ABC de propósito).

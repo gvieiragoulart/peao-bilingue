@@ -1,12 +1,14 @@
 """Dublês das portas: o pipeline inteiro roda sem navegador, rede ou LLM."""
 
 from pathlib import Path
+from typing import Any, Self
 
 import httpx
 from construtores import analise
+from pydantic import BaseModel
 
 from peao_bilingue.dominio.agenda import Agendador, SituacaoAgenda
-from peao_bilingue.dominio.analise import ProvedorLLM, RespostaLLM
+from peao_bilingue.dominio.analise import Mensagem, ProvedorLLM, RespostaLLM
 from peao_bilingue.dominio.avisos import Notificador
 from peao_bilingue.dominio.coleta import FonteDeVagas
 from peao_bilingue.dominio.perfil import FonteDePerfil, Perfil
@@ -21,8 +23,9 @@ class FonteFake(FonteDeVagas):
         nome: str = "fake",
         vagas: list[Vaga] | None = None,
         falha: Exception | None = None,
-    ):
-        self.nome = nome
+    ) -> None:
+        # Nas fontes reais o nome é da classe; o dublê precisa de um por instância.
+        self.nome = nome  # type: ignore[misc]
         # Como uma fonte real, toda vaga sai com o nome desta fonte.
         self.vagas = {
             v.id_externo: v.model_copy(update={"fonte": nome}) for v in vagas or []
@@ -31,13 +34,13 @@ class FonteFake(FonteDeVagas):
         self.detalhadas: list[str] = []
         self.aberta = False
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         if self.falha:
             raise self.falha
         self.aberta = True
         return self
 
-    async def __aexit__(self, *excecao):
+    async def __aexit__(self, *excecao: object) -> None:
         self.aberta = False
 
     async def buscar(self, termo: str) -> list[VagaResumo]:
@@ -53,9 +56,15 @@ class FonteFake(FonteDeVagas):
 
 class FonteComPerfilFake(FonteFake, FonteDePerfil):
     def __init__(
-        self, perfil: Perfil, *, falha_no_perfil: Exception | None = None, **kwargs
-    ):
-        super().__init__(**kwargs)
+        self,
+        perfil: Perfil,
+        *,
+        nome: str = "fake",
+        vagas: list[Vaga] | None = None,
+        falha: Exception | None = None,
+        falha_no_perfil: Exception | None = None,
+    ) -> None:
+        super().__init__(nome, vagas, falha)
         # Como uma fonte real, o perfil sai com o nome desta fonte.
         self.perfil = perfil.model_copy(update={"fonte": self.nome})
         self.falha_no_perfil = falha_no_perfil
@@ -76,15 +85,18 @@ class ProvedorFake(ProvedorLLM):
         *,
         nome: str = "fake",
         falha: Exception | None = None,
-    ):
-        self.nome = nome
+    ) -> None:
+        # Nos provedores reais o nome é da classe; o dublê precisa de um por instância.
+        self.nome = nome  # type: ignore[misc]
         self.modelo = f"{nome}-1"
         self.respostas = list(respostas or [])
         self.fit = fit
         self.falha = falha
-        self.chamadas: list[dict] = []
+        self.chamadas: list[dict[str, Any]] = []
 
-    async def gerar_json(self, sistema, mensagens, schema):
+    async def gerar_json(
+        self, sistema: str, mensagens: list[Mensagem], schema: type[BaseModel]
+    ) -> RespostaLLM:
         self.chamadas.append(
             {"sistema": sistema, "mensagens": list(mensagens), "schema": schema}
         )
@@ -98,29 +110,29 @@ class ProvedorFake(ProvedorLLM):
 class AgendadorFake(Agendador):
     """Guarda o agendamento em memória: os testes nunca mexem no Agendador do Windows."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.atual: SituacaoAgenda | None = None
 
-    def agendar(self, horario):
+    def agendar(self, horario: str) -> None:
         if len(horario) != 5:
             raise ValueError(f"Horário inválido: {horario!r}.")
         self.atual = SituacaoAgenda(horario=horario, estado="Ready")
 
-    def cancelar(self):
+    def cancelar(self) -> None:
         self.atual = None
 
-    def situacao(self):
+    def situacao(self) -> SituacaoAgenda | None:
         return self.atual
 
 
 class NotificadorFake(Notificador):
     nome = "fake"
 
-    def __init__(self, falha: Exception | None = None):
+    def __init__(self, falha: Exception | None = None) -> None:
         self.recebido: list[list[Vaga]] = []
         self.falha = falha
 
-    async def notificar(self, vagas):
+    async def notificar(self, vagas: list[Vaga]) -> None:
         if self.falha:
             raise self.falha
         self.recebido.append(vagas)
@@ -130,7 +142,7 @@ class ApiFalsa:
     """Responde como uma API pública, com a resposta real salva na fixture, e
     conta as chamadas: os termos dessas APIs limitam quantas por dia."""
 
-    def __init__(self, fixture: Path, status: int = 200):
+    def __init__(self, fixture: Path, status: int = 200) -> None:
         self.fixture = fixture
         self.status = status
         self.chamadas: list[httpx.Request] = []

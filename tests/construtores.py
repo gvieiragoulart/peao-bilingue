@@ -1,5 +1,7 @@
 """Construtores de entidades para os testes."""
 
+from typing import Any
+
 from peao_bilingue.dominio.analise import JobAnalysis
 from peao_bilingue.dominio.perfil import Perfil
 from peao_bilingue.dominio.vagas import Skill, Vaga
@@ -10,7 +12,7 @@ def vaga(
     titulo: str = "Fullstack Staff Engineer",
     *,
     fonte: str = "vanhack",
-    **ajustes,
+    **ajustes: Any,
 ) -> Vaga:
     base = {
         "fonte": fonte,
@@ -26,7 +28,7 @@ def vaga(
     return Vaga(**{**base, **ajustes})
 
 
-def analise(fit: int = 82, **ajustes) -> JobAnalysis:
+def analise(fit: int = 82, **ajustes: Any) -> JobAnalysis:
     base = {
         "fit_score": fit,
         "resumo": "Bom encaixe em Python e React.",

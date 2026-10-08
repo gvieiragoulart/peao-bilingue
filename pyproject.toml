@@ -66,7 +66,9 @@ ignore = [
 python_version = "3.12"
 # O app é para Windows: o resultado não pode depender do SO de quem roda o mypy.
 platform = "win32"
-files = ["src"]
+files = ["src", "tests"]
+# Os testes importam `dubles` e `construtores` como módulos de topo.
+mypy_path = "tests"
 strict = true
 warn_unreachable = true
 plugins = ["pydantic.mypy"]

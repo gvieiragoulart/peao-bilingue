@@ -5,7 +5,9 @@ chama API nem precisa do Ollama rodando.
 """
 
 import logging
+from collections.abc import Callable
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from ollama import ResponseError
@@ -29,10 +31,13 @@ CONVERSA = [
 class Gravador:
     """Método assíncrono que guarda os argumentos e devolve (ou levanta) algo fixo."""
 
-    def __init__(self, devolve=None, levanta: Exception | None = None):
-        self.devolve, self.levanta, self.argumentos = devolve, levanta, {}
+    def __init__(
+        self, devolve: object = None, levanta: Exception | None = None
+    ) -> None:
+        self.devolve, self.levanta = devolve, levanta
+        self.argumentos: dict[str, Any] = {}
 
-    async def __call__(self, **kwargs):
+    async def __call__(self, **kwargs: Any) -> object:
         self.argumentos = kwargs
         if self.levanta:
             raise self.levanta
@@ -40,9 +45,13 @@ class Gravador:
 
 
 # --- dublês com a forma das respostas de cada SDK --------------------------
+# O cliente devolvido é `Any` de propósito: é um dublê com a forma do cliente do
+# SDK (duck typing), não uma instância dele.
 
 
-def cliente_anthropic(texto=JSON, stop_reason="end_turn"):
+def cliente_anthropic(
+    texto: str = JSON, stop_reason: str = "end_turn"
+) -> tuple[Any, Gravador]:
     resposta = SimpleNamespace(
         stop_reason=stop_reason,
         stop_details="cyber" if stop_reason == "refusal" else None,
@@ -54,7 +63,9 @@ def cliente_anthropic(texto=JSON, stop_reason="end_turn"):
     ), create
 
 
-def cliente_ollama(texto=JSON, done_reason="stop", levanta=None):
+def cliente_ollama(
+    texto: str = JSON, done_reason: str = "stop", levanta: Exception | None = None
+) -> tuple[Any, Gravador]:
     resposta = SimpleNamespace(
         message=SimpleNamespace(content=texto), done_reason=done_reason
     )
@@ -62,14 +73,20 @@ def cliente_ollama(texto=JSON, done_reason="stop", levanta=None):
     return SimpleNamespace(chat=chat), chat
 
 
-def cliente_openai(texto=JSON, refusal=None):
+def cliente_openai(
+    texto: str | None = JSON, refusal: str | None = None
+) -> tuple[Any, Gravador]:
     mensagem = SimpleNamespace(content=texto, refusal=refusal)
     create = Gravador(SimpleNamespace(choices=[SimpleNamespace(message=mensagem)]))
     completions = SimpleNamespace(create=create)
     return SimpleNamespace(chat=SimpleNamespace(completions=completions)), create
 
 
-def cliente_gemini(texto=JSON, finish_reason="STOP", block_reason=None):
+def cliente_gemini(
+    texto: str | None = JSON,
+    finish_reason: str = "STOP",
+    block_reason: str | None = None,
+) -> tuple[Any, Gravador]:
     resposta = SimpleNamespace(
         text=texto,
         prompt_feedback=SimpleNamespace(block_reason=block_reason)
@@ -82,7 +99,7 @@ def cliente_gemini(texto=JSON, finish_reason="STOP", block_reason=None):
     return SimpleNamespace(aio=SimpleNamespace(models=modelos)), gerar
 
 
-PROVEDORES = {
+PROVEDORES: dict[str, Callable[[], ProvedorLLM]] = {
     "anthropic": lambda: Anthropic(
         modelo="claude-sonnet-5-5", client=cliente_anthropic()[0]
     ),
@@ -96,7 +113,7 @@ PROVEDORES = {
 
 
 @pytest.mark.parametrize("nome", PROVEDORES)
-async def test_contrato_devolve_o_json_como_texto(nome):
+async def test_contrato_devolve_o_json_como_texto(nome: str) -> None:
     provedor = PROVEDORES[nome]()
     assert isinstance(provedor, ProvedorLLM)
     assert provedor.nome == nome
@@ -110,7 +127,7 @@ async def test_contrato_devolve_o_json_como_texto(nome):
 # --- Ollama -------------------------------------------------------------------
 
 
-async def test_ollama_manda_schema_contexto_e_sistema_primeiro():
+async def test_ollama_manda_schema_contexto_e_sistema_primeiro() -> None:
     cliente, chat = cliente_ollama()
     await Ollama(modelo="qwen3:8b", contexto=8192, client=cliente).gerar_json(
         "sistema", CONVERSA, JobAnalysis
@@ -127,13 +144,13 @@ async def test_ollama_manda_schema_contexto_e_sistema_primeiro():
     ]
 
 
-async def test_ollama_desligado_vira_instrucao_clara():
+async def test_ollama_desligado_vira_instrucao_clara() -> None:
     cliente, _ = cliente_ollama(levanta=ConnectionError("Failed to connect"))
     with pytest.raises(ProvedorIndisponivel, match="ollama serve"):
         await Ollama(client=cliente).gerar_json("s", CONVERSA, JobAnalysis)
 
 
-async def test_ollama_sem_o_modelo_baixado_ensina_o_pull():
+async def test_ollama_sem_o_modelo_baixado_ensina_o_pull() -> None:
     cliente, _ = cliente_ollama(levanta=ResponseError("model not found", 404))
     with pytest.raises(ProvedorIndisponivel, match="ollama pull qwen3:8b"):
         await Ollama(modelo="qwen3:8b", client=cliente).gerar_json(
@@ -141,13 +158,15 @@ async def test_ollama_sem_o_modelo_baixado_ensina_o_pull():
         )
 
 
-async def test_ollama_outros_erros_http_propagam():
+async def test_ollama_outros_erros_http_propagam() -> None:
     cliente, _ = cliente_ollama(levanta=ResponseError("boom", 500))
     with pytest.raises(ResponseError):
         await Ollama(client=cliente).gerar_json("s", CONVERSA, JobAnalysis)
 
 
-async def test_ollama_avisa_quando_a_resposta_foi_cortada(caplog):
+async def test_ollama_avisa_quando_a_resposta_foi_cortada(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     cliente, _ = cliente_ollama(done_reason="length")
     with caplog.at_level(logging.WARNING):
         await Ollama(client=cliente).gerar_json("s", CONVERSA, JobAnalysis)
@@ -157,7 +176,7 @@ async def test_ollama_avisa_quando_a_resposta_foi_cortada(caplog):
 # --- OpenAI -------------------------------------------------------------------
 
 
-async def test_openai_usa_json_schema_estrito():
+async def test_openai_usa_json_schema_estrito() -> None:
     cliente, create = cliente_openai()
     await OpenAI(modelo="modelo-teste", client=cliente).gerar_json(
         "s", CONVERSA, JobAnalysis
@@ -171,7 +190,7 @@ async def test_openai_usa_json_schema_estrito():
     assert create.argumentos["messages"][0]["role"] == "system"
 
 
-async def test_openai_recusa_vira_resposta_marcada():
+async def test_openai_recusa_vira_resposta_marcada() -> None:
     cliente, _ = cliente_openai(texto=None, refusal="não posso ajudar")
     resposta = await OpenAI(modelo="m", client=cliente).gerar_json(
         "s", CONVERSA, JobAnalysis
@@ -179,7 +198,7 @@ async def test_openai_recusa_vira_resposta_marcada():
     assert resposta.recusou and resposta.motivo == "não posso ajudar"
 
 
-def test_openai_exige_modelo_e_chave(monkeypatch):
+def test_openai_exige_modelo_e_chave(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "openai_modelo", "")
     monkeypatch.setattr(settings, "openai_api_key", "")
     with pytest.raises(ProvedorIndisponivel, match="OPENAI_MODELO"):
@@ -191,7 +210,7 @@ def test_openai_exige_modelo_e_chave(monkeypatch):
 # --- Gemini -------------------------------------------------------------------
 
 
-async def test_gemini_traduz_papeis_e_manda_sistema_e_schema():
+async def test_gemini_traduz_papeis_e_manda_sistema_e_schema() -> None:
     cliente, gerar = cliente_gemini()
     await Gemini(modelo="m", client=cliente).gerar_json(
         "sistema", CONVERSA, JobAnalysis
@@ -209,7 +228,9 @@ async def test_gemini_traduz_papeis_e_manda_sistema_e_schema():
     ("finish_reason", "block_reason"),
     [("SAFETY", None), ("PROHIBITED_CONTENT", None), ("STOP", "BLOCKLIST")],
 )
-async def test_gemini_bloqueio_vira_recusa(finish_reason, block_reason):
+async def test_gemini_bloqueio_vira_recusa(
+    finish_reason: str, block_reason: str | None
+) -> None:
     cliente, _ = cliente_gemini(
         texto=None, finish_reason=finish_reason, block_reason=block_reason
     )
@@ -219,7 +240,7 @@ async def test_gemini_bloqueio_vira_recusa(finish_reason, block_reason):
     assert resposta.recusou is True
 
 
-async def test_gemini_resposta_cortada_nao_e_recusa():
+async def test_gemini_resposta_cortada_nao_e_recusa() -> None:
     # sem texto por tamanho é falha técnica: a aplicação tenta de novo
     cliente, _ = cliente_gemini(texto=None, finish_reason="MAX_TOKENS")
     resposta = await Gemini(modelo="m", client=cliente).gerar_json(
@@ -228,7 +249,7 @@ async def test_gemini_resposta_cortada_nao_e_recusa():
     assert resposta.recusou is False and resposta.texto == ""
 
 
-def test_gemini_exige_modelo_e_chave(monkeypatch):
+def test_gemini_exige_modelo_e_chave(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "gemini_modelo", "")
     monkeypatch.setattr(settings, "gemini_api_key", "")
     with pytest.raises(ProvedorIndisponivel, match="GEMINI_MODELO"):

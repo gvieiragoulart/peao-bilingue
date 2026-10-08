@@ -25,8 +25,8 @@ def remotive(api: ApiFalsa, cache: Path) -> Remotive:
 
 
 async def test_uma_chamada_por_coleta_qualquer_que_seja_o_numero_de_termos(
-    api, tmp_path
-):
+    api: ApiFalsa, tmp_path: Path
+) -> None:
     async with remotive(api, tmp_path / "cache.json") as fonte:
         python = await fonte.buscar("python")
         await fonte.buscar("react")
@@ -38,7 +38,9 @@ async def test_uma_chamada_por_coleta_qualquer_que_seja_o_numero_de_termos(
     assert vaga.descricao  # o detalhe veio da listagem, sem outra chamada
 
 
-async def test_filtra_cada_termo_localmente_no_texto_inteiro(api, tmp_path):
+async def test_filtra_cada_termo_localmente_no_texto_inteiro(
+    api: ApiFalsa, tmp_path: Path
+) -> None:
     async with remotive(api, tmp_path / "cache.json") as fonte:
         kobo = await fonte.buscar("kobotoolbox")  # só no nome da empresa/descrição
         django = await fonte.buscar("Django")  # tag de uma vaga só
@@ -49,7 +51,9 @@ async def test_filtra_cada_termo_localmente_no_texto_inteiro(api, tmp_path):
     assert nada == []
 
 
-async def test_converte_a_vaga_com_atribuicao_ao_remotive(api, tmp_path):
+async def test_converte_a_vaga_com_atribuicao_ao_remotive(
+    api: ApiFalsa, tmp_path: Path
+) -> None:
     async with remotive(api, tmp_path / "cache.json") as fonte:
         [resumo] = await fonte.buscar("KoboToolbox")
         vaga = await fonte.detalhar(resumo)
@@ -64,13 +68,15 @@ async def test_converte_a_vaga_com_atribuicao_ao_remotive(api, tmp_path):
     assert "<p>" not in vaga.descricao and "\n" in vaga.descricao
 
 
-async def test_salario_vazio_vira_none(api, tmp_path):
+async def test_salario_vazio_vira_none(api: ApiFalsa, tmp_path: Path) -> None:
     async with remotive(api, tmp_path / "cache.json") as fonte:
         [resumo] = await fonte.buscar("Senior back-end Engineer")
         assert (await fonte.detalhar(resumo)).salario is None
 
 
-async def test_cache_evita_chamar_de_novo_na_mesma_janela(api, tmp_path):
+async def test_cache_evita_chamar_de_novo_na_mesma_janela(
+    api: ApiFalsa, tmp_path: Path
+) -> None:
     cache = tmp_path / "cache.json"
     async with remotive(api, cache) as fonte:
         await fonte.buscar("python")
@@ -79,7 +85,9 @@ async def test_cache_evita_chamar_de_novo_na_mesma_janela(api, tmp_path):
     assert len(api.chamadas) == 1
 
 
-async def test_cache_vencido_ou_de_outra_categoria_chama_de_novo(api, tmp_path):
+async def test_cache_vencido_ou_de_outra_categoria_chama_de_novo(
+    api: ApiFalsa, tmp_path: Path
+) -> None:
     cache = tmp_path / "cache.json"
     async with remotive(api, cache) as fonte:
         await fonte.buscar("python")
@@ -97,7 +105,7 @@ async def test_cache_vencido_ou_de_outra_categoria_chama_de_novo(api, tmp_path):
     assert len(api.chamadas) == 3
 
 
-async def test_limite_excedido_vira_erro_de_coleta_legivel(tmp_path):
+async def test_limite_excedido_vira_erro_de_coleta_legivel(tmp_path: Path) -> None:
     api = ApiFalsa(FIXTURE, status=429)
     with pytest.raises(ErroDeColeta, match="excesso de chamadas"):
         async with remotive(api, tmp_path / "cache.json") as fonte:
@@ -105,7 +113,7 @@ async def test_limite_excedido_vira_erro_de_coleta_legivel(tmp_path):
     assert not (tmp_path / "cache.json").exists()  # erro não vira cache
 
 
-def test_html_vira_uma_linha_por_paragrafo_e_item():
+def test_html_vira_uma_linha_por_paragrafo_e_item() -> None:
     html = (
         "<p><strong>Sobre</strong> a vaga &amp; o time</p>"
         "<ul><li>Python</li><li>  Django </li><li></li></ul>"
