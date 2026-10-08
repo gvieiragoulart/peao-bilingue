@@ -108,6 +108,18 @@ def test_schema_exige_preparacao_e_melhorias():
 # --- análise pedida na interface, vaga a vaga ---------------------------------
 
 
+async def analisar_vaga(repositorio, provedor, chave, **opcoes):
+    # o SQLite em memória faz as três portas que o caso de uso pede
+    return await modulo.analisar_vaga(
+        chave,
+        provedor,
+        vagas=repositorio,
+        perfis=repositorio,
+        analises=repositorio,
+        **opcoes,
+    )
+
+
 def prompt_enviado(provedor: ProvedorFake) -> str:
     return provedor.chamadas[0]["mensagens"][0].content
 
@@ -118,7 +130,7 @@ async def test_usa_o_perfil_da_fonte_da_vaga(repositorio):
     repositorio.salvar_vaga(vaga("1", fonte="vanhack"), ["Python"])
     provedor = ProvedorFake(fit=77)
 
-    resultado = await modulo.analisar_vaga(repositorio, provedor, "vanhack:1")
+    resultado = await analisar_vaga(repositorio, provedor, "vanhack:1")
 
     assert resultado.fit_score == 77
     assert "Staff Engineer" in prompt_enviado(provedor)
@@ -133,9 +145,7 @@ async def test_perfil_de_outra_fonte_quando_pedido(repositorio):
     repositorio.salvar_vaga(vaga("1", fonte="remotive"), ["Python"])
     provedor = ProvedorFake()
 
-    await modulo.analisar_vaga(
-        repositorio, provedor, "remotive:1", perfil_de="linkedin"
-    )
+    await analisar_vaga(repositorio, provedor, "remotive:1", perfil_de="linkedin")
 
     assert "Tech Lead" in prompt_enviado(provedor)
     assert repositorio.analise_vigente("remotive:1").perfil_fonte == "linkedin"
@@ -146,13 +156,13 @@ async def test_sem_perfil_da_fonte_explica_o_que_fazer(repositorio):
     provedor = ProvedorFake()
 
     with pytest.raises(PerfilAusente, match="aba Perfil"):
-        await modulo.analisar_vaga(repositorio, provedor, "remotive:1")
+        await analisar_vaga(repositorio, provedor, "remotive:1")
     assert provedor.chamadas == []  # nem chega a gastar com o LLM
 
 
 async def test_vaga_inexistente_avisa(repositorio):
     with pytest.raises(LookupError, match="não encontrada"):
-        await modulo.analisar_vaga(repositorio, ProvedorFake(), "vanhack:999")
+        await analisar_vaga(repositorio, ProvedorFake(), "vanhack:999")
 
 
 async def test_analise_invalida_nao_grava_nada(repositorio):
@@ -161,7 +171,7 @@ async def test_analise_invalida_nao_grava_nada(repositorio):
     provedor = ProvedorFake(respostas=[RespostaLLM(texto="{}")] * 3)
 
     with pytest.raises(AnaliseInvalida):
-        await modulo.analisar_vaga(repositorio, provedor, "vanhack:1")
+        await analisar_vaga(repositorio, provedor, "vanhack:1")
     assert repositorio.analise_vigente("vanhack:1") is None
 
 
@@ -171,7 +181,7 @@ async def test_notas_do_usuario_entram_no_prompt(repositorio):
     repositorio.salvar_vaga(vaga("1"), ["Python"])
     provedor = ProvedorFake()
 
-    await modulo.analisar_vaga(
+    await analisar_vaga(
         repositorio, provedor, "vanhack:1", notas="Prefiro vagas 100% remotas."
     )
 

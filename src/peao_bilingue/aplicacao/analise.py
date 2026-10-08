@@ -8,10 +8,15 @@ import re
 
 from pydantic import BaseModel, ValidationError
 
-from peao_bilingue.dominio.analise import JobAnalysis, Mensagem, ProvedorLLM
+from peao_bilingue.dominio.analise import (
+    JobAnalysis,
+    Mensagem,
+    ProvedorLLM,
+    RepositorioAnalises,
+)
 from peao_bilingue.dominio.erros import AnaliseInvalida, PerfilAusente
-from peao_bilingue.dominio.repositorio import Repositorio
-from peao_bilingue.dominio.vagas import Vaga
+from peao_bilingue.dominio.perfil import RepositorioPerfis
+from peao_bilingue.dominio.vagas import RepositorioVagas, Vaga
 
 TENTATIVAS = 3
 
@@ -106,10 +111,12 @@ async def analisar(
 
 
 async def analisar_vaga(
-    repositorio: Repositorio,
-    provedor: ProvedorLLM,
     chave: str,
+    provedor: ProvedorLLM,
     *,
+    vagas: RepositorioVagas,
+    perfis: RepositorioPerfis,
+    analises: RepositorioAnalises,
     perfil_de: str | None = None,
     notas: str = "",
 ) -> JobAnalysis:
@@ -118,11 +125,11 @@ async def analisar_vaga(
     O perfil é o cadastrado na fonte da própria vaga; `perfil_de` escolhe o de
     outra fonte (o caminho para fontes sem perfil, como as APIs públicas).
     """
-    vaga = repositorio.obter_vaga(chave)
+    vaga = vagas.obter_vaga(chave)
     if vaga is None:
         raise LookupError(f"Vaga {chave} não encontrada.")
     fonte = perfil_de or vaga.fonte
-    salvo = repositorio.ultimo_perfil(fonte)
+    salvo = perfis.ultimo_perfil(fonte)
     if salvo is None:
         raise PerfilAusente(
             f"Nenhum perfil da fonte {fonte} foi lido ainda. Leia na aba Perfil "
@@ -130,7 +137,7 @@ async def analisar_vaga(
         )
     perfil_id, perfil = salvo
     analise = await analisar(vaga, perfil.texto, provedor, notas=notas)
-    repositorio.salvar_analise(
+    analises.salvar_analise(
         chave,
         analise,
         provedor=provedor.nome,

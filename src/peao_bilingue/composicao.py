@@ -28,8 +28,12 @@ def montar_servicos(
     fontes: list[str] | None = None,
     repositorio: Repositorio | None = None,
 ) -> Servicos:
+    banco = repositorio or montar_repositorio()
     return Servicos(
-        repositorio=repositorio or montar_repositorio(),
+        buscas=banco,
+        vagas=banco,
+        perfis=banco,
+        execucoes=banco,
         fontes=[
             fabricas.fontes.criar(nome)
             for nome in fontes or settings.fontes_habilitadas
