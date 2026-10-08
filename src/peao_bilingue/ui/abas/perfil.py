@@ -108,6 +108,8 @@ class AbaPerfil(ctk.CTkFrame):
 
         async def ler() -> bool:
             fonte = fabricas.fontes.criar(nome)
+            if not isinstance(fonte, FonteDePerfil):  # já filtrado acima
+                raise TypeError(f"A fonte {nome} não lê perfil.")
             async with fonte:
                 perfil = await fonte.ler_perfil()
             _, mudou = repositorio.salvar_perfil(perfil)

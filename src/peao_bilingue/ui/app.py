@@ -22,7 +22,8 @@ from peao_bilingue.ui.executor import ExecutorAssincrono, FilaDeLog, acompanhar
 
 TITULO = "Peão Bilíngue"
 INTERVALO_LOG_MS = 200
-ABAS = [
+# As abas herdam de widgets do CustomTkinter, que não tem tipos: para o mypy, Any.
+ABAS: list[tuple[str, type[Any]]] = [
     ("Vagas", AbaVagas),
     ("Buscas", AbaBuscas),
     ("Fontes", AbaFontes),

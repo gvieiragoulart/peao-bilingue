@@ -2,6 +2,7 @@ from typing import ClassVar
 
 from openai import AsyncOpenAI
 from openai.lib._pydantic import to_strict_json_schema
+from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel
 
 from peao_bilingue.configuracao import settings
@@ -42,12 +43,17 @@ class OpenAI(ProvedorLLM):
     ) -> RespostaLLM:
         # `create` em vez de `parse`: o parse valida dentro do SDK e engoliria o
         # texto que a aplicação devolve ao modelo quando a validação falha.
+        mensagens_api: list[ChatCompletionMessageParam] = [
+            {"role": "system", "content": sistema}
+        ]
+        for enviada in mensagens:
+            if enviada.role == "user":
+                mensagens_api.append({"role": "user", "content": enviada.content})
+            else:
+                mensagens_api.append({"role": "assistant", "content": enviada.content})
         resposta = await self._client.chat.completions.create(
             model=self.modelo,
-            messages=[
-                {"role": "system", "content": sistema},
-                *(mensagem.model_dump() for mensagem in mensagens),
-            ],
+            messages=mensagens_api,
             response_format={
                 "type": "json_schema",
                 "json_schema": {

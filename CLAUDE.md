@@ -25,7 +25,7 @@ perguntas de entrevista, gaps e o que melhorar no perfil (CV, LinkedIn, VanHack)
 **Fases 1 a 4 do novo roteiro concluídas**, mais a mudança de 07/10 pedida pelo Gabriel: a
 coleta não chama LLM nenhum; cada vaga é analisada pelo botão **Analisar** da aba Vagas, com o
 LLM escolhido (Anthropic, Ollama, OpenAI, Gemini) e o **perfil da fonte** da vaga (cada fonte
-tem o seu). A triagem automática saiu. 201 testes offline, `ruff` limpo.
+tem o seu). A triagem automática saiu. 201 testes offline; `ruff` e `mypy --strict` limpos.
 FastAPI, uvicorn e APScheduler saíram. Banco em `data/peao.db` (o antigo `watcher.db` ficou
 intocado) com 18 vagas reais, nenhuma analisada ainda. Três buscas cadastradas: Python,
 PHP/Laravel, React/TypeScript — sem `exclude`, porque filtrar "junior" descartaria vaga sênior
@@ -245,7 +245,7 @@ Seletores **somente** em `selectors.py`, documentados. Fixtures reais anonimizad
 
 ## Roteiro
 
-Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, commit e push.
+Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `uv run mypy`, commit e push.
 
 - [x] **Fase 1 — Núcleo hexagonal.** Domínio, portas, fábricas, composição; VanHack e Anthropic
       como adapters; FastAPI/APScheduler removidos; bug da listagem corrigido (busca vazia e
@@ -294,6 +294,7 @@ uv run peao agenda                   # situação da coleta diária
 uv run peao agenda ativar --horario 08:00            # ou `agenda desativar`
 uv run pytest
 uv run ruff check . && uv run ruff format .
+uv run mypy                          # strict em src/ (configurado no pyproject)
 ```
 
 ## Testes
@@ -307,3 +308,18 @@ uv run ruff check . && uv run ruff format .
   seguidas abrem sem erro.
 - Com o app aberto, `uv run` falha ao reinstalar o projeto (`peao-ui.exe` em uso) quando o
   `pyproject.toml` mudou: use `uv run --no-sync ...` ou feche o app.
+
+## Lint e tipagem
+
+- **ruff** com regras além do padrão (bugbear, pyupgrade, async, datas com fuso, `except`
+  genérico etc., ver `[tool.ruff.lint]`). Fora de propósito: `E501` (o formatter cuida),
+  `RUF001-003` (travessão e aspas tipográficos nos textos em PT-BR), `PT018`. Um `noqa` sempre
+  diz o porquê.
+- **mypy `--strict` em `src/`**, com o plugin do pydantic. O CustomTkinter não tem tipos: seus
+  widgets são `Any` e as abas podem herdar deles (override só em `peao_bilingue.ui.*`).
+- Colunas do SQLModel em `order_by`/`.desc()` passam por `col(...)`, senão o mypy as vê como
+  `int | None`/`datetime`.
+- Mensagens para os SDKs vão tipadas (`BetaMessageParam`, `ChatCompletionMessageParam`), e
+  parâmetro opcional da Anthropic que não deve ir na requisição é `omit` — não `**kwargs`
+  montado à parte, que o mypy não consegue conferir. Há teste com o SDK de verdade sobre um
+  transporte local (`httpx2`, que o SDK usa) provando que o `omit` não chega à API.

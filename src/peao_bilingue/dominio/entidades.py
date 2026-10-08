@@ -1,25 +1,25 @@
 from datetime import datetime
-from enum import Enum
-from typing import Literal
+from enum import StrEnum
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 
-class StatusVaga(str, Enum):
+class StatusVaga(StrEnum):
     nova = "nova"
     estudando = "estudando"
     aplicada = "aplicada"
     descartada = "descartada"
 
 
-class StatusExecucao(str, Enum):
+class StatusExecucao(StrEnum):
     rodando = "rodando"
     ok = "ok"
     erro = "erro"
     login_required = "login_required"
 
 
-class Gatilho(str, Enum):
+class Gatilho(StrEnum):
     agendado = "agendado"
     manual = "manual"
 
@@ -41,7 +41,7 @@ class VagaResumo(BaseModel):
     salario: str | None = None
     skills: list[str] = []
     publicada_em: str | None = None
-    extras: dict = {}  # campos próprios da fonte, sem lugar no modelo comum
+    extras: dict[str, Any] = {}  # campos próprios da fonte, sem lugar no modelo comum
 
     @property
     def chave(self) -> str:
@@ -61,7 +61,7 @@ class Vaga(VagaResumo):
 class Perfil(BaseModel):
     # Cada fonte tem o seu: o perfil cadastrado na VanHack não é o do LinkedIn.
     fonte: str
-    dados: dict
+    dados: dict[str, Any]
     texto: str  # versão legível, usada no prompt
     content_hash: str
 

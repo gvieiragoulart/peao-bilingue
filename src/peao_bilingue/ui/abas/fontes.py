@@ -82,13 +82,15 @@ class AbaFontes(ctk.CTkScrollableFrame):
         situacao.configure(
             text="Janela de login aberta: siga as instruções no registro"
         )
+
+        def falhar(falha: BaseException) -> None:
+            situacao.configure(text="Login não concluído")
+            self.app.mostrar_erro(falha)
+
         self.app.rodar(
             classe.login_manual(self.app.registrar),
             ao_terminar=lambda _r: situacao.configure(text="Login concluído"),
-            ao_falhar=lambda falha: (
-                situacao.configure(text="Login não concluído"),
-                self.app.mostrar_erro(falha),
-            ),
+            ao_falhar=falhar,
         )
 
     def _verificar(self, classe: type[SessaoManual], situacao: ctk.CTkLabel) -> None:

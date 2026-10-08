@@ -17,8 +17,11 @@ class PaginaFake:
         self.visitadas.append(url)
         self.url = self.destino
 
+    # Mesma assinatura do Playwright, que recebe `timeout`.
     async def wait_for_load_state(
-        self, state: str, timeout: float | None = None
+        self,
+        state: str,
+        timeout: float | None = None,  # noqa: ASYNC109
     ) -> None:
         pass
 

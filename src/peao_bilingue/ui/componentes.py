@@ -13,7 +13,7 @@ def tipo_do_campo(nome: str) -> Tipo:
     """O tipo do widget sai do próprio Settings: nada de lista paralela para manter."""
     if nome in SEGREDOS:
         return "segredo"
-    anotacao = Settings.model_fields[nome].annotation
+    anotacao: object = Settings.model_fields[nome].annotation
     if anotacao is bool:
         return "booleano"
     if anotacao is int:
@@ -24,7 +24,7 @@ def tipo_do_campo(nome: str) -> Tipo:
 def cor_do_tema(widget: str, propriedade: str) -> str:
     """O tema guarda [claro, escuro]; escolhe pelo modo atual."""
     par = ctk.ThemeManager.theme[widget][propriedade]
-    return par[1] if ctk.get_appearance_mode() == "Dark" else par[0]
+    return str(par[1] if ctk.get_appearance_mode() == "Dark" else par[0])
 
 
 class Tabela(ctk.CTkFrame):

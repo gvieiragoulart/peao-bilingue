@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import Any
 
 from playwright.async_api import Locator, Page
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError
@@ -23,7 +24,9 @@ def url_de_busca(termo: str) -> str:
     )
 
 
-async def search(page: Page, termo: str, max_scrolls: int | None = None) -> list[dict]:
+async def search(
+    page: Page, termo: str, max_scrolls: int | None = None
+) -> list[dict[str, Any]]:
     url = url_de_busca(termo)
     await auth.goto(page, url)
     if not await _esperar_resultado(page):
@@ -56,9 +59,9 @@ async def _esperar_resultado(page: Page) -> bool:
     return True
 
 
-async def extract(page: Page) -> list[dict]:
+async def extract(page: Page) -> list[dict[str, Any]]:
     """Cards da listagem, sem duplicatas, na ordem em que aparecem."""
-    vagas: dict[str, dict] = {}
+    vagas: dict[str, dict[str, Any]] = {}
     for link in (
         await page.locator(selectors.CARDS_CONTAINER).locator(selectors.CARD_LINK).all()
     ):
@@ -89,7 +92,7 @@ async def _texto(locator: Locator) -> str | None:
     return texto or None
 
 
-async def _card(link: Locator) -> dict | None:
+async def _card(link: Locator) -> dict[str, Any] | None:
     href = await link.get_attribute("href")
     achado = re.search(selectors.JOB_URL_ID, href or "")
     if not achado:
