@@ -10,22 +10,19 @@ import threading
 from dataclasses import dataclass, field
 
 from peao_bilingue.aplicacao import filtros
-from peao_bilingue.dominio.entidades import (
-    Busca,
+from peao_bilingue.dominio.avisos import Notificador
+from peao_bilingue.dominio.buscas import Busca
+from peao_bilingue.dominio.coleta import (
     Execucao,
+    FonteDeVagas,
     Gatilho,
     StatusExecucao,
-    Vaga,
-    VagaResumo,
-)
-from peao_bilingue.dominio.erros import ExecucaoEmAndamento, SessaoExpirada
-from peao_bilingue.dominio.portas import (
-    FonteDePerfil,
-    FonteDeVagas,
-    Notificador,
-    RepositorioVagas,
     Trava,
 )
+from peao_bilingue.dominio.erros import ExecucaoEmAndamento, SessaoExpirada
+from peao_bilingue.dominio.perfil import FonteDePerfil
+from peao_bilingue.dominio.repositorio import Repositorio
+from peao_bilingue.dominio.vagas import Vaga, VagaResumo
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +52,7 @@ _TRAVA_DO_PROCESSO = TravaDoProcesso()
 
 @dataclass
 class Servicos:
-    repositorio: RepositorioVagas
+    repositorio: Repositorio
     fontes: list[FonteDeVagas]
     notificadores: list[Notificador] = field(default_factory=list)
     trava: Trava = field(default_factory=lambda: _TRAVA_DO_PROCESSO)
@@ -152,9 +149,7 @@ async def _coletar_da_fonte(
         logger.warning("Fonte %s falhou: %s", fonte.nome, falha)
 
 
-async def _sincronizar_perfil(
-    repositorio: RepositorioVagas, fonte: FonteDeVagas
-) -> None:
+async def _sincronizar_perfil(repositorio: Repositorio, fonte: FonteDeVagas) -> None:
     """Cada fonte com perfil guarda o seu: a análise de uma vaga usa o perfil
     cadastrado na fonte dela."""
     if not isinstance(fonte, FonteDePerfil):
@@ -174,7 +169,7 @@ async def _sincronizar_perfil(
 
 
 async def _coletar(
-    repositorio: RepositorioVagas,
+    repositorio: Repositorio,
     execucao: Execucao,
     fonte: FonteDeVagas,
     buscas: list[Busca],

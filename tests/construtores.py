@@ -1,6 +1,8 @@
 """Construtores de entidades para os testes."""
 
-from peao_bilingue.dominio.entidades import JobAnalysis, Perfil, Skill, Vaga
+from peao_bilingue.dominio.analise import JobAnalysis
+from peao_bilingue.dominio.perfil import Perfil
+from peao_bilingue.dominio.vagas import Skill, Vaga
 
 
 def vaga(

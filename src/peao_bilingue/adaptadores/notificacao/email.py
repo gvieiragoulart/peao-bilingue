@@ -5,8 +5,8 @@ import aiosmtplib
 
 from peao_bilingue.adaptadores.notificacao.formatacao import montar_email
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.entidades import Vaga
-from peao_bilingue.dominio.portas import Notificador
+from peao_bilingue.dominio.avisos import Notificador
+from peao_bilingue.dominio.vagas import Vaga
 from peao_bilingue.fabricas import notificadores
 
 

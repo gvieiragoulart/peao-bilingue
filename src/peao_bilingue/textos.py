@@ -3,7 +3,7 @@
 A CLI não importa nada de `ui/`: os dois são pontas de entrada independentes.
 """
 
-from peao_bilingue.dominio.entidades import SituacaoAgenda
+from peao_bilingue.dominio.agenda import SituacaoAgenda
 
 
 def descrever_agenda(situacao: SituacaoAgenda | None) -> str:

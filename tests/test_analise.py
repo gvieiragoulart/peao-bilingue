@@ -4,7 +4,7 @@ from dubles import ProvedorFake
 from pydantic import ValidationError
 
 from peao_bilingue.aplicacao import analise as modulo
-from peao_bilingue.dominio.entidades import JobAnalysis, RespostaLLM
+from peao_bilingue.dominio.analise import JobAnalysis, RespostaLLM
 from peao_bilingue.dominio.erros import AnaliseInvalida, PerfilAusente
 
 PERFIL = "Cargo: Software Developer\nSkills principais: Python (5 years)"

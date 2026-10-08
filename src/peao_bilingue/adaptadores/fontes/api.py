@@ -20,9 +20,9 @@ from typing import Any, ClassVar, Self
 import httpx
 
 from peao_bilingue.configuracao import DIRETORIO_DADOS
-from peao_bilingue.dominio.entidades import Vaga, VagaResumo
+from peao_bilingue.dominio.coleta import FonteDeVagas
 from peao_bilingue.dominio.erros import ErroDeColeta
-from peao_bilingue.dominio.portas import FonteDeVagas
+from peao_bilingue.dominio.vagas import Vaga, VagaResumo
 
 # O que um JSON de API devolve no topo; o conteúdo cada fonte confere.
 Json = dict[str, Any] | list[Any]

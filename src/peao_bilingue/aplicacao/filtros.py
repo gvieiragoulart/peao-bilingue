@@ -1,4 +1,5 @@
-from peao_bilingue.dominio.entidades import Busca, Vaga
+from peao_bilingue.dominio.buscas import Busca
+from peao_bilingue.dominio.vagas import Vaga
 
 
 def aplica_a_fonte(busca: Busca, fonte: str) -> bool:

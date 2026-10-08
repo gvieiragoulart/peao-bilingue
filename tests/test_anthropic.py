@@ -5,7 +5,7 @@ import httpx2
 from anthropic import AsyncAnthropic
 
 from peao_bilingue.adaptadores.llm.anthropic import BETA_FALLBACK, Anthropic
-from peao_bilingue.dominio.entidades import JobAnalysis, Mensagem
+from peao_bilingue.dominio.analise import JobAnalysis, Mensagem
 
 
 class ClienteFake:

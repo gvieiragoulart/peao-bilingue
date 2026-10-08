@@ -1,14 +1,9 @@
 """Transforma entidades em texto e linhas de tabela. Sem Tk: testável direto."""
 
-from peao_bilingue.dominio.entidades import (
-    AnaliseSalva,
-    Busca,
-    Execucao,
-    JobAnalysis,
-    StatusVaga,
-    Vaga,
-    VagaListada,
-)
+from peao_bilingue.dominio.analise import AnaliseSalva, JobAnalysis
+from peao_bilingue.dominio.buscas import Busca
+from peao_bilingue.dominio.coleta import Execucao
+from peao_bilingue.dominio.vagas import StatusVaga, Vaga, VagaListada
 
 TODAS = "Todas"
 OPCOES_STATUS = [TODAS, *(status.value for status in StatusVaga)]

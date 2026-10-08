@@ -4,7 +4,7 @@ import customtkinter as ctk
 from pydantic import ValidationError
 
 from peao_bilingue import fabricas
-from peao_bilingue.dominio.entidades import Busca
+from peao_bilingue.dominio.buscas import Busca
 from peao_bilingue.ui import apresentacao
 from peao_bilingue.ui.componentes import Tabela
 

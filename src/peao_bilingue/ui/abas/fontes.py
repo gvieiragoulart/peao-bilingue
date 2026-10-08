@@ -4,7 +4,8 @@ import customtkinter as ctk
 
 from peao_bilingue import configuracao, fabricas
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.portas import FonteDePerfil, SessaoManual
+from peao_bilingue.dominio.coleta import SessaoManual
+from peao_bilingue.dominio.perfil import FonteDePerfil
 
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import Aplicativo

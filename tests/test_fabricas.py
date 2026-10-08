@@ -3,8 +3,8 @@ import pytest
 from peao_bilingue import fabricas
 from peao_bilingue.adaptadores.fontes.vanhack.fonte import VanHack
 from peao_bilingue.adaptadores.llm.anthropic import Anthropic
+from peao_bilingue.dominio.coleta import FonteDeVagas
 from peao_bilingue.dominio.erros import NomeDesconhecido
-from peao_bilingue.dominio.portas import FonteDeVagas
 
 
 def test_adapters_reais_estao_registrados():

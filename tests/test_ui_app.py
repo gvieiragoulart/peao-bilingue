@@ -9,7 +9,7 @@ from dubles import AgendadorFake, ProvedorFake
 
 from peao_bilingue import configuracao
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.entidades import StatusVaga
+from peao_bilingue.dominio.vagas import StatusVaga
 from peao_bilingue.ui.abas import vagas as aba_vagas
 from peao_bilingue.ui.app import ABAS, Aplicativo
 

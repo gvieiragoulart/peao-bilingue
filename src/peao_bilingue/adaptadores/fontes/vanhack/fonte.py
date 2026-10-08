@@ -16,9 +16,10 @@ from peao_bilingue.adaptadores.fontes.vanhack import (
 )
 from peao_bilingue.adaptadores.fontes.vanhack.browser import open_context, save_state
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.entidades import Perfil, Skill, Vaga, VagaResumo
+from peao_bilingue.dominio.coleta import FonteDeVagas, SessaoManual
 from peao_bilingue.dominio.erros import DesafioHumano, ErroDeColeta, SessaoExpirada
-from peao_bilingue.dominio.portas import FonteDePerfil, FonteDeVagas, SessaoManual
+from peao_bilingue.dominio.perfil import FonteDePerfil, Perfil
+from peao_bilingue.dominio.vagas import Skill, Vaga, VagaResumo
 from peao_bilingue.fabricas import fontes
 
 T = TypeVar("T")

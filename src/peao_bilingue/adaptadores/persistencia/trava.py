@@ -2,7 +2,7 @@ from pathlib import Path
 
 from filelock import FileLock, Timeout
 
-from peao_bilingue.dominio.portas import Trava
+from peao_bilingue.dominio.coleta import Trava
 
 
 class TravaDeArquivo(Trava):

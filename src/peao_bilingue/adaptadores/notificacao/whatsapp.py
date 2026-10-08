@@ -4,8 +4,8 @@ import httpx
 
 from peao_bilingue.adaptadores.notificacao.formatacao import montar_digest
 from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.entidades import Vaga
-from peao_bilingue.dominio.portas import Notificador
+from peao_bilingue.dominio.avisos import Notificador
+from peao_bilingue.dominio.vagas import Vaga
 from peao_bilingue.fabricas import notificadores
 
 TWILIO_URL = "https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"

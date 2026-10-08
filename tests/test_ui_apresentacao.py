@@ -4,15 +4,10 @@ from zoneinfo import ZoneInfo
 import pytest
 from construtores import analise, vaga
 
-from peao_bilingue.dominio.entidades import (
-    AnaliseSalva,
-    Busca,
-    Execucao,
-    Gatilho,
-    StatusExecucao,
-    StatusVaga,
-    VagaListada,
-)
+from peao_bilingue.dominio.analise import AnaliseSalva
+from peao_bilingue.dominio.buscas import Busca
+from peao_bilingue.dominio.coleta import Execucao, Gatilho, StatusExecucao
+from peao_bilingue.dominio.vagas import StatusVaga, VagaListada
 from peao_bilingue.ui import apresentacao
 
 AGORA = datetime(2026, 10, 6, 9, 30, tzinfo=ZoneInfo("America/Sao_Paulo"))

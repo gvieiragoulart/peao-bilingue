@@ -8,9 +8,10 @@ import re
 
 from pydantic import BaseModel, ValidationError
 
-from peao_bilingue.dominio.entidades import JobAnalysis, Mensagem, Vaga
+from peao_bilingue.dominio.analise import JobAnalysis, Mensagem, ProvedorLLM
 from peao_bilingue.dominio.erros import AnaliseInvalida, PerfilAusente
-from peao_bilingue.dominio.portas import ProvedorLLM, RepositorioVagas
+from peao_bilingue.dominio.repositorio import Repositorio
+from peao_bilingue.dominio.vagas import Vaga
 
 TENTATIVAS = 3
 
@@ -105,7 +106,7 @@ async def analisar(
 
 
 async def analisar_vaga(
-    repositorio: RepositorioVagas,
+    repositorio: Repositorio,
     provedor: ProvedorLLM,
     chave: str,
     *,

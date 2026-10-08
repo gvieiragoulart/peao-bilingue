@@ -1,7 +1,8 @@
 from construtores import vaga
 
 from peao_bilingue.aplicacao import filtros
-from peao_bilingue.dominio.entidades import Busca, Skill
+from peao_bilingue.dominio.buscas import Busca
+from peao_bilingue.dominio.vagas import Skill
 
 VAGA = vaga(
     titulo="Fullstack Developer",

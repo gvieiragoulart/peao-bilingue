@@ -10,19 +10,12 @@ from sqlalchemy.sql.schema import ScalarElementColumnDefault
 from sqlmodel import Field, Session, SQLModel, col, create_engine, select
 
 from peao_bilingue.configuracao import DIRETORIO_DADOS, settings
-from peao_bilingue.dominio.entidades import (
-    AnaliseSalva,
-    Busca,
-    Execucao,
-    Gatilho,
-    JobAnalysis,
-    Perfil,
-    StatusExecucao,
-    StatusVaga,
-    Vaga,
-    VagaListada,
-)
-from peao_bilingue.dominio.portas import RepositorioVagas
+from peao_bilingue.dominio.analise import AnaliseSalva, JobAnalysis
+from peao_bilingue.dominio.buscas import Busca
+from peao_bilingue.dominio.coleta import Execucao, Gatilho, StatusExecucao
+from peao_bilingue.dominio.perfil import Perfil
+from peao_bilingue.dominio.repositorio import Repositorio
+from peao_bilingue.dominio.vagas import StatusVaga, Vaga, VagaListada
 
 DB_PATH = DIRETORIO_DADOS / "peao.db"
 
@@ -170,7 +163,7 @@ def _diferencas(antes: dict[str, Any], depois: dict[str, Any]) -> list[str]:
     return sorted(chave for chave in chaves if antes.get(chave) != depois.get(chave))
 
 
-class RepositorioSQLite(RepositorioVagas):
+class RepositorioSQLite(Repositorio):
     def __init__(self, engine: Engine | None = None) -> None:
         self._engine = engine or engine_padrao()
         _migrar(self._engine)

@@ -1,7 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from peao_bilingue.dominio.entidades import SituacaoAgenda
+from peao_bilingue.dominio.agenda import SituacaoAgenda
 from peao_bilingue.textos import descrever_agenda
 
 AGORA = datetime(2026, 10, 6, 9, 30, tzinfo=ZoneInfo("America/Sao_Paulo"))

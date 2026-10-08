@@ -12,19 +12,21 @@ from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
 from peao_bilingue.adaptadores.persistencia.trava import TravaDeArquivo
 from peao_bilingue.aplicacao.execucao import Servicos
 from peao_bilingue.configuracao import DIRETORIO_DADOS, settings
-from peao_bilingue.dominio.portas import Agendador, ProvedorLLM, RepositorioVagas
+from peao_bilingue.dominio.agenda import Agendador
+from peao_bilingue.dominio.analise import ProvedorLLM
+from peao_bilingue.dominio.repositorio import Repositorio
 
 CAMINHO_TRAVA = DIRETORIO_DADOS / "execucao.lock"
 
 
-def montar_repositorio() -> RepositorioVagas:
+def montar_repositorio() -> Repositorio:
     return RepositorioSQLite()
 
 
 def montar_servicos(
     *,
     fontes: list[str] | None = None,
-    repositorio: RepositorioVagas | None = None,
+    repositorio: Repositorio | None = None,
 ) -> Servicos:
     return Servicos(
         repositorio=repositorio or montar_repositorio(),

@@ -12,9 +12,8 @@ from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
-from peao_bilingue.dominio.entidades import SituacaoAgenda
+from peao_bilingue.dominio.agenda import Agendador, SituacaoAgenda
 from peao_bilingue.dominio.erros import ErroDeAgendamento
-from peao_bilingue.dominio.portas import Agendador
 
 # ASCII de propósito: a saída do PowerShell 5.1 vem na página de código do console.
 NOME_TAREFA = "Peao Bilingue - coleta diaria"
