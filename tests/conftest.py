@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 
 # Antes de qualquer import do projeto: o `settings` é lido na importação, e os
@@ -68,3 +69,9 @@ def repositorio() -> RepositorioSQLite:
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
     return RepositorioSQLite(engine)
+
+
+def pytest_sessionfinish() -> None:
+    # A pasta temporária de PEAO_DADOS sobrava a cada execução da suíte. No Windows
+    # algum arquivo pode seguir aberto (SQLite, trava): o que não sair fica.
+    shutil.rmtree(os.environ["PEAO_DADOS"], ignore_errors=True)
