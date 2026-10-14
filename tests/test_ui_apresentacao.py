@@ -8,7 +8,7 @@ from construtores import analise, vaga
 from peao_bilingue.dominio.analise import AnaliseSalva
 from peao_bilingue.dominio.buscas import Busca
 from peao_bilingue.dominio.coleta import Execucao, Gatilho, StatusExecucao
-from peao_bilingue.dominio.vagas import StatusVaga, VagaListada
+from peao_bilingue.dominio.vagas import Anuncio, StatusVaga, VagaListada
 from peao_bilingue.ui import apresentacao
 
 AGORA = datetime(2026, 10, 6, 9, 30, tzinfo=ZoneInfo("America/Sao_Paulo"))
@@ -119,3 +119,13 @@ def test_score_minimo_valido(texto: str, esperado: int | None) -> None:
 def test_score_minimo_invalido_explica(texto: str) -> None:
     with pytest.raises(ValueError, match="0 a 100"):
         apresentacao.score_minimo(texto)
+
+
+def test_detalhe_mostra_onde_mais_a_vaga_foi_publicada() -> None:
+    item = listada().model_copy(
+        update={"tambem_em": [Anuncio(fonte="himalayas", url="https://h/1")]}
+    )
+    assert "Também em himalayas: https://h/1" in apresentacao.detalhe_da_vaga(
+        item, None
+    )
+    assert "Também em himalayas" in apresentacao.detalhe_da_vaga(item, salva())

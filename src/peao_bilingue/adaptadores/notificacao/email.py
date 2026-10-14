@@ -3,7 +3,10 @@ from typing import ClassVar
 
 import aiosmtplib
 
-from peao_bilingue.adaptadores.notificacao.formatacao import montar_email
+from peao_bilingue.adaptadores.notificacao.formatacao import (
+    montar_email,
+    montar_email_de_problema,
+)
 from peao_bilingue.configuracao import settings
 from peao_bilingue.dominio.avisos import Notificador
 from peao_bilingue.dominio.vagas import Vaga
@@ -12,10 +15,10 @@ from peao_bilingue.fabricas import notificadores
 
 @notificadores.registrar("email")
 class Email(Notificador):
-    """Um email por coleta, com todas as vagas novas."""
+    """Um email por coleta com todas as vagas novas; outro se algo falhou."""
 
     nome = "email"
-    rotulo = "Email (vagas novas)"
+    rotulo = "Email (vagas novas e problemas)"
     campos: ClassVar[dict[str, str]] = {
         "smtp_host": "Servidor SMTP",
         "smtp_port": "Porta",
@@ -26,6 +29,9 @@ class Email(Notificador):
 
     async def notificar(self, vagas: list[Vaga]) -> None:
         await self.enviar(*montar_email(vagas))
+
+    async def avisar_problema(self, problemas: list[str]) -> None:
+        await self.enviar(*montar_email_de_problema(problemas))
 
     async def enviar(self, assunto: str, corpo: str) -> None:
         mensagem = EmailMessage()

@@ -263,3 +263,22 @@ def test_so_execucoes_rodando_sao_encerradas_como_orfas(
     assert orfa.finalizada_em is None  # não se sabe quando o processo morreu
     assert (ok.status, ok.erro) == (StatusExecucao.ok, None)
     assert repositorio.encerrar_execucoes_orfas("interrompida") == 0
+
+
+def test_pesquisa_por_texto_sem_ligar_para_acento(
+    repositorio: RepositorioSQLite,
+) -> None:
+    _com_analise(repositorio, "1", titulo="Engenheiro de Dados", empresa="Nubank")
+    _com_analise(repositorio, "2", titulo="Backend Python", local="São Paulo")
+    _com_analise(repositorio, "3", titulo="Frontend", descricao="React e TypeScript")
+
+    def ids(pesquisa: str) -> list[str]:
+        return sorted(
+            v.vaga.id_externo for v in repositorio.listar_vagas(pesquisa=pesquisa)
+        )
+
+    assert ids("nubank") == ["1"]
+    assert ids("sao paulo") == ["2"]
+    assert ids("REACT typescript") == ["3"]
+    # Todas as palavras precisam aparecer.
+    assert ids("typescript nubank") == []

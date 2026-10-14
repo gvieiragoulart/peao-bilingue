@@ -25,7 +25,7 @@ perguntas de entrevista, gaps e o que melhorar no perfil (CV, LinkedIn, VanHack)
 **Fases 1 a 5 e 8 do novo roteiro concluídas** (a 6 aguarda decisão; a 7 não começou), mais a mudança de 07/10 pedida pelo Gabriel: a
 coleta não chama LLM nenhum; cada vaga é analisada pelo botão **Analisar** da aba Vagas, com o
 LLM escolhido (Anthropic, Ollama, OpenAI, Gemini) e o **perfil da fonte** da vaga (cada fonte
-tem o seu). A triagem automática saiu. 244 testes offline; `ruff` e `mypy --strict` limpos.
+tem o seu). A triagem automática saiu. 264 testes offline; `ruff` e `mypy --strict` limpos.
 FastAPI, uvicorn e APScheduler saíram. Banco em `data/peao.db` (o antigo `watcher.db` ficou
 intocado) com 18 vagas reais, nenhuma analisada ainda. Três buscas cadastradas: Python,
 PHP/Laravel, React/TypeScript — sem `exclude`, porque filtrar "junior" descartaria vaga sênior
@@ -125,6 +125,21 @@ adapters concretos.
 A vaga é guardada inteira em JSON (`VagaTabela.dados`); campos próprios de cada fonte vão em
 `Vaga.extras`.
 
+**Vaga repetida entre fontes** (13/10): a mesma vaga aparece em vários sites (a Lemon.io publica
+no Remotive, no Himalayas e no WWR). `Vaga.assinatura()` = empresa + título normalizados
+(minúsculas, sem acento, só letras e números: "Full-stack" = "full stack", "Lemon.io" = "lemon
+io"). Vale só entre **fontes diferentes**: na mesma fonte, título e empresa iguais são vagas
+diferentes (a Bjak tem "Frontend Engineer" em Singapura e na Irlanda, no Remote OK). Sem empresa
+não há assinatura — a VanHack nunca publica a empresa, e só o título juntaria vagas que não têm
+nada a ver. A repetida é **guardada** com `repete=<chave da original>` (senão seria detalhada de
+novo a cada coleta, gastando o limite por fonte), mas não conta como nova, não vai no aviso e
+não aparece na lista; o detalhe da original mostra "Também em <fonte>: <link>". Vagas de antes
+da coluna são assinadas e juntadas ao abrir o banco (`_assinar_vagas_antigas`, uma vez); no
+banco real, 2 pares da Lemon.io.
+
+**Pesquisa** na aba Vagas (`listar_vagas(pesquisa=)`, `Vaga.contem`): cada palavra precisa
+aparecer no título, empresa, local, skills ou descrição, sem ligar para acento nem maiúsculas.
+
 **Coleta (`executar`):** buscar → filtrar → guardar → avisar; **não chama LLM**. Fontes rodam
 uma por vez (um navegador aberto de cada vez). Uma fonte que falha não derruba as outras — vira
 "Falhas parciais" na execução; só falha tudo se todas falharem. Cada fonte que implementa
@@ -133,6 +148,11 @@ uma por vez (um navegador aberto de cada vez). Uma fonte que falha não derruba 
 `avisar=True` — a coleta agendada e `peao run --avisar`; a do botão não avisa, porque quem
 pediu está olhando. Aviso que falha também vira "Falhas parciais" (as vagas ficam salvas). Os
 canais começam desligados (`NOTIFICADORES=[]`): ligado sem estar preenchido, todo aviso falharia.
+**Aviso de problema** (`Notificador.avisar_problema`, 13/10): com `avisar=True`, fonte que falha
+(ou a execução inteira, se não foi fonte) também é avisada — "VanHack: Sessão da VanHack
+expirada…". Sem isso a sessão vencida fazia a coleta agendada falhar todo dia em silêncio. Repete
+a cada coleta enquanto não for resolvido, de propósito: é o lembrete. O texto é o da exceção,
+sem o nome da classe (`fonte.rotulo: mensagem`).
 
 **Perfil por fonte:** o perfil cadastrado na VanHack não é o do LinkedIn. `Perfil.fonte`; o
 repositório guarda, deduplica e mostra histórico **por fonte**. Bancos antigos ganharam a coluna
@@ -145,7 +165,7 @@ repositório guarda, deduplica e mostra histórico **por fonte**. Bancos antigos
 - **Tarefa** registrada pelo PowerShell 5.1 (`Register-ScheduledTask`; o `schtasks` não tem
   `-StartWhenAvailable`): diária, roda ao ligar o PC se a hora passou com ele desligado,
   `-MultipleInstances IgnoreNew`, limite de 2 h. Executa `.venv\Scripts\pythonw.exe -m
-  peao_bilingue.cli run --agendado` (coleta e avisa das vagas novas; nada de LLM) — ou o
+  peao_bilingue.cli run --agendado` (coleta e avisa das vagas novas e dos problemas; nada de LLM) — ou o
   próprio `PeaoBilingue.exe run --agendado`, ver "Executável" — com a
   **pasta do projeto como diretório de trabalho** —
   `data/`, `.env` e `profile_notes.md` são relativos a ela. Nome da tarefa em ASCII: a saída
@@ -415,7 +435,7 @@ uv run peao buscas                   # lista; `buscas adicionar NOME kw1 kw2 --e
 uv run peao adaptadores              # fontes, LLMs e notificadores registrados
 uv run peao run                      # coleta e salva; não chama LLM (análise é no app)
 uv run peao run --fonte vanhack      # só uma fonte
-uv run peao run --avisar             # também manda o resumo das vagas novas
+uv run peao run --avisar             # também avisa das vagas novas e dos problemas
 uv run peao agenda                   # situação da coleta diária
 uv run peao agenda ativar --horario 08:00            # ou `agenda desativar`
 uv run pytest

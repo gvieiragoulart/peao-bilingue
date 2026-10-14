@@ -71,6 +71,22 @@ def test_vagas_aparecem_e_o_detalhe_mostra_a_analise(
     assert "PERGUNTAS DE ENTREVISTA (20)" in aba.detalhe.get("1.0", "end")
 
 
+def test_pesquisa_filtra_a_lista(
+    janela: Aplicativo, repositorio: RepositorioSQLite
+) -> None:
+    repositorio.salvar_vaga(vaga("1", "Backend Laravel"), ["PHP"])
+    repositorio.salvar_vaga(vaga("2", "Data Engineer"), ["Python"])
+    aba = janela.paineis["Vagas"]
+
+    aba.pesquisa.insert(0, "laravel")
+    aba.atualizar()
+
+    assert aba.tabela.arvore.get_children() == ("vanhack:1",)
+    # Enter filtra. O bind fica no Entry do Tk dentro do CTkEntry; a tecla em si não
+    # dá para simular: a janela de teste não recebe o foco do sistema.
+    assert aba.pesquisa._entry.bind("<Return>")
+
+
 def test_fit_minimo_invalido_avisa_sem_quebrar(janela: Aplicativo) -> None:
     aba = janela.paineis["Vagas"]
     aba.score.insert(0, "abc")
