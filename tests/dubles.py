@@ -130,12 +130,18 @@ class NotificadorFake(Notificador):
 
     def __init__(self, falha: Exception | None = None) -> None:
         self.recebido: list[list[Vaga]] = []
+        self.problemas: list[list[str]] = []
         self.falha = falha
 
     async def notificar(self, vagas: list[Vaga]) -> None:
         if self.falha:
             raise self.falha
         self.recebido.append(vagas)
+
+    async def avisar_problema(self, problemas: list[str]) -> None:
+        if self.falha:
+            raise self.falha
+        self.problemas.append(problemas)
 
 
 class ApiFalsa:

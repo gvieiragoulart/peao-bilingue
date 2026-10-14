@@ -30,7 +30,8 @@ class AbaConfiguracoes(ctk.CTkScrollableFrame):
         ctk.CTkLabel(
             self,
             text="Depois da coleta agendada, um resumo das vagas novas (título, fonte e "
-            "link) pelos canais ligados. Ligue só os que já estiverem preenchidos.",
+            "link) pelos canais ligados — e um aviso se algo falhar, como a sessão de "
+            "uma fonte vencida. Ligue só os que já estiverem preenchidos.",
             wraplength=900,
             justify="left",
             text_color="gray55",

@@ -1,4 +1,5 @@
-"""Texto dos avisos de vagas novas. A análise não vai no aviso: é pedida no app."""
+"""Texto dos avisos: vagas novas e problemas da coleta. A análise não vai no
+aviso: é pedida no app."""
 
 from peao_bilingue.dominio.vagas import Vaga
 
@@ -43,3 +44,25 @@ def montar_digest(vagas: list[Vaga]) -> str:
             return texto + sufixo
         texto += bloco
     return texto
+
+
+def _lista(problemas: list[str]) -> str:
+    return "\n".join(f"- {problema}" for problema in problemas)
+
+
+def montar_email_de_problema(problemas: list[str]) -> tuple[str, str]:
+    """Assunto e corpo do aviso de que a coleta agendada precisa de ação."""
+    assunto = "Peão Bilíngue — a coleta precisa de atenção"
+    corpo = (
+        f"A coleta agendada não conseguiu ler tudo:\n\n{_lista(problemas)}\n\n"
+        "Os detalhes ficam na aba Execuções do app."
+    )
+    return assunto, corpo
+
+
+def montar_digest_de_problema(problemas: list[str]) -> str:
+    """O mesmo aviso, curto, para o WhatsApp."""
+    texto = f"Peão Bilíngue — a coleta precisa de atenção\n\n{_lista(problemas)}"
+    if len(texto) <= LIMITE_WHATSAPP:
+        return texto
+    return texto[: LIMITE_WHATSAPP - 1] + "…"

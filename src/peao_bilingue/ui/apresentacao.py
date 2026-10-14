@@ -3,7 +3,7 @@
 from peao_bilingue.dominio.analise import AnaliseSalva, JobAnalysis
 from peao_bilingue.dominio.buscas import Busca
 from peao_bilingue.dominio.coleta import Execucao
-from peao_bilingue.dominio.vagas import StatusVaga, Vaga, VagaListada
+from peao_bilingue.dominio.vagas import Anuncio, StatusVaga, Vaga, VagaListada
 
 TODAS = "Todas"
 OPCOES_STATUS = [TODAS, *(status.value for status in StatusVaga)]
@@ -20,7 +20,13 @@ def linha_de_vaga(item: VagaListada) -> tuple[str, ...]:
     )
 
 
-def texto_da_analise(vaga: Vaga, analise: JobAnalysis) -> str:
+def _tambem_em(anuncios: list[Anuncio]) -> list[str]:
+    return [f"Também em {anuncio.fonte}: {anuncio.url}" for anuncio in anuncios]
+
+
+def texto_da_analise(
+    vaga: Vaga, analise: JobAnalysis, tambem_em: list[Anuncio] | None = None
+) -> str:
     detalhes = " | ".join(
         parte
         for parte in (
@@ -37,6 +43,7 @@ def texto_da_analise(vaga: Vaga, analise: JobAnalysis) -> str:
             vaga.titulo,
             detalhes,
             vaga.url,
+            *_tambem_em(tambem_em or []),
             "",
             f"Fit: {analise.fit_score}/100",
             "",
@@ -64,6 +71,7 @@ def detalhe_da_vaga(item: VagaListada, analise: AnaliseSalva | None) -> str:
             [
                 item.vaga.titulo,
                 item.vaga.url,
+                *_tambem_em(item.tambem_em),
                 "",
                 "Ainda não analisada: escolha o LLM e o perfil e clique em Analisar.",
                 "",
@@ -84,7 +92,8 @@ def detalhe_da_vaga(item: VagaListada, analise: AnaliseSalva | None) -> str:
             f"\nO perfil da fonte {analise.perfil_fonte} mudou depois desta análise: "
             "analise de novo para atualizar."
         )
-    return f"{texto_da_analise(item.vaga, analise.analise)}\n\n{rodape}"
+    texto = texto_da_analise(item.vaga, analise.analise, item.tambem_em)
+    return f"{texto}\n\n{rodape}"
 
 
 def linha_de_busca(busca: Busca) -> tuple[str, ...]:

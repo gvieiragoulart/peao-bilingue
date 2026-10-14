@@ -72,3 +72,27 @@ async def test_email_manda_uma_mensagem_por_coleta(enviados: dict[str, Any]) -> 
 async def test_whatsapp_manda_um_unico_resumo(enviados: dict[str, Any]) -> None:
     await WhatsApp().notificar([vaga("1"), vaga("2")])
     assert len(enviados["whatsapp"]) == 1
+
+
+def test_aviso_de_problema_lista_o_que_falhou() -> None:
+    assunto, corpo = formatacao.montar_email_de_problema(
+        ["VanHack: sessão expirada", "Remotive: 429"]
+    )
+    assert "atenção" in assunto
+    assert "- VanHack: sessão expirada\n- Remotive: 429" in corpo
+    assert "Execuções" in corpo
+
+
+def test_aviso_de_problema_respeita_o_limite_do_whatsapp() -> None:
+    texto = formatacao.montar_digest_de_problema(["x" * 3_000])
+    assert len(texto) == formatacao.LIMITE_WHATSAPP
+    assert texto.endswith("…")
+
+
+async def test_os_dois_canais_mandam_o_aviso_de_problema(
+    enviados: dict[str, Any],
+) -> None:
+    await Email().avisar_problema(["VanHack: sessão expirada"])
+    await WhatsApp().avisar_problema(["VanHack: sessão expirada"])
+    assert enviados["email"] == ["Peão Bilíngue — a coleta precisa de atenção"]
+    assert "VanHack: sessão expirada" in enviados["whatsapp"][0]

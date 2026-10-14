@@ -1,5 +1,8 @@
 """Caso de uso principal: uma coleta — buscar, filtrar, guardar e avisar.
 
+A coleta agendada avisa das vagas novas e também de problema que precisa de
+ação (sessão vencida, fonte falhando): ninguém está olhando o app nessa hora.
+
 Nenhum LLM é chamado aqui: a análise é pedida vaga a vaga, na interface
 (`aplicacao.analise.analisar_vaga`). Só conhece portas; quais fontes e
 notificadores entram é decidido na composição (`peao_bilingue.composicao`).
@@ -71,6 +74,8 @@ class _Estado:
     novas: list[Vaga] = field(default_factory=list)
     falhas: list[str] = field(default_factory=list)
     excecoes: list[Exception] = field(default_factory=list)
+    # As falhas de fonte em texto para quem lê o aviso (sem nome de exceção).
+    problemas: list[str] = field(default_factory=list)
 
 
 async def executar(
@@ -79,8 +84,9 @@ async def executar(
     *,
     avisar: bool = False,
 ) -> Execucao:
-    """`avisar` manda o resumo das vagas novas pelos notificadores: a coleta
-    agendada avisa; a pedida no app não, porque quem pediu está olhando."""
+    """`avisar` manda pelos notificadores o resumo das vagas novas e, se algo
+    falhou, o problema: a coleta agendada avisa; a pedida no app não, porque quem
+    pediu está olhando."""
     if not servicos.trava.adquirir():
         raise ExecucaoEmAndamento(
             "Já existe uma execução em andamento (no app ou na tarefa agendada)."
@@ -95,8 +101,9 @@ async def executar(
                 "%d execução(ões) anterior(es) marcada(s) como interrompida(s).", orfas
             )
         execucao = execucoes.iniciar_execucao(gatilho)
+        estado = _Estado()
         try:
-            await _rodar(servicos, execucao, avisar=avisar)
+            await _rodar(servicos, execucao, estado, avisar=avisar)
             execucao.status = StatusExecucao.ok
         except SessaoExpirada as falha:
             execucao.status = StatusExecucao.login_required
@@ -107,19 +114,22 @@ async def executar(
             execucao.erro = f"{type(falha).__name__}: {falha}"
             execucao.artefato = getattr(falha, "artefato", None)
             logger.exception("Execução falhou")
+        if avisar:
+            await _avisar_problemas(servicos.notificadores, execucao, estado)
         execucoes.finalizar_execucao(execucao)
         return execucao
     finally:
         servicos.trava.liberar()
 
 
-async def _rodar(servicos: Servicos, execucao: Execucao, *, avisar: bool) -> None:
+async def _rodar(
+    servicos: Servicos, execucao: Execucao, estado: _Estado, *, avisar: bool
+) -> None:
     buscas = servicos.buscas.listar_buscas(so_ativas=True)
     if not buscas:
         logger.info("Nenhuma busca ativa; nada a fazer.")
         return
 
-    estado = _Estado()
     for fonte in servicos.fontes:
         await _coletar_da_fonte(servicos, execucao, fonte, buscas, estado)
 
@@ -149,6 +159,7 @@ async def _coletar_da_fonte(
     except Exception as falha:  # noqa: BLE001
         estado.excecoes.append(falha)
         estado.falhas.append(f"{fonte.nome}: {type(falha).__name__}: {falha}")
+        estado.problemas.append(f"{fonte.rotulo}: {falha}")
         execucao.artefato = execucao.artefato or getattr(falha, "artefato", None)
         logger.warning("Fonte %s falhou: %s", fonte.nome, falha)
 
@@ -197,7 +208,13 @@ async def _coletar(
         if not casadas:
             logger.info("Vaga %s não passou nos filtros.", vaga.chave)
             continue
-        vagas.salvar_vaga(vaga, casadas)
+        # A mesma vaga em outro site: guardada (não é detalhada de novo), mas não é
+        # nova nem vai no aviso.
+        original = vagas.original_de(vaga)
+        vagas.salvar_vaga(vaga, casadas, repete=original)
+        if original:
+            logger.info("Vaga %s repete %s; fica junto dela.", vaga.chave, original)
+            continue
         novas.append(vaga)
     execucao.vagas_novas += len(novas)
     return novas
@@ -213,4 +230,21 @@ async def _avisar(notificadores: list[Notificador], estado: _Estado) -> None:
         # As vagas já estão salvas; o aviso que falhou fica registrado na execução.
         except Exception as falha:  # noqa: BLE001
             estado.falhas.append(f"aviso por {notificador.nome}: {falha}")
+            logger.warning("Notificador %s falhou: %s", notificador.nome, falha)
+
+
+async def _avisar_problemas(
+    notificadores: list[Notificador], execucao: Execucao, estado: _Estado
+) -> None:
+    # Fonte que falhou diz o quê; sem fonte com falha, é a execução inteira.
+    problemas = estado.problemas or ([execucao.erro] if execucao.erro else [])
+    if not problemas:
+        return
+    for notificador in notificadores:
+        try:
+            await notificador.avisar_problema(problemas)
+        # Sem como avisar por este canal: fica na execução, como o aviso de vagas.
+        except Exception as falha:  # noqa: BLE001
+            nota = f"aviso do problema por {notificador.nome}: {falha}"
+            execucao.erro = f"{execucao.erro} | {nota}" if execucao.erro else nota
             logger.warning("Notificador %s falhou: %s", notificador.nome, falha)

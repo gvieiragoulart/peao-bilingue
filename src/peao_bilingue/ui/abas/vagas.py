@@ -38,6 +38,15 @@ class AbaVagas(ctk.CTkFrame):
             for nome in fabricas.llms.disponiveis()
         }
 
+        # Linha própria: ao lado dos filtros o campo não caberia na largura da janela.
+        self.pesquisa = ctk.CTkEntry(
+            self,
+            placeholder_text="Procurar no título, empresa, local, skills e descrição "
+            "(Enter para filtrar)",
+        )
+        self.pesquisa.pack(fill="x", pady=(0, 6))
+        self.pesquisa.bind("<Return>", lambda _evento: self.atualizar())
+
         filtros = ctk.CTkFrame(self, fg_color="transparent")
         filtros.pack(fill="x", pady=(0, 8))
         self.status = ctk.CTkOptionMenu(
@@ -143,6 +152,7 @@ class AbaVagas(ctk.CTkFrame):
             min_score=minimo,
             busca=filtro(self.busca),
             fonte=filtro(self.fonte),
+            pesquisa=self.pesquisa.get().strip() or None,
             limite=LIMITE,
         )
         self._vagas = {item.vaga.chave: item for item in vagas}

@@ -1,11 +1,24 @@
 """Vagas: o que as fontes trazem, o que o usuário acompanha e onde fica guardado."""
 
+import re
+import unicodedata
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel
+
+
+def sem_acentos(texto: str) -> str:
+    """Minúsculas e sem acento: "Líder" e "lider" se encontram."""
+    decomposto = unicodedata.normalize("NFKD", texto.casefold())
+    return "".join(letra for letra in decomposto if not unicodedata.combining(letra))
+
+
+def _so_palavras(texto: str) -> str:
+    # "Full-stack" e "Full Stack", "Lemon.io" e "lemon io": a mesma coisa.
+    return " ".join(re.findall(r"[a-z0-9]+", sem_acentos(texto)))
 
 
 class StatusVaga(StrEnum):
@@ -64,6 +77,29 @@ class Vaga(VagaResumo):
         ]
         return " ".join(partes).lower()
 
+    def assinatura(self) -> str:
+        """Empresa + título normalizados: reconhece a mesma vaga publicada em sites
+        diferentes. Vazia quando a fonte não publica a empresa (a VanHack nunca
+        publica): só o título juntaria vagas que não têm nada a ver."""
+        if not self.empresa or not _so_palavras(self.empresa):
+            return ""
+        return f"{_so_palavras(self.empresa)}|{_so_palavras(self.titulo)}"
+
+    def contem(self, pesquisa: str) -> bool:
+        """Cada palavra da pesquisa aparece no título, empresa, local, skills ou
+        descrição, sem ligar para acento nem maiúsculas."""
+        texto = sem_acentos(
+            " ".join([self.texto_pesquisavel(), self.empresa or "", self.local or ""])
+        )
+        return all(palavra in texto for palavra in sem_acentos(pesquisa).split())
+
+
+class Anuncio(BaseModel):
+    """Onde mais a mesma vaga foi publicada."""
+
+    fonte: str
+    url: str
+
 
 class VagaListada(BaseModel):
     vaga: Vaga
@@ -71,6 +107,8 @@ class VagaListada(BaseModel):
     fit_score: int | None
     buscas: list[str]
     vista_em: datetime
+    # A mesma vaga em outros sites: guardada uma vez só, com os outros links aqui.
+    tambem_em: list[Anuncio] = []
 
 
 class RepositorioVagas(ABC):
@@ -78,7 +116,16 @@ class RepositorioVagas(ABC):
     def vaga_existe(self, chave: str) -> bool: ...
 
     @abstractmethod
-    def salvar_vaga(self, vaga: Vaga, buscas: list[str]) -> None: ...
+    def salvar_vaga(
+        self, vaga: Vaga, buscas: list[str], *, repete: str | None = None
+    ) -> None:
+        """`repete` é a chave da mesma vaga já guardada por outra fonte: esta fica
+        guardada (para não ser detalhada de novo), mas não aparece na lista."""
+
+    @abstractmethod
+    def original_de(self, vaga: Vaga) -> str | None:
+        """A chave da mesma vaga (`Vaga.assinatura`) já guardada por **outra** fonte.
+        Na mesma fonte, título e empresa iguais são vagas diferentes (outro país)."""
 
     @abstractmethod
     def obter_vaga(self, chave: str) -> Vaga | None: ...
@@ -91,6 +138,7 @@ class RepositorioVagas(ABC):
         min_score: int | None = None,
         busca: str | None = None,
         fonte: str | None = None,
+        pesquisa: str | None = None,
         limite: int = 50,
         offset: int = 0,
     ) -> list[VagaListada]:

@@ -75,7 +75,7 @@ Cuidado com `--exclude`: o filtro olha a descrição inteira, e vaga sênior cos
 
 ```bash
 uv run peao run                  # coleta e salva as vagas novas; não chama LLM
-uv run peao run --avisar         # e manda o resumo das vagas novas pelos canais ligados
+uv run peao run --avisar         # e avisa das vagas novas e dos problemas pelos canais ligados
 ```
 
 Para limitar as fontes: `--fonte vanhack`. `uv run peao adaptadores` lista o que está
@@ -94,7 +94,9 @@ uv run peao agenda desativar
 A tarefa fica no Agendador de Tarefas do Windows ("Peao Bilingue - coleta diaria") e roda com o
 app fechado; se o PC estiver desligado na hora marcada, ela roda assim que ele ligar. Coleta
 como o `uv run peao run` e **avisa das vagas novas** (título, fonte e link) pelos canais ligados
-em Configurações — eles começam desligados; ligue os que já tiver preenchido. Como roda sem
+em Configurações — eles começam desligados; ligue os que já tiver preenchido. Se algo falhar
+(a sessão da VanHack venceu, um site saiu do ar), chega um aviso dizendo o quê, a cada coleta,
+até ser resolvido. Como roda sem
 janela, o registro fica em `data/coleta.log`. Só uma coleta roda por vez: se a tarefa começar
 enquanto você coleta pelo app (ou o contrário), a segunda é recusada.
 
@@ -142,6 +144,10 @@ registrado numa fábrica pelo nome. Adicionar uma fonte nova é escrever um mód
 
 Cada execução fica registrada com contadores e erros. Uma fonte com problema não derruba as
 outras; qualquer falha de leitura deixa screenshot + HTML em `artifacts/`.
+
+A mesma vaga publicada em sites diferentes (mesma empresa e mesmo título) aparece uma vez só,
+com os outros links em "Também em" no detalhe. Na aba Vagas, o campo de pesquisa procura no
+título, empresa, local, skills e descrição — sem ligar para acento nem maiúsculas.
 
 ## Sessão expirada
 

@@ -281,3 +281,73 @@ async def test_detalha_no_maximo_o_limite_por_fonte(
 
     assert len(fonte.detalhadas) == 2
     assert resultado.vagas_novas == 2
+
+
+# --- aviso de problema --------------------------------------------------------
+
+
+async def test_coleta_agendada_avisa_da_sessao_vencida(
+    com_busca: RepositorioSQLite,
+) -> None:
+    # Ninguém olha o app na hora da coleta agendada: sem aviso, a sessão vencida
+    # faria a coleta falhar todo dia em silêncio.
+    notificador = NotificadorFake()
+    fonte = FonteFake(falha=SessaoExpirada("Faça o login de novo."))
+
+    resultado = await executar(
+        servicos(com_busca, fonte, notificador=notificador),
+        Gatilho.agendado,
+        avisar=True,
+    )
+
+    assert resultado.status == StatusExecucao.login_required
+    assert notificador.problemas == [["Fake: Faça o login de novo."]]
+
+
+async def test_fonte_que_falha_e_avisada_junto_com_as_vagas_das_outras(
+    com_busca: RepositorioSQLite,
+) -> None:
+    notificador = NotificadorFake()
+    quebrada = FonteFake(nome="quebrada", falha=ErroDeColeta("site fora do ar"))
+    boa = FonteFake(nome="boa", vagas=[vaga("1")])
+
+    await executar(
+        servicos(com_busca, quebrada, boa, notificador=notificador),
+        Gatilho.agendado,
+        avisar=True,
+    )
+
+    assert [[v.chave for v in vagas] for vagas in notificador.recebido] == [["boa:1"]]
+    assert notificador.problemas == [["Fake: site fora do ar"]]
+
+
+async def test_coleta_sem_problema_nao_manda_aviso_de_problema(
+    com_busca: RepositorioSQLite,
+) -> None:
+    notificador = NotificadorFake()
+    await executar(
+        servicos(com_busca, FonteFake(vagas=[vaga("1")]), notificador=notificador),
+        avisar=True,
+    )
+    assert notificador.problemas == []
+
+
+async def test_coleta_pelo_app_nao_avisa_problema(com_busca: RepositorioSQLite) -> None:
+    notificador = NotificadorFake()
+    fonte = FonteFake(falha=SessaoExpirada("vencida"))
+    await executar(servicos(com_busca, fonte, notificador=notificador))
+    assert notificador.problemas == []
+
+
+async def test_aviso_de_problema_que_falha_fica_registrado(
+    com_busca: RepositorioSQLite,
+) -> None:
+    notificador = NotificadorFake(falha=ConnectionError("SMTP fora"))
+    fonte = FonteFake(falha=SessaoExpirada("vencida"))
+
+    resultado = await executar(
+        servicos(com_busca, fonte, notificador=notificador), avisar=True
+    )
+
+    erro = resultado.erro or ""
+    assert "vencida" in erro and "aviso do problema por fake: SMTP fora" in erro

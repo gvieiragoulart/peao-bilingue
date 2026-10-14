@@ -39,6 +39,10 @@ class VagaTabela(SQLModel, table=True):
     buscas: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     status: StatusVaga = StatusVaga.nova
     vista_em: datetime = Field(default_factory=agora)
+    # `Vaga.assinatura()`; None = ainda não calculada (linha de antes da coluna).
+    assinatura: str | None = None
+    # Chave da mesma vaga já guardada por outra fonte: esta não aparece na lista.
+    repete: str | None = None
 
 
 class PerfilTabela(SQLModel, table=True):
