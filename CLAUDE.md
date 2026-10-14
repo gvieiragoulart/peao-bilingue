@@ -206,6 +206,14 @@ repositório guarda, deduplica e mostra histórico **por fonte**. Bancos antigos
 - Entram à mão no spec: os submódulos de `peao_bilingue` (adapters são importados pelo registro),
   os backends do `keyring` + metadata (achados por entry points), `win32ctypes.core` e o dialeto
   `sqlite` do SQLAlchemy. O Chromium do Playwright **não** entra: usa o Chrome instalado.
+- **Instalação do Gabriel (13/10):** programa em `%LOCALAPPDATA%\Programs\PeaoBilingue`, dados
+  em `%LOCALAPPDATA%\PeaoBilingue` (migrados do `data/` do projeto), atalho no Menu Iniciar e a
+  tarefa das 08:00 chamando o .exe. O `data/` do projeto virou só cópia de desenvolvimento.
+- **O Claude desktop é MSIX:** pasta **nova** criada em `AppData` por processo aberto pelo shell
+  do agente (inclusive o .exe) vai para `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\...` — só o
+  agente a vê. Assim a primeira migração "sumiu": a tarefa agendada abriu um banco vazio e saiu
+  com código 0 sem registro. Para instalar, atualizar ou testar o .exe de verdade, usar uma
+  **tarefa agendada temporária** (roda fora do contêiner) e removê-la depois.
 - **Bug achado pelo .exe (existia também no projeto):** se o `__aenter__` da VanHack falhava
   depois de abrir o navegador (sessão expirada, desafio), o `async with` não chamava o
   `__aexit__` e o Chrome + driver seguravam o processo — a coleta agendada com sessão vencida
