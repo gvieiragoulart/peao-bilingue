@@ -1,4 +1,4 @@
-"""Reusable widgets: a themed table and forms bound to Settings."""
+"""Reusable widgets: headings and hints, a themed table and forms bound to Settings."""
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -31,6 +31,20 @@ def theme_color(widget: str, prop: str) -> str:
     """The theme stores [light, dark]; picks by the current mode."""
     pair = ctk.ThemeManager.theme[widget][prop]
     return str(pair[1] if ctk.get_appearance_mode() == "Dark" else pair[0])
+
+
+class Heading(ctk.CTkLabel):
+    """A section's title, on the scrollable tabs (LLMs, Settings)."""
+
+    def __init__(self, master: Any, text: str) -> None:
+        super().__init__(master, text=text, font=ctk.CTkFont(size=15, weight="bold"))
+
+
+class Hint(ctk.CTkLabel):
+    """A gray explanation next to what it explains."""
+
+    def __init__(self, master: Any, text: str, **kwargs: Any) -> None:
+        super().__init__(master, text=text, text_color="gray55", **kwargs)
 
 
 class Table(ctk.CTkFrame):

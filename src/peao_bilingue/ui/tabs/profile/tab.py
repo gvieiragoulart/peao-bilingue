@@ -2,6 +2,7 @@
 
 The CV (`manual`) is the profile for jobs whose source has none, like the public APIs,
 and for anyone without a VanHack account. Contact data is removed before it is saved.
+The tab puts the components together and does the reading, saving and importing.
 """
 
 from pathlib import Path
@@ -18,7 +19,10 @@ from peao_bilingue.config import settings
 from peao_bilingue.domain.profile import MANUAL_SOURCE, ProfileSource
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation
-from peao_bilingue.ui.widgets import Table
+from peao_bilingue.ui.tabs.profile.history import ProfileHistory
+from peao_bilingue.ui.tabs.profile.notes import NotesEditor
+from peao_bilingue.ui.tabs.profile.profile_text import ProfileText
+from peao_bilingue.ui.tabs.profile.toolbar import ProfileToolbar
 
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
@@ -49,29 +53,15 @@ class ProfileTab(ctk.CTkFrame):
         # Until the user picks a source, the tab shows the best default (see refresh).
         self._picked_by_user = False
 
-        top = ctk.CTkFrame(self, fg_color="transparent")
-        top.pack(fill="x", pady=(0, 8))
-        ctk.CTkLabel(top, text=_("Source")).pack(side="left", padx=(0, 4))
-        self.source = ctk.CTkOptionMenu(
-            top, values=[manual_label()], width=170, command=self._on_pick
+        self.toolbar = ProfileToolbar(
+            self,
+            manual_label(),
+            on_pick=self._on_pick,
+            on_read=self._read,
+            on_save=self._save_manual,
+            on_import=self._import,
         )
-        self.source.pack(side="left", padx=(0, 12))
-        self.status = ctk.CTkLabel(top, text="", wraplength=520, justify="left")
-        self.status.pack(side="left")
-        self.read_button = ctk.CTkButton(
-            top, text=_("Read profile now"), width=140, command=self._read
-        )
-        self.save_button = ctk.CTkButton(
-            top, text=_("Save profile"), width=120, command=self._save_manual
-        )
-        self.import_button = ctk.CTkButton(
-            top,
-            text=_("Import file…"),
-            width=130,
-            fg_color="transparent",
-            border_width=1,
-            command=self._import,
-        )
+        self.toolbar.pack(fill="x", pady=(0, 8))
 
         body = ctk.CTkFrame(self, fg_color="transparent")
         body.pack(fill="both", expand=True)
@@ -79,132 +69,85 @@ class ProfileTab(ctk.CTkFrame):
         body.grid_columnconfigure(1, weight=2)
         body.grid_rowconfigure(0, weight=1)
 
-        self.text = ctk.CTkTextbox(body, wrap="word")
+        self.text = ProfileText(body)
         self.text.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
-        self.history = Table(
-            body,
-            [("read_at", _("Read on"), 120), ("fields", _("What changed"), 260)],
-        )
+        self.history = ProfileHistory(body)
         self.history.grid(row=0, column=1, sticky="nsew")
 
-        notes = ctk.CTkFrame(self, fg_color="transparent")
-        notes.pack(fill="x", pady=(12, 0))
-        heading = ctk.CTkFrame(notes, fg_color="transparent")
-        heading.pack(fill="x")
-        ctk.CTkLabel(
-            heading, text=_("Notes about you"), font=ctk.CTkFont(weight="bold")
-        ).pack(side="left")
-        ctk.CTkButton(
-            heading, text=_("Save notes"), width=120, command=self._save_notes
-        ).pack(side="right")
-        ctk.CTkLabel(
-            notes,
-            text=_(
-                "They go into every analysis, with any profile: what you want and don't "
-                "want, and what the profile doesn't show (e.g. \"I want remote jobs "
-                'only", "I\'ve led a team of 5").'
-            ),
-            text_color="gray55",
-            wraplength=900,
-            justify="left",
-        ).pack(anchor="w")
-        self.notes = ctk.CTkTextbox(notes, wrap="word", height=100)
-        self.notes.pack(fill="x", pady=(4, 0))
-        self._load_notes()
+        self.notes = NotesEditor(self, on_save=self._save_notes)
+        self.notes.pack(fill="x", pady=(12, 0))
+        self.notes.show(read_profile_notes())
 
     def _on_pick(self, value: str) -> None:
-        self.source.set(value)  # already set by a click; not when called directly
+        self.toolbar.pick(value)  # already set by a click; not when called directly
         self._picked_by_user = True
         self.refresh()
 
     def _picked(self) -> str:
-        return self._labels.get(self.source.get(), MANUAL_SOURCE)
+        return self._labels.get(self.toolbar.picked(), MANUAL_SOURCE)
 
     def refresh(self) -> None:
         repository = self.app.repository
         # The CV, the sources that read a profile today and those that already have one
         # saved (even if turned off).
-        names = (
-            sorted(set(profile_sources()) | set(repository.sources_with_profile()))
-            or []
-        )
+        names = sorted(set(profile_sources()) | set(repository.sources_with_profile()))
         names = [MANUAL_SOURCE, *(name for name in names if name != MANUAL_SOURCE)]
         self._labels = {
             (manual_label() if name == MANUAL_SOURCE else name): name for name in names
         }
-        self.source.configure(values=list(self._labels))
-        if not self._picked_by_user or self.source.get() not in self._labels:
+        self.toolbar.set_choices(list(self._labels))
+        if not self._picked_by_user or self.toolbar.picked() not in self._labels:
             # A source's saved profile if there is one; otherwise the CV, to fill in.
             saved_sources = [
                 label
                 for label, name in self._labels.items()
                 if name != MANUAL_SOURCE and repository.last_profile(name)
             ]
-            self.source.set(saved_sources[0] if saved_sources else manual_label())
+            self.toolbar.pick(saved_sources[0] if saved_sources else manual_label())
         name = self._picked()
         manual = name == MANUAL_SOURCE
-
-        for button in (self.read_button, self.save_button, self.import_button):
-            button.pack_forget()
-        if manual:
-            self.save_button.pack(side="right")
-            self.import_button.pack(side="right", padx=6)
-        else:
-            self.read_button.pack(side="right")
+        self.toolbar.show_actions(manual=manual)
 
         saved = repository.last_profile(name)
         if manual:
-            self.status.configure(
-                text=_(
+            self.toolbar.show_status(
+                _(
                     "Paste your CV or profile (or import a file) and save. It's the "
                     "profile for jobs whose source has none. Emails, phones and links "
                     "are removed automatically."
                 )
             )
         elif saved is None:
-            self.status.configure(
-                text=_("No {source} profile read yet.").format(source=name)
+            self.toolbar.show_status(
+                _("No {source} profile read yet.").format(source=name)
             )
         else:
-            self.status.configure(
-                text=_(
+            self.toolbar.show_status(
+                _(
                     "The {source} profile, used to analyze its jobs (no personal data):"
                 ).format(source=name)
             )
         # An unsaved paste survives a refresh (another tab saving, a collection ending).
-        edited = self._shown == name and bool(self.text._textbox.edit_modified())
-        if not edited:
-            self.text.configure(state="normal")
-            self.text.delete("1.0", "end")
+        if not (self._shown == name and self.text.edited()):
             if saved is not None:
-                self.text.insert("1.0", saved[1].text)
+                text = saved[1].text
             elif not manual:
-                self.text.insert("1.0", _("Click Read profile now."))
-            self.text._textbox.edit_modified(False)
-            self.text.configure(state="normal" if manual else "disabled")
+                text = _("Click Read profile now.")
+            else:
+                text = ""
+            self.text.show(text, editable=manual)
         self._shown = name
 
-        self.history.fill(
-            [
-                (
-                    str(item["id"]),
-                    (
-                        f"{item['read_at']:%d/%m/%Y %H:%M}",
-                        ", ".join(item["changed_fields"]),
-                    ),
-                )
-                for item in repository.profile_history(name)
-            ]
-        )
+        self.history.show(repository.profile_history(name))
 
     def _save_manual(self) -> None:
-        text = self.text.get("1.0", "end").strip()
+        text = self.text.content()
         if not text:
             self.app.show_error(ValueError(_("Paste your CV or profile first.")))
             return
         profile, removed = manual_profile(text)
         self.app.repository.save_profile(profile)
-        self.text._textbox.edit_modified(False)
+        self.text.mark_saved()
         self.app.on_change()
         self.app.inform(presentation.saved_without_contact_data(removed))
 
@@ -231,21 +174,13 @@ class ProfileTab(ctk.CTkFrame):
                 )
             )
             return
-        self.text.configure(state="normal")
-        self.text.delete("1.0", "end")
-        self.text.insert("1.0", text)
-        self.status.configure(
-            text=_("Imported. Check the text and click Save profile.")
-        )
-
-    def _load_notes(self) -> None:
-        self.notes.delete("1.0", "end")
-        self.notes.insert("1.0", read_profile_notes())
+        self.text.replace(text)
+        self.toolbar.show_status(_("Imported. Check the text and click Save profile."))
 
     def _save_notes(self) -> None:
-        text, removed = clean_notes(self.notes.get("1.0", "end"))
+        text, removed = clean_notes(self.notes.content())
         save_profile_notes(text + "\n" if text else "")
-        self._load_notes()
+        self.notes.show(read_profile_notes())
         self.app.inform(presentation.saved_without_contact_data(removed))
 
     def _read(self) -> None:
@@ -259,7 +194,7 @@ class ProfileTab(ctk.CTkFrame):
                 )
             )
             return
-        self.read_button.configure(state="disabled", text=_("Reading…"))
+        self.toolbar.set_reading(True)
         repository = self.app.repository
 
         async def read() -> bool:
@@ -272,7 +207,7 @@ class ProfileTab(ctk.CTkFrame):
             return changed
 
         def finish(changed: bool) -> None:
-            self.read_button.configure(state="normal", text=_("Read profile now"))
+            self.toolbar.set_reading(False)
             self.app.on_change()
             self.app.inform(
                 _("The {source} profile was updated.").format(source=name)
@@ -281,7 +216,7 @@ class ProfileTab(ctk.CTkFrame):
             )
 
         def fail(failure: BaseException) -> None:
-            self.read_button.configure(state="normal", text=_("Read profile now"))
+            self.toolbar.set_reading(False)
             self.app.show_error(failure)
 
         self.app.run(read(), on_done=finish, on_error=fail)
