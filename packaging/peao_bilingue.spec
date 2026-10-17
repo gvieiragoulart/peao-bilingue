@@ -20,6 +20,8 @@ datas = [
     *collect_data_files("playwright"),
     # keyring finds the Windows vault backend through entry points.
     *copy_metadata("keyring"),
+    # The app reads its own version from the package metadata.
+    *copy_metadata("peao-bilingue"),
 ]
 
 hiddenimports = [

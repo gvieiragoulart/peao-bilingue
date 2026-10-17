@@ -3,16 +3,27 @@
 import asyncio
 import logging
 import queue
+import webbrowser
 from collections.abc import Callable, Coroutine
 from tkinter import messagebox
+from types import TracebackType
 from typing import Any
 
 import customtkinter as ctk
 
-from peao_bilingue.composition import build_repository, build_scheduler
+from peao_bilingue import __version__
+from peao_bilingue.application.updates import newer_release
+from peao_bilingue.composition import (
+    build_release_feed,
+    build_repository,
+    build_scheduler,
+)
+from peao_bilingue.config import settings
 from peao_bilingue.domain.repository import Repository
 from peao_bilingue.domain.schedule import Scheduler
+from peao_bilingue.domain.updates import Release, ReleaseFeed
 from peao_bilingue.i18n import _
+from peao_bilingue.logs import log_to_file, record_uncaught_exceptions
 from peao_bilingue.ui.executor import AsyncExecutor, LogQueue, track
 from peao_bilingue.ui.tabs.jobs import JobsTab
 from peao_bilingue.ui.tabs.llms import LLMsTab
@@ -47,18 +58,39 @@ class App(ctk.CTk):
         repository: Repository | None = None,
         executor: AsyncExecutor | None = None,
         scheduler: Scheduler | None = None,
+        release_feed: ReleaseFeed | None = None,
     ) -> None:
         super().__init__()
-        self.title(_("{app} — job radar").format(app=APP_NAME))
+        self.title(
+            _("{app} {version} — job radar").format(app=APP_NAME, version=__version__)
+        )
         self.geometry("1280x800")
         self.minsize(1000, 640)
 
         self.repository = repository or build_repository()
         self.executor = executor or AsyncExecutor()
         self.scheduler = scheduler or build_scheduler()
+        self.release_feed = release_feed or build_release_feed()
         self._queue: queue.Queue[str] = queue.Queue()
         self._log = LogQueue(self._queue)
         logging.getLogger().addHandler(self._log)
+
+        # Shown above the tabs only when a newer version is out.
+        self.update_banner = ctk.CTkFrame(self, fg_color=("#DCEBFB", "#1F3A5A"))
+        self.update_text = ctk.CTkLabel(self.update_banner, text="")
+        self.update_text.pack(side="left", padx=12, pady=8)
+        self.update_button = ctk.CTkButton(
+            self.update_banner, text=_("Download"), width=110
+        )
+        self.update_button.pack(side="right", padx=(0, 12))
+        ctk.CTkButton(
+            self.update_banner,
+            text=_("Later"),
+            width=80,
+            fg_color="transparent",
+            border_width=1,
+            command=self.update_banner.pack_forget,
+        ).pack(side="right", padx=6)
 
         self.tabs = ctk.CTkTabview(self)
         self.tabs.pack(fill="both", expand=True, padx=12, pady=12)
@@ -72,6 +104,8 @@ class App(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.after(LOG_INTERVAL_MS, self._drain_log)
         self._upgrade_legacy_task()
+        if settings.check_for_updates:
+            self._check_for_updates()
 
     def run(
         self,
@@ -121,12 +155,46 @@ class App(ctk.CTk):
             on_error=failed,
         )
 
+    def _check_for_updates(self) -> None:
+        def failed(failure: BaseException) -> None:
+            logger.info("Update check failed: %s", failure)
+
+        self.run(
+            newer_release(self.release_feed, __version__),
+            on_done=self.show_update,
+            on_error=failed,
+        )
+
+    def show_update(self, release: Release | None) -> None:
+        if release is None:
+            return
+        self.update_text.configure(
+            text=_("Version {version} of {app} is available.").format(
+                version=release.version, app=APP_NAME
+            )
+        )
+        self.update_button.configure(command=lambda: webbrowser.open(release.url))
+        self.update_banner.pack(fill="x", padx=12, pady=(12, 0), before=self.tabs)
+
     def on_change(self) -> None:
         for panel in self.panels.values():
             panel.refresh()
 
     def show_error(self, failure: BaseException) -> None:
+        # In the log too: what the user saw is what support will ask about.
+        logger.info("Error shown to the user: %s", failure, exc_info=failure)
         messagebox.showerror(APP_NAME, str(failure), parent=self)
+
+    def report_callback_exception(
+        self,
+        kind: type[BaseException],
+        value: BaseException,
+        traceback: TracebackType | None,
+    ) -> None:
+        """An unexpected error in a button or timer: Tk would print it to a console the
+        app doesn't have. It goes to the log and to the user instead."""
+        logger.error("Error in a window callback", exc_info=(kind, value, traceback))
+        self.show_error(value)
 
     def inform(self, message: str) -> None:
         messagebox.showinfo(APP_NAME, message, parent=self)
@@ -145,7 +213,8 @@ class App(ctk.CTk):
 
 
 def main() -> None:
-    # No basicConfig: opened as a GUI app there is no console to write to.
-    logging.getLogger().setLevel(logging.INFO)
+    # No console in a GUI app: the log goes to data/logs/app.log.
+    log_to_file("app")
+    record_uncaught_exceptions()
     ctk.set_appearance_mode("system")
     App().mainloop()

@@ -211,8 +211,32 @@ columns, the settings and the CLI commands were in Portuguese. The update migrat
   "Peao Bilingue - coleta diaria" (two tasks would collect twice); `status()` still finds it; and
   the window, on startup, calls `upgrade_legacy_task()` (off the window's thread), which
   re-registers it under the new name and command at the same time.
-- **Files:** `coleta.log` → `collection.log`, `execucao.lock` → `run.lock`; the old ones are just
-  left behind.
+- **Files:** `coleta.log` → `logs/collection.log`, `execucao.lock` → `run.lock`; the old ones are
+  just left behind.
+
+---
+
+## Logs and updates (2026-10-17)
+
+- **`logs.py`:** `log_to_file(name)` sends the root logger to `data/logs/<name>.log` (rotating,
+  1 MB × 3): `app.log` from the window, `collection.log` from `run --scheduled`. Entry points
+  also call `record_uncaught_exceptions()`: `sys.excepthook`, `threading.excepthook` and
+  `faulthandler` (to `crash.log`, a file kept open for the whole process), installed once. The
+  window overrides `report_callback_exception` (Tk would print to a console the app doesn't
+  have) and logs every error it shows. Tests patch the hooks: they are process-wide.
+- **Settings → About and support:** the version, the update switch, "open the logs folder"
+  (`os.startfile`) and the project page.
+- **The CLI in the .exe:** a GUI .exe has no stdout, so `launcher.attach_parent_console()`
+  attaches to the terminal it was started from (`AttachConsole(-1)`, UTF-8 code page, `CONOUT$`).
+  Under Task Scheduler there's no parent console and printing stays silent.
+- **Version:** `peao_bilingue.__version__` from the package metadata (the spec copies
+  `peao-bilingue`'s metadata, or the .exe would show 0.0.0); in the window title.
+- **Updates:** the `ReleaseFeed` port (`domain/updates.py`), `GitHubReleases` adapter
+  (`GET /repos/{repo}/releases/latest`, no token; 404 = none or private repo; offline = None),
+  `application/updates.newer_release`. The window checks once when it opens (if
+  `check_for_updates`) and shows a banner with "Baixar"/"Depois". `update_repository` lets a
+  fork point at itself. Nothing is downloaded or installed automatically: that needs a signed
+  installer first.
 
 ---
 
@@ -230,8 +254,8 @@ columns, the settings and the CLI commands were in Portuguese. The update migrat
   no message. 5.1's `ConvertTo-Json` serializes dates as `\/Date(...)\/`: dates are formatted as
   ISO inside the script. `LastRunTime` 1999-11-30 = never ran; `LastTaskResult` 0 = ok, 1 = our
   failure, 267009 = running, 267011 = never ran.
-- `pythonw` has no console: with `--scheduled`, the log goes to `data/collection.log` (rotating,
-  1 MB × 3).
+- `pythonw` has no console: with `--scheduled`, the log goes to `data/logs/collection.log`
+  (rotating, 1 MB × 3; see "Logs and updates").
 - **One run at a time, across processes:** `FileRunLock` (`filelock` on `data/run.lock`). The same
   `FileLock` instance is **reentrant**, so every acquisition uses a new instance, or a second run
   in the same process would get in. Verified on Windows: app/CLI and the scheduled task exclude
@@ -478,8 +502,8 @@ commit and push.
 - [x] **Code in English** (2026-10-17): identifiers, comments, docs, the database, settings and
       CLI, with automatic migration; the app stays in Brazilian Portuguese through `_()`.
 - [ ] **Launch items requested on 2026-10-17:** manual profile + notes in the app (2), a guided
-      first run (3), native Windows notifications (4), version + update check (7), an app log +
-      "open the logs folder" (8).
+      first run (3), native Windows notifications (4); done: version + update check (7), an app
+      log + "open the logs folder" (8).
 
 Waiting on Gabriel (costs money or needs him): the first real analysis with the Analyze button
 (Claude spends credit; Ollama is free but needs installing), a real email notice (fill in SMTP,

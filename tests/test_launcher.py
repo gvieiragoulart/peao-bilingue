@@ -28,3 +28,9 @@ def test_with_arguments_runs_the_cli(
     monkeypatch.setattr("sys.argv", ["PeaoBilingue.exe", "run", "--scheduled"])
     launcher.main()
     assert called == ["cli"]
+
+
+def test_console_is_only_attached_from_the_exe(monkeypatch: pytest.MonkeyPatch) -> None:
+    # In the project, the CLI already has a console: nothing to attach.
+    monkeypatch.delattr("sys.frozen", raising=False)
+    assert launcher.attach_parent_console() is False

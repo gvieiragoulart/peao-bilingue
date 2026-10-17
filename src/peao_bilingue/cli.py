@@ -3,7 +3,6 @@
 import argparse
 import asyncio
 import logging
-from logging.handlers import RotatingFileHandler
 
 from peao_bilingue import factories
 from peao_bilingue.application.collect import run_collection
@@ -12,7 +11,7 @@ from peao_bilingue.composition import (
     build_scheduler,
     build_services,
 )
-from peao_bilingue.config import DATA_DIR, settings
+from peao_bilingue.config import settings
 from peao_bilingue.domain.collection import ManualSession, RunStatus, Trigger
 from peao_bilingue.domain.errors import (
     LoginFailed,
@@ -23,9 +22,8 @@ from peao_bilingue.domain.errors import (
 )
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
+from peao_bilingue.logs import log_to_file, record_uncaught_exceptions
 from peao_bilingue.texts import describe_schedule
-
-LOG_FILE = DATA_DIR / "collection.log"
 
 
 def _source_with_login(name: str) -> type[ManualSession]:
@@ -120,15 +118,8 @@ def _configure_log(*, scheduled: bool) -> None:
         return
     # The scheduled task runs with no console (pythonw / the .exe): the log goes to a
     # file, or a failure at 08:00 would leave no trace.
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    handler = RotatingFileHandler(
-        LOG_FILE, maxBytes=1_000_000, backupCount=3, encoding="utf-8"
-    )
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-        handlers=[handler],
-    )
+    log_to_file("collection")
+    record_uncaught_exceptions()
 
 
 def _run_command(args: argparse.Namespace) -> None:
