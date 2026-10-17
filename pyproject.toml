@@ -1,7 +1,7 @@
 [project]
 name = "peao-bilingue"
 version = "0.1.0"
-description = "Busca vagas em varios sites, analisa o encaixe com LLMs e avisa por email."
+description = "A desktop job radar: collects jobs from several sites, analyzes the fit with LLMs and notifies you."
 readme = "README.md"
 authors = [
     { name = "gabriel vieira", email = "116896794+gvieiragoulart@users.noreply.github.com" }
@@ -26,20 +26,20 @@ dependencies = [
 [project.scripts]
 peao = "peao_bilingue.cli:main"
 
-# gui-script: no Windows abre sem a janela de console atrás.
+# gui-script: on Windows it opens with no console window behind it.
 [project.gui-scripts]
 peao-ui = "peao_bilingue.ui.app:main"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-# Captura no nível do Python, não do descritor. A captura padrão (fd) troca os
-# handles de stdout/stderr do processo a cada fase do teste; o Tcl guarda esses
-# handles, e o Windows recicla os valores: a janela seguinte falhava ao ler os
-# próprios arquivos do Tcl ("Can't find a usable init.tcl"), de forma aleatória.
+# Capture at the Python level, not the file descriptor's. The default capture (fd)
+# swaps the process's stdout/stderr handles on every test phase; Tcl keeps those handles,
+# and Windows recycles the values: the next window failed to read Tcl's own files
+# ("Can't find a usable init.tcl"), at random.
 addopts = "--capture=sys --strict-markers"
 markers = [
-    # Testes de unidade são o resto: dublês, SQLite em memória, HTTP local.
-    "integracao: usa componente real fora do Python — Chromium (Playwright), janela Tk, outro processo ou o PowerShell",
+    # Unit tests are everything else: fakes, in-memory SQLite, local HTTP.
+    "integration: uses a real component outside Python — Chromium (Playwright), a Tk window, another process or PowerShell",
 ]
 
 [tool.ruff]
@@ -52,29 +52,29 @@ select = [
     "BLE", "DTZ", "ISC", "PLE", "PLW", "PT", "ASYNC", "RUF",
 ]
 ignore = [
-    "E501",  # o comprimento é do formatter; sobram só textos longos em PT-BR
-    # Travessão, aspas e reticências tipográficos nos textos são de propósito.
+    "E501",  # line length is the formatter's job; only long texts are left
+    # Typographic dashes, quotes and ellipses in the texts are on purpose.
     "RUF001", "RUF002", "RUF003",
-    "PT018",  # assert composto é usado de propósito nos testes
+    "PT018",  # compound asserts are used on purpose in the tests
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# O ambiente (pasta de dados, keyring) é preparado antes de importar o projeto.
+# The environment (data folder, keyring) is set up before importing the project.
 "tests/conftest.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.12"
-# O app é para Windows: o resultado não pode depender do SO de quem roda o mypy.
+# The app is for Windows: the result can't depend on the OS that runs mypy.
 platform = "win32"
 files = ["src", "tests"]
-# Os testes importam `dubles` e `construtores` como módulos de topo.
+# The tests import `fakes`, `builders` and `queries` as top-level modules.
 mypy_path = "tests"
 strict = true
 warn_unreachable = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-# O CustomTkinter não publica tipos: os widgets dele chegam como Any.
+# CustomTkinter ships no types: its widgets arrive as Any.
 module = ["customtkinter", "customtkinter.*"]
 ignore_missing_imports = true
 
@@ -93,6 +93,6 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "ruff>=0.16.10",
 ]
-empacotar = [
+packaging = [
     "pyinstaller>=6.22.3",
 ]

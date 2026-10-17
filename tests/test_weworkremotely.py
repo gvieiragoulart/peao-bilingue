@@ -1,14 +1,15 @@
-"""Adapter do We Work Remotely sobre um feed RSS real salvo em fixtures, sem rede."""
+"""The We Work Remotely adapter over a real RSS feed saved in fixtures, with no
+network."""
 
 from pathlib import Path
 
 import httpx
 import pytest
-from dubles import ApiFalsa
+from fakes import FakeApi
 
-from peao_bilingue.adaptadores.fontes.weworkremotely import CATEGORIAS, WeWorkRemotely
-from peao_bilingue.dominio.erros import ErroDeColeta
-from peao_bilingue.dominio.vagas import Vaga
+from peao_bilingue.adapters.sources.weworkremotely import CATEGORIES, WeWorkRemotely
+from peao_bilingue.domain.errors import CollectionError
+from peao_bilingue.domain.jobs import Job
 
 FIXTURE = (
     Path(__file__).parent / "fixtures" / "weworkremotely" / "back-end-e-full-stack.rss"
@@ -16,74 +17,69 @@ FIXTURE = (
 
 
 @pytest.fixture
-def api() -> ApiFalsa:
-    return ApiFalsa(FIXTURE)
+def api() -> FakeApi:
+    return FakeApi(FIXTURE)
 
 
 @pytest.fixture(autouse=True)
-def sem_pausa(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(WeWorkRemotely, "pausa_s", 0.0)
+def no_pause(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(WeWorkRemotely, "pause_s", 0.0)
 
 
-async def todas(api: ApiFalsa, cache: Path) -> dict[str, Vaga]:
-    async with WeWorkRemotely(cliente=api.cliente(), cache=cache) as fonte:
-        return {r.id_externo: await fonte.detalhar(r) for r in await fonte.buscar("")}
+async def all_items(api: FakeApi, cache: Path) -> dict[str, Job]:
+    async with WeWorkRemotely(client=api.client(), cache=cache) as source:
+        return {
+            found.external_id: await source.detail(found)
+            for found in await source.search("")
+        }
 
 
-async def test_um_feed_por_categoria_de_programacao(
-    api: ApiFalsa, tmp_path: Path
-) -> None:
-    async with WeWorkRemotely(
-        cliente=api.cliente(), cache=tmp_path / "c.json"
-    ) as fonte:
-        await fonte.buscar("java")
-        await fonte.buscar("laravel")
+async def test_one_feed_per_programming_category(api: FakeApi, tmp_path: Path) -> None:
+    async with WeWorkRemotely(client=api.client(), cache=tmp_path / "c.json") as source:
+        await source.search("java")
+        await source.search("laravel")
 
-    assert [str(c.url) for c in api.chamadas] == [
-        f"https://weworkremotely.com/categories/{categoria}.rss"
-        for categoria in CATEGORIAS
+    assert [str(call.url) for call in api.calls] == [
+        f"https://weworkremotely.com/categories/{category}.rss"
+        for category in CATEGORIES
     ]
 
 
-async def test_cache_vale_para_os_tres_feeds(api: ApiFalsa, tmp_path: Path) -> None:
-    for _ in range(2):
-        await todas(api, tmp_path / "c.json")
-    assert len(api.chamadas) == 3
+async def test_cache_covers_all_three_feeds(api: FakeApi, tmp_path: Path) -> None:
+    for _collection in range(2):
+        await all_items(api, tmp_path / "c.json")
+    assert len(api.calls) == 3
 
 
-async def test_converte_titulo_skills_e_link(api: ApiFalsa, tmp_path: Path) -> None:
-    vagas = await todas(api, tmp_path / "c.json")
-    twikey = vagas["twikey-senior-java-developer"]
+async def test_converts_title_skills_and_link(api: FakeApi, tmp_path: Path) -> None:
+    jobs = await all_items(api, tmp_path / "c.json")
+    twikey = jobs["twikey-senior-java-developer"]
 
-    assert (twikey.empresa, twikey.titulo) == ("Twikey", "Senior Java Developer")
+    assert (twikey.company, twikey.title) == ("Twikey", "Senior Java Developer")
     assert twikey.skills == ["Java", "PostgreSQL", "Spring"]
-    assert twikey.local == "Anywhere in the World"
+    assert twikey.location == "Anywhere in the World"
     assert (
         twikey.url
         == "https://weworkremotely.com/remote-jobs/twikey-senior-java-developer"
     )
     assert twikey.extras["via"] == "We Work Remotely"
-    assert twikey.publicada_em is not None and twikey.publicada_em.startswith("2026-")
-    assert twikey.descricao and "<" not in twikey.descricao
+    assert twikey.published_at is not None and twikey.published_at.startswith("2026-")
+    assert twikey.description and "<" not in twikey.description
 
 
-async def test_filtra_cada_termo_no_texto_inteiro(
-    api: ApiFalsa, tmp_path: Path
-) -> None:
-    async with WeWorkRemotely(
-        cliente=api.cliente(), cache=tmp_path / "c.json"
-    ) as fonte:
-        laravel = await fonte.buscar("laravel")
-    assert [v.id_externo for v in laravel] == [
+async def test_filters_each_term_on_full_text(api: FakeApi, tmp_path: Path) -> None:
+    async with WeWorkRemotely(client=api.client(), cache=tmp_path / "c.json") as source:
+        laravel = await source.search("laravel")
+    assert [found.external_id for found in laravel] == [
         "lemon-io-senior-angular-full-stack-developer"
     ]
 
 
-async def test_feed_quebrado_vira_erro_de_coleta(tmp_path: Path) -> None:
-    def quebrado(_requisicao: httpx.Request) -> httpx.Response:
+async def test_broken_feed_becomes_collection_error(tmp_path: Path) -> None:
+    def broken(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, content=b"<rss><channel><item>")
 
-    cliente = httpx.AsyncClient(transport=httpx.MockTransport(quebrado))
-    with pytest.raises(ErroDeColeta, match="RSS inválido"):
-        async with WeWorkRemotely(cliente=cliente, cache=tmp_path / "c.json") as fonte:
-            await fonte.buscar("python")
+    client = httpx.AsyncClient(transport=httpx.MockTransport(broken))
+    with pytest.raises(CollectionError, match="invalid RSS"):
+        async with WeWorkRemotely(client=client, cache=tmp_path / "c.json") as source:
+            await source.search("python")

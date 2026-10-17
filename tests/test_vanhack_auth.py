@@ -1,25 +1,27 @@
+"""Session checks on VanHack, on stub pages and on the real Chromium."""
+
 from typing import cast
 
 import pytest
 from playwright.async_api import Page
 
-from peao_bilingue.adaptadores.fontes.vanhack import auth
-from peao_bilingue.dominio.erros import SessaoExpirada
+from peao_bilingue.adapters.sources.vanhack import auth
+from peao_bilingue.domain.errors import SessionExpired
 
 
-class PaginaFake:
-    """Stub de navegação: `destino` é onde o site deixa a página após o goto."""
+class FakePage:
+    """A navigation stub: `destination` is where the site leaves the page after goto."""
 
-    def __init__(self, destino: str) -> None:
-        self.destino = destino
+    def __init__(self, destination: str) -> None:
+        self.destination = destination
         self.url = "about:blank"
-        self.visitadas: list[str] = []
+        self.visited: list[str] = []
 
     async def goto(self, url: str, wait_until: str | None = None) -> None:
-        self.visitadas.append(url)
-        self.url = self.destino
+        self.visited.append(url)
+        self.url = self.destination
 
-    # Mesma assinatura do Playwright, que recebe `timeout`.
+    # The same signature as Playwright's, which takes `timeout`.
     async def wait_for_load_state(
         self,
         state: str,
@@ -28,47 +30,47 @@ class PaginaFake:
         pass
 
 
-async def test_sessao_valida_quando_o_perfil_abre() -> None:
-    pagina = PaginaFake("https://app.vanhack.com/profile")
-    assert await auth.has_valid_session(cast(Page, pagina))
+async def test_session_is_valid_when_profile_opens() -> None:
+    page = FakePage("https://app.vanhack.com/profile")
+    assert await auth.has_valid_session(cast(Page, page))
 
 
-async def test_sem_sessao_quando_o_perfil_redireciona_para_o_auth() -> None:
-    pagina = PaginaFake(
+async def test_no_session_when_profile_redirects_to_auth() -> None:
+    page = FakePage(
         "https://auth.vanhack.com/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize"
     )
-    assert not await auth.has_valid_session(cast(Page, pagina))
+    assert not await auth.has_valid_session(cast(Page, page))
 
 
-async def test_a_prova_de_sessao_usa_o_perfil_e_nao_a_listagem() -> None:
-    pagina = PaginaFake("https://app.vanhack.com/profile")
-    await auth.has_valid_session(cast(Page, pagina))
-    assert pagina.visitadas == ["https://app.vanhack.com/profile"]
+async def test_session_check_uses_profile_not_listing() -> None:
+    page = FakePage("https://app.vanhack.com/profile")
+    await auth.has_valid_session(cast(Page, page))
+    assert page.visited == ["https://app.vanhack.com/profile"]
 
 
-async def test_ensure_logged_in_exige_login_manual() -> None:
-    pagina = PaginaFake("https://auth.vanhack.com/Account/Login")
-    with pytest.raises(SessaoExpirada, match="peao login"):
-        await auth.ensure_logged_in(cast(Page, pagina))
+async def test_ensure_logged_in_requires_manual_login() -> None:
+    page = FakePage("https://auth.vanhack.com/Account/Login")
+    with pytest.raises(SessionExpired, match="peao login"):
+        await auth.ensure_logged_in(cast(Page, page))
 
 
-async def test_detecta_recusa_do_cloudflare(page: Page) -> None:
+async def test_detects_cloudflare_block(page: Page) -> None:
     await page.set_content(
         "<div role='alert'>Security check could not complete. "
         "Refresh this page or try another browser.</div>"
     )
-    desafio = await auth.detect_challenge(page)
-    assert desafio is not None and "Cloudflare recusou" in desafio
+    challenge = await auth.detect_challenge(page)
+    assert challenge is not None and "Cloudflare rejected" in challenge
 
 
-async def test_detecta_widget_turnstile(page: Page) -> None:
+async def test_detects_turnstile_widget(page: Page) -> None:
     await page.set_content(
         "<iframe src='/challenges.cloudflare.com/turnstile/v0'></iframe>"
     )
-    desafio = await auth.detect_challenge(page)
-    assert desafio is not None and "Turnstile" in desafio
+    challenge = await auth.detect_challenge(page)
+    assert challenge is not None and "Turnstile" in challenge
 
 
-async def test_pagina_normal_nao_tem_desafio(page: Page) -> None:
-    await page.set_content("<h1>Vagas</h1><ul><li>Backend Engineer</li></ul>")
+async def test_normal_page_has_no_challenge(page: Page) -> None:
+    await page.set_content("<h1>Jobs</h1><ul><li>Backend Engineer</li></ul>")
     assert await auth.detect_challenge(page) is None

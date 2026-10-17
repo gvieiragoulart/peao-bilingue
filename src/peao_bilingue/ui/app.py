@@ -1,5 +1,6 @@
-"""Janela principal do Peão Bilíngue."""
+"""The Peão Bilíngue main window."""
 
+import asyncio
 import logging
 import queue
 from collections.abc import Callable, Coroutine
@@ -8,115 +9,143 @@ from typing import Any
 
 import customtkinter as ctk
 
-from peao_bilingue.composicao import montar_agendador, montar_repositorio
-from peao_bilingue.dominio.agenda import Agendador
-from peao_bilingue.dominio.repositorio import Repositorio
-from peao_bilingue.ui.abas.buscas import AbaBuscas
-from peao_bilingue.ui.abas.configuracoes import AbaConfiguracoes
-from peao_bilingue.ui.abas.execucoes import AbaExecucoes
-from peao_bilingue.ui.abas.fontes import AbaFontes
-from peao_bilingue.ui.abas.llms import AbaLLMs
-from peao_bilingue.ui.abas.perfil import AbaPerfil
-from peao_bilingue.ui.abas.vagas import AbaVagas
-from peao_bilingue.ui.executor import ExecutorAssincrono, FilaDeLog, acompanhar
+from peao_bilingue.composition import build_repository, build_scheduler
+from peao_bilingue.domain.repository import Repository
+from peao_bilingue.domain.schedule import Scheduler
+from peao_bilingue.i18n import _
+from peao_bilingue.ui.executor import AsyncExecutor, LogQueue, track
+from peao_bilingue.ui.tabs.jobs import JobsTab
+from peao_bilingue.ui.tabs.llms import LLMsTab
+from peao_bilingue.ui.tabs.profile import ProfileTab
+from peao_bilingue.ui.tabs.runs import RunsTab
+from peao_bilingue.ui.tabs.searches import SearchesTab
+from peao_bilingue.ui.tabs.settings import SettingsTab
+from peao_bilingue.ui.tabs.sources import SourcesTab
 
-TITULO = "Peão Bilíngue"
-INTERVALO_LOG_MS = 200
-# As abas herdam de widgets do CustomTkinter, que não tem tipos: para o mypy, Any.
-ABAS: list[tuple[str, type[Any]]] = [
-    ("Vagas", AbaVagas),
-    ("Buscas", AbaBuscas),
-    ("Fontes", AbaFontes),
-    ("LLMs", AbaLLMs),
-    ("Perfil", AbaPerfil),
-    ("Execuções", AbaExecucoes),
-    ("Configurações", AbaConfiguracoes),
-]
+APP_NAME = "Peão Bilíngue"
+LOG_INTERVAL_MS = 200
+logger = logging.getLogger(__name__)
 
 
-class Aplicativo(ctk.CTk):
+def tabs() -> list[tuple[str, str, type[Any]]]:
+    """(id, title, class). The tabs inherit from CustomTkinter widgets, which have no
+    types: for mypy, Any."""
+    return [
+        ("jobs", _("Jobs"), JobsTab),
+        ("searches", _("Searches"), SearchesTab),
+        ("sources", _("Sources"), SourcesTab),
+        ("llms", _("LLMs"), LLMsTab),
+        ("profile", _("Profile"), ProfileTab),
+        ("runs", _("Runs"), RunsTab),
+        ("settings", _("Settings"), SettingsTab),
+    ]
+
+
+class App(ctk.CTk):
     def __init__(
         self,
-        repositorio: Repositorio | None = None,
-        executor: ExecutorAssincrono | None = None,
-        agendador: Agendador | None = None,
+        repository: Repository | None = None,
+        executor: AsyncExecutor | None = None,
+        scheduler: Scheduler | None = None,
     ) -> None:
         super().__init__()
-        self.title(f"{TITULO} — radar de vagas")
+        self.title(_("{app} — job radar").format(app=APP_NAME))
         self.geometry("1280x800")
         self.minsize(1000, 640)
 
-        self.repositorio = repositorio or montar_repositorio()
-        self.executor = executor or ExecutorAssincrono()
-        self.agendador = agendador or montar_agendador()
-        self._fila: queue.Queue[str] = queue.Queue()
-        self._log = FilaDeLog(self._fila)
+        self.repository = repository or build_repository()
+        self.executor = executor or AsyncExecutor()
+        self.scheduler = scheduler or build_scheduler()
+        self._queue: queue.Queue[str] = queue.Queue()
+        self._log = LogQueue(self._queue)
         logging.getLogger().addHandler(self._log)
 
-        self.abas = ctk.CTkTabview(self)
-        self.abas.pack(fill="both", expand=True, padx=12, pady=12)
-        self.paineis: dict[str, Any] = {}
-        for titulo, classe in ABAS:
-            painel = classe(self.abas.add(titulo), self)
-            painel.pack(fill="both", expand=True)
-            self.paineis[titulo] = painel
+        self.tabs = ctk.CTkTabview(self)
+        self.tabs.pack(fill="both", expand=True, padx=12, pady=12)
+        self.panels: dict[str, Any] = {}
+        for identifier, title, cls in tabs():
+            panel = cls(self.tabs.add(title), self)
+            panel.pack(fill="both", expand=True)
+            self.panels[identifier] = panel
 
-        self.ao_mudar_dados()
-        self.protocol("WM_DELETE_WINDOW", self.fechar)
-        self.after(INTERVALO_LOG_MS, self._drenar_log)
+        self.on_change()
+        self.protocol("WM_DELETE_WINDOW", self.close)
+        self.after(LOG_INTERVAL_MS, self._drain_log)
+        self._upgrade_legacy_task()
 
-    def rodar(
+    def run(
         self,
-        corrotina: Coroutine[Any, Any, Any],
+        coroutine: Coroutine[Any, Any, Any],
         *,
-        ao_terminar: Callable[[Any], None] | None = None,
-        ao_falhar: Callable[[BaseException], None] | None = None,
+        on_done: Callable[[Any], None] | None = None,
+        on_error: Callable[[BaseException], None] | None = None,
     ) -> None:
-        """Roda no loop assíncrono; os callbacks voltam na thread da interface."""
-        acompanhar(
+        """Runs on the async loop; the callbacks come back on the window's thread."""
+        track(
             self,
-            self.executor.submeter(corrotina),
-            ao_terminar,
-            ao_falhar or self.mostrar_erro,
+            self.executor.submit(coroutine),
+            on_done,
+            on_error or self.show_error,
         )
 
-    def registrar(self, mensagem: str) -> None:
-        """Pode ser chamado de qualquer thread: só enfileira."""
-        self._fila.put(mensagem)
+    def log(self, message: str) -> None:
+        """Safe to call from any thread: it only queues."""
+        self._queue.put(message)
 
-    def _drenar_log(self) -> None:
+    def _drain_log(self) -> None:
         while True:
             try:
-                linha = self._fila.get_nowait()
+                line = self._queue.get_nowait()
             except queue.Empty:
                 break
-            self.paineis["Execuções"].adicionar_log(linha)
-        self.after(INTERVALO_LOG_MS, self._drenar_log)
+            self.panels["runs"].add_log(line)
+        self.after(LOG_INTERVAL_MS, self._drain_log)
 
-    def ao_mudar_dados(self) -> None:
-        for painel in self.paineis.values():
-            painel.atualizar()
+    def _upgrade_legacy_task(self) -> None:
+        """A daily task registered before the code was in English calls an old
+        command: it is registered again (PowerShell, off the window's thread)."""
 
-    def mostrar_erro(self, falha: BaseException) -> None:
-        messagebox.showerror(TITULO, str(falha), parent=self)
+        def done(upgraded: bool) -> None:
+            if upgraded:
+                logger.info(
+                    "Daily collection task registered again under its new name."
+                )
+                self.on_change()
 
-    def informar(self, mensagem: str) -> None:
-        messagebox.showinfo(TITULO, mensagem, parent=self)
+        def failed(failure: BaseException) -> None:
+            logger.warning("Couldn't upgrade the daily collection task: %s", failure)
 
-    def fechar(self) -> None:
+        self.run(
+            asyncio.to_thread(self.scheduler.upgrade_legacy_task),
+            on_done=done,
+            on_error=failed,
+        )
+
+    def on_change(self) -> None:
+        for panel in self.panels.values():
+            panel.refresh()
+
+    def show_error(self, failure: BaseException) -> None:
+        messagebox.showerror(APP_NAME, str(failure), parent=self)
+
+    def inform(self, message: str) -> None:
+        messagebox.showinfo(APP_NAME, message, parent=self)
+
+    def close(self) -> None:
         logging.getLogger().removeHandler(self._log)
-        self.executor.encerrar()
-        # Timers pendentes (o do registro e os do CustomTkinter) disparariam depois
-        # do destroy, e o Tcl reclamaria de comando inexistente no stderr. Só o timer
-        # é cancelado: o comando é de quem agendou e sai no destroy de cada widget
-        # (o `after_cancel` o apagaria antes, e o destroy do dono falharia).
-        for pendente in self.tk.splitlist(self.tk.call("after", "info")):
-            self.tk.call("after", "cancel", pendente)
+        self.executor.close()
+        # Pending timers (the log's and CustomTkinter's) would fire after destroy, and
+        # Tcl would complain about a missing command on stderr. Only the timer is
+        # cancelled: the command belongs to whoever scheduled it and goes away when
+        # each widget is destroyed (`after_cancel` would delete it first, and the
+        # owner's destroy would fail).
+        for pending in self.tk.splitlist(self.tk.call("after", "info")):
+            self.tk.call("after", "cancel", pending)
         self.destroy()
 
 
 def main() -> None:
-    # Sem basicConfig: aberto como app de janela não há console para escrever.
+    # No basicConfig: opened as a GUI app there is no console to write to.
     logging.getLogger().setLevel(logging.INFO)
     ctk.set_appearance_mode("system")
-    Aplicativo().mainloop()
+    App().mainloop()

@@ -1,76 +1,76 @@
-"""Adapter do Arbeitnow sobre a resposta real salva em fixtures, sem rede."""
+"""The Arbeitnow adapter over the real response saved in fixtures, with no network."""
 
 from pathlib import Path
 
 import pytest
-from dubles import ApiFalsa
+from fakes import FakeApi
 
-from peao_bilingue.adaptadores.fontes.arbeitnow import (
+from peao_bilingue.adapters.sources.arbeitnow import (
     URL,
     Arbeitnow,
-    descricao_em_texto,
+    description_as_text,
 )
-from peao_bilingue.dominio.vagas import Vaga
+from peao_bilingue.domain.jobs import Job
 
 FIXTURE = Path(__file__).parent / "fixtures" / "arbeitnow" / "visa_sponsorship.json"
 
 
 @pytest.fixture
-def api() -> ApiFalsa:
-    return ApiFalsa(FIXTURE)
+def api() -> FakeApi:
+    return FakeApi(FIXTURE)
 
 
-async def todas(api: ApiFalsa, cache: Path) -> list[Vaga]:
-    async with Arbeitnow(cliente=api.cliente(), cache=cache) as fonte:
-        return [await fonte.detalhar(r) for r in await fonte.buscar("")]
+async def all_items(api: FakeApi, cache: Path) -> list[Job]:
+    async with Arbeitnow(client=api.client(), cache=cache) as source:
+        return [await source.detail(found) for found in await source.search("")]
 
 
-async def test_pede_so_vagas_com_visto_numa_chamada(
-    api: ApiFalsa, tmp_path: Path
+async def test_asks_only_visa_jobs_in_one_call(api: FakeApi, tmp_path: Path) -> None:
+    async with Arbeitnow(client=api.client(), cache=tmp_path / "c.json") as source:
+        react = await source.search("react")
+        await source.search("golang")
+
+    # the whole text counts: the Go job also mentions React in its description
+    assert "Senior Web Engineer (React) - Remote friendly" in [
+        found.title for found in react
+    ]
+    assert len(api.calls) == 1
+    assert str(api.calls[0].url) == f"{URL}?visa_sponsorship=true"
+
+
+async def test_converts_with_link_and_attribution(api: FakeApi, tmp_path: Path) -> None:
+    jobs = {
+        found.external_id: found for found in await all_items(api, tmp_path / "c.json")
+    }
+    job = jobs["senior-go-backend-developer-hamburg-347531"]
+
+    assert job.key == "arbeitnow:senior-go-backend-developer-hamburg-347531"
+    assert job.url.startswith("https://www.arbeitnow.com/")
+    assert job.extras["via"] == "Arbeitnow"
+    assert job.extras["visa_sponsorship"] is True
+    assert job.work_mode == "On-site"
+    assert job.published_at is not None and job.published_at.startswith("2026-")
+
+
+async def test_escaped_description_becomes_plain_text(
+    api: FakeApi, tmp_path: Path
 ) -> None:
-    async with Arbeitnow(cliente=api.cliente(), cache=tmp_path / "c.json") as fonte:
-        react = await fonte.buscar("react")
-        await fonte.buscar("golang")
-
-    # o texto inteiro conta: a vaga de Go também cita React na descrição
-    assert "Senior Web Engineer (React) - Remote friendly" in [v.titulo for v in react]
-    assert len(api.chamadas) == 1
-    assert str(api.chamadas[0].url) == f"{URL}?visa_sponsorship=true"
+    for job in await all_items(api, tmp_path / "c.json"):
+        assert job.description
+        assert "&lt;" not in job.description and "<p>" not in job.description
 
 
-async def test_converte_com_link_e_atribuicao(api: ApiFalsa, tmp_path: Path) -> None:
-    vagas = {v.id_externo: v for v in await todas(api, tmp_path / "c.json")}
-    vaga = vagas["senior-go-backend-developer-hamburg-347531"]
-
-    assert vaga.chave == "arbeitnow:senior-go-backend-developer-hamburg-347531"
-    assert vaga.url.startswith("https://www.arbeitnow.com/")
-    assert vaga.extras["via"] == "Arbeitnow"
-    assert vaga.extras["visto"] is True
-    assert vaga.modalidade == "On-site"
-    assert vaga.publicada_em is not None and vaga.publicada_em.startswith("2026-")
-
-
-async def test_descricao_escapada_vira_texto_sem_tags(
-    api: ApiFalsa, tmp_path: Path
-) -> None:
-    for vaga in await todas(api, tmp_path / "c.json"):
-        assert vaga.descricao
-        assert "&lt;" not in vaga.descricao and "<p>" not in vaga.descricao
-
-
-def test_descricao_ja_em_html_nao_e_desescapada_de_novo() -> None:
-    # "&lt;" de verdade no texto (ex.: "C&lt;C++") não pode virar tag
-    assert descricao_em_texto("<p>Use &lt;br&gt; com cuidado</p>") == (
-        "Use <br> com cuidado"
+def test_html_description_is_not_unescaped_twice() -> None:
+    # a real "&lt;" in the text (e.g. "C&lt;C++") can't turn into a tag
+    assert description_as_text("<p>Use &lt;br&gt; with care</p>") == (
+        "Use <br> with care"
     )
-    assert descricao_em_texto("&lt;p&gt;Olá &amp; bem-vindo&lt;/p&gt;") == (
-        "Olá & bem-vindo"
+    assert description_as_text("&lt;p&gt;Hello &amp; welcome&lt;/p&gt;") == (
+        "Hello & welcome"
     )
 
 
-def test_descricao_com_html_escapado_so_em_parte() -> None:
-    # como veio em vagas reais: tags de verdade e, dentro delas, HTML escapado
-    misturada = (
-        "<p>Intro</p>&lt;h2&gt;Sobre&lt;/h2&gt;&lt;p&gt;Vaga &amp; time&lt;/p&gt;"
-    )
-    assert descricao_em_texto(misturada) == "Intro\nSobre\nVaga & time"
+def test_description_with_partly_escaped_html() -> None:
+    # as it came in real jobs: real tags and, inside them, escaped HTML
+    mixed = "<p>Intro</p>&lt;h2&gt;About&lt;/h2&gt;&lt;p&gt;Job &amp; team&lt;/p&gt;"
+    assert description_as_text(mixed) == "Intro\nAbout\nJob & team"

@@ -1,290 +1,351 @@
 # Peão Bilíngue
 
-Radar pessoal de vagas para o Gabriel: coleta vagas em vários sites, filtra por buscas
-configuráveis e avisa das vagas novas por email e WhatsApp. A análise de encaixe por LLM é
-**pedida vaga a vaga** no app, com o LLM e o perfil escolhidos na hora. App desktop Windows
-(CustomTkinter), com a coleta diária disparada pelo Agendador do Windows.
+A personal job radar: it collects jobs from several sites, filters them by configurable searches
+and reports the new ones by email and WhatsApp. The LLM fit analysis is **requested one job at a
+time** in the app, with the LLM and profile picked right then. A Windows desktop app
+(CustomTkinter), with the daily collection started by Windows Task Scheduler.
 
-Cada análise traz: fit score (0–100), resumo do encaixe, passos de preparação, **exatamente 20**
-perguntas de entrevista, gaps e o que melhorar no perfil (CV, LinkedIn, VanHack).
+Each analysis has: a fit score (0–100), a summary of the fit, preparation steps, **exactly 20**
+interview questions, gaps, and what to improve in the profile (CV, LinkedIn, VanHack).
 
-## Contexto
+## Context
 
-- **Usuário:** Gabriel, engenheiro sênior backend (PHP/Laravel, Python, TypeScript, AWS). Usa
-  **Windows** (PowerShell). Converse e escreva mensagens/commits em **português do Brasil**.
-- **Histórico:** nasceu como "VanHack Watcher" (só VanHack, só Claude, painel FastAPI). Em
-  2026-10-06 virou multi-fonte e multi-LLM com portas e adaptadores. O plano aprovado está em
+- **User:** Gabriel, a senior backend engineer (PHP/Laravel, Python, TypeScript, AWS). Uses
+  **Windows** (PowerShell). **Talk to him in Brazilian Portuguese.**
+- **Language rules (since 2026-10-17, the code is going public):** code, comments, docstrings,
+  logs, tests, docs and commit messages in **English**; everything the app shows the user in
+  **Brazilian Portuguese**, through the translation catalog (see "Text and translations").
+- **History:** started as "VanHack Watcher" (VanHack only, Claude only, a FastAPI panel). On
+  2026-10-06 it became multi-source and multi-LLM with ports and adapters; on 2026-10-17 the
+  code moved to English. The approved plan is in
   `~/.claude/plans/quero-alterar-o-nosso-resilient-patterson.md`.
-- **Repositório:** `gvieiragoulart/peao-bilingue` (privado). O `gh` está instalado mas **fora do
-  PATH** (`"/c/Program Files/GitHub CLI/gh.exe"`) e o PAT não tem escopo para criar repositório
-  nem mudar visibilidade.
-- **Hardware:** RTX 3050 Laptop com 6 GB de VRAM — limita o Ollama a modelos de 7–8B quantizados.
+- **Repository:** `gvieiragoulart/peao-bilingue` (private for now). `gh` is installed but **not on
+  PATH** (`"/c/Program Files/GitHub CLI/gh.exe"`) and the PAT can't create repositories or change
+  visibility.
+- **Hardware:** an RTX 3050 Laptop with 6 GB of VRAM, which limits Ollama to quantized 7–8B
+  models.
 
-## Estado atual (2026-10-08)
+## Current state (2026-10-17)
 
-**Fases 1 a 5 e 8 do novo roteiro concluídas** (a 6 aguarda decisão; a 7 não começou), mais a mudança de 07/10 pedida pelo Gabriel: a
-coleta não chama LLM nenhum; cada vaga é analisada pelo botão **Analisar** da aba Vagas, com o
-LLM escolhido (Anthropic, Ollama, OpenAI, Gemini) e o **perfil da fonte** da vaga (cada fonte
-tem o seu). A triagem automática saiu. 264 testes offline; `ruff` e `mypy --strict` limpos.
-FastAPI, uvicorn e APScheduler saíram. Banco em `data/peao.db` (o antigo `watcher.db` ficou
-intocado) com 18 vagas reais, nenhuma analisada ainda. Três buscas cadastradas: Python,
-PHP/Laravel, React/TypeScript — sem `exclude`, porque filtrar "junior" descartaria vaga sênior
-que diz "mentor junior engineers".
+**Phases 1 to 5 and 8 of the roadmap are done** (6 waits for a decision; 7 hasn't started), plus
+the 2026-10-07 change: the collection calls no LLM; each job is analyzed with the **Analisar**
+(Analyze) button on the Jobs tab, with the chosen LLM (Anthropic, Ollama, OpenAI, Gemini) and the
+**profile of the job's source** (each source has its own). The code is in English, with the app
+in Brazilian Portuguese. All tests run offline; `ruff` and `mypy --strict` are clean.
 
-O banco evolui por **migração aditiva automática** (`migrar` em `persistencia/sqlite/banco.py`): o
-`create_all` não acrescenta colunas a tabelas existentes, então campo novo em model ganha
-`ALTER TABLE ADD COLUMN` com o default do model. Mudança não aditiva exige migração à mão.
-
----
-
-## Regras inegociáveis
-
-- **Não contornar 2FA, captcha nem detecção de bot, em nenhuma fonte.** Nada de stealth,
-  falsificação de fingerprint ou rotação de IP. Se aparecer: parar, salvar evidência
-  (`artifacts/`), avisar o usuário e exigir login manual.
-- **Login é sempre manual** nas fontes que exigem conta. O robô só reaproveita a sessão salva; se
-  expirou, a execução termina com `login_required`. Nunca preencher formulário de login.
-- **Comportamento educado:** uma execução por vez, sem páginas em paralelo, pausa aleatória de
-  2–5 s entre navegações (é responsabilidade do adapter), limite de vagas detalhadas por execução.
-- **Fontes com API ou feed oficial** usam a API/feed. Scraping só onde não houver alternativa, e
-  sempre lendo o DOM como um usuário.
-- **VanHack:** nada de chamar a API interna (nem httpx, nem interceptando XHR).
-- **Segredos no Cofre de Credenciais do Windows** (via `keyring`, serviço `peao-bilingue`), nunca
-  em arquivo versionado. O `.env` (no `.gitignore`, junto com `data/` e `artifacts/`) é só
-  fallback da CLI. Nunca logar senha nem cookie.
-- **PII fora do snapshot e do prompt:** nada de email, telefone, documento, visto, passaporte,
-  cidadania, nome, nem URLs assinadas (currículo, vídeo). Há teste travando isso.
-- Todo texto voltado ao usuário em **português do Brasil**.
+The database evolves through **automatic additive migration** (`add_new_columns` in
+`persistence/sqlite/database.py`): `create_all` doesn't add columns to existing tables, so a new
+model field gets an `ALTER TABLE ADD COLUMN` with the model's default. A non-additive change needs
+a hand-written migration, like `persistence/sqlite/legacy.py`.
 
 ---
 
-## Arquitetura: portas e adaptadores
+## Non-negotiable rules
+
+- **Never bypass 2FA, captchas or bot detection, on any source.** No stealth, fingerprint spoofing
+  or IP rotation. If one shows up: stop, save evidence (`artifacts/`), tell the user and require
+  a manual login.
+- **Login is always manual** on sources that need an account. The robot only reuses the saved
+  session; if it expired, the run ends with `login_required`. Never fill in a login form.
+- **Polite behavior:** one run at a time, no parallel pages, a random 2–5 s pause between
+  navigations (the adapter's job), a limit of jobs detailed per run.
+- **Sources with an official API or feed** use the API/feed. Scraping only where there's no
+  alternative, and always reading the DOM like a user.
+- **VanHack:** never call the internal API (no httpx, no intercepting XHR).
+- **Secrets in Windows Credential Manager** (through `keyring`, service `peao-bilingue`), never in
+  a committed file. `.env` (in `.gitignore`, along with `data/` and `artifacts/`) is only the
+  CLI's fallback. Never log a password or a cookie.
+- **No PII in the snapshot or the prompt:** no email, phone, documents, visa, passport,
+  citizenship, name, or signed URLs (CV, video). A test guards it.
+- Every text the user reads goes through `_()` and has a Brazilian Portuguese translation.
+
+---
+
+## Architecture: ports and adapters
 
 ```
 src/peao_bilingue/
-├── dominio/
-│   │                  # um módulo por subdomínio: entidades (pydantic, sem SQL) + portas (ABCs)
-│   ├── vagas.py       # Vaga, VagaResumo, Skill, StatusVaga, VagaListada · RepositorioVagas
-│   ├── buscas.py      # Busca · RepositorioBuscas
-│   ├── perfil.py      # Perfil · FonteDePerfil, RepositorioPerfis
-│   ├── analise.py     # JobAnalysis, AnaliseSalva, Mensagem, RespostaLLM · ProvedorLLM,
-│   │                  #   RepositorioAnalises
-│   ├── coleta.py      # Execucao, StatusExecucao, Gatilho · FonteDeVagas, SessaoManual, Trava,
-│   │                  #   RepositorioExecucoes
-│   ├── avisos.py      # Notificador
-│   ├── agenda.py      # SituacaoAgenda · Agendador
-│   ├── repositorio.py # Repositorio = as cinco portas de repositório juntas (UI e composição)
-│   └── erros.py       # SessaoExpirada, DesafioHumano, ErroDeColeta, AnaliseInvalida...
-├── aplicacao/
-│   ├── execucao.py    # coleta: buscar → filtrar → guardar → avisar (sem LLM), com lock
-│   ├── analise.py     # análise sob demanda: prompt, validação e retry — agnóstico de provedor
-│   └── filtros.py     # keywords / exclude / fontes da busca
-├── adaptadores/       # importar o pacote registra todos nas fábricas
-│   ├── fontes/vanhack/   # Playwright: auth, listing, detail, profile, selectors, sessao, fonte
-│   ├── llm/anthropic.py
-│   ├── notificacao/      # formatacao, email, whatsapp
-│   ├── agendamento/windows.py   # Agendador de Tarefas via PowerShell
-│   └── persistencia/     # sqlite/ (tabelas, banco, um arquivo por agregado e RepositorioSQLite
-│                         #   juntando os cinco), trava.py (filelock)
-├── fabricas.py        # Registro[T] + fontes / llms / notificadores
-├── composicao.py      # raiz de composição: único lugar que liga portas a adapters
-├── configuracao.py    # Settings: config.json + cofre do Windows + .env (fallback)
-├── ui/                # CustomTkinter: app, executor assíncrono, abas, componentes
-└── cli.py             # peao login | check | run | buscas | agenda | adaptadores
+├── domain/
+│   │                  # one module per subdomain: entities (pydantic, no SQL) + ports (ABCs)
+│   ├── jobs.py        # Job, JobSummary, Skill, JobStatus, ListedJob, Posting · JobRepository
+│   ├── searches.py    # Search · SearchRepository
+│   ├── profile.py     # Profile, profile_hash · ProfileSource, ProfileRepository
+│   ├── analysis.py    # JobAnalysis, SavedAnalysis, Message, LLMResponse · LLMProvider,
+│   │                  #   AnalysisRepository
+│   ├── collection.py  # Run, RunStatus, Trigger · JobSource, ManualSession, Lock,
+│   │                  #   RunRepository
+│   ├── notifications.py  # Notifier
+│   ├── schedule.py    # ScheduleStatus · Scheduler
+│   ├── repository.py  # Repository = the five repository ports together (UI and composition)
+│   └── errors.py      # SessionExpired, HumanChallenge, CollectionError, InvalidAnalysis...
+├── application/
+│   ├── collect.py     # run_collection: search → filter → save → notify (no LLM), with a lock
+│   ├── analysis.py    # on-demand analysis: prompt, validation and retries, provider-agnostic
+│   └── filters.py     # a search's keywords / exclude / sources
+├── adapters/          # importing the package registers them all in the factories
+│   ├── sources/       # api.py (ApiSource base), remotive, remoteok, arbeitnow, himalayas,
+│   │                  #   weworkremotely, html.py; vanhack/ (Playwright: auth, listing, detail,
+│   │                  #   profile, selectors, session, source)
+│   ├── llm/           # anthropic, ollama, openai, gemini
+│   ├── notification/  # formatting, email, whatsapp
+│   ├── scheduling/windows.py   # Task Scheduler through PowerShell
+│   └── persistence/   # sqlite/ (tables, database, legacy, one file per aggregate and
+│                      #   SQLiteRepository joining the five), lock.py (filelock)
+├── factories.py       # Registry[T] + sources / llms / notifiers
+├── composition.py     # composition root: the only place that wires ports to adapters
+├── config.py          # Settings: config.json + the Windows vault + .env (fallback)
+├── i18n.py            # `_()` and the locale; locales/pt_BR.py has the translations
+├── texts.py           # user-facing text shared by the CLI and the window
+├── launcher.py        # the .exe's entry point: window or CLI
+├── ui/                # CustomTkinter: app, async executor, tabs, widgets, presentation
+└── cli.py             # peao login | check | run | searches | schedule | adapters
 ```
 
-**Configuração:** precedência `config.json` > cofre > variáveis de ambiente > `.env` > padrão. A
-interface grava em `data/config.json` (público) e no cofre (campos em `SEGREDOS`) via
-`configuracao.salvar()`, que também atualiza o `settings` **no lugar** — vários módulos fazem
-`from configuracao import settings`, e trocar o objeto não chegaria a eles. `PEAO_DADOS` muda a
-pasta de dados (padrão `data`); os testes a apontam para um temporário e trocam o keyring por um
-em memória **antes** de importar o projeto, para nunca tocar na configuração real.
+**Configuration:** precedence `config.json` > vault > environment variables > `.env` > default.
+The window writes to `data/config.json` (public) and to the vault (fields in `SECRETS`) through
+`config.save()`, which also updates `settings` **in place**: several modules do
+`from peao_bilingue.config import settings`, and swapping the object wouldn't reach them.
+`PEAO_DATA_DIR` changes the data folder (default `data`; `PEAO_DADOS` still works); the tests
+point it at a temp folder and swap the keyring for an in-memory one **before** importing the
+project, so they never touch the real configuration.
 
-**Interface (`ui/`):** o Tkinter é síncrono e o núcleo é assíncrono (Playwright). As corrotinas
-rodam num loop asyncio numa thread própria (`ExecutorAssincrono`); os resultados voltam por
-`after()` (`acompanhar`) e os logs por uma fila (`FilaDeLog`). **Nenhum widget é tocado fora da
-thread da interface** — callbacks que vêm do worker (ex.: `aviso` do login) só enfileiram.
-Verificado no Windows: Playwright funciona nessa thread (loop Proactor) sem travar a janela.
-Os formulários de LLMs e avisos são montados a partir de `campos` que cada adapter declara, com
-o tipo do widget inferido do próprio `Settings`. Fontes com login manual implementam a porta
-`SessaoManual` e ganham botões de login/verificação automaticamente. `peao-ui` é gui-script:
-abre sem console.
+**Window (`ui/`):** Tkinter is synchronous and the core is async (Playwright). Coroutines run on
+an asyncio loop in a thread of their own (`AsyncExecutor`); results come back through `after()`
+(`track`) and logs through a queue (`LogQueue`). **No widget is touched outside the window's
+thread**: callbacks coming from the worker (e.g. the login's `report`) only queue. Verified on
+Windows: Playwright works on that thread (Proactor loop) without freezing the window. The LLM and
+notice forms are built from the `fields` each adapter declares, with the widget type inferred
+from `Settings` itself. Sources with a manual login implement the `ManualSession` port and get
+login/check buttons automatically. Tabs have an internal id (`jobs`, `runs`...) and a translated
+title. `peao-ui` is a gui-script: it opens with no console.
 
-**Regra de dependência:** `dominio` não importa nada do projeto; `aplicacao` só conhece
-`dominio`; adapters implementam portas; só `composicao.py`, `cli.py` e (depois) `ui/` conhecem
-adapters concretos.
+**Dependency rule:** `domain` imports nothing from the project except `i18n` (a leaf utility for
+user-facing error messages); `application` only knows `domain`; adapters implement ports; only
+`composition.py`, `cli.py` and `ui/` know concrete adapters.
 
-**Portas são `abc.ABC`:** uma classe que esquece um método abstrato nem instancia (há teste).
+**Ports are `abc.ABC`:** a class that forgets an abstract method can't even be instantiated (a
+test proves it).
 
-**Fábricas por registro:** cada adapter se registra com `@fontes.registrar("nome")` (ou `llms`,
-`notificadores`). `fabricas.fontes.criar("nome", **config)`; nome errado levanta
-`NomeDesconhecido` listando os disponíveis. Novo adapter = novo módulo + import em
-`adaptadores/__init__.py`, nada mais.
+**Registry factories:** each adapter registers itself with `@sources.register("name")` (or
+`llms`, `notifiers`). `factories.sources.create("name", **config)`; a wrong name raises
+`UnknownName` listing the available ones. A new adapter = a new module + an import in
+`adapters/__init__.py`, nothing else.
 
-**Identidade da vaga:** `fonte:id_externo` (`vanhack:12030`) — ids de sites diferentes colidem.
-A vaga é guardada inteira em JSON (`VagaTabela.dados`); campos próprios de cada fonte vão em
-`Vaga.extras`.
+**Job identity:** `source:external_id` (`vanhack:12030`): ids from different sites collide. The
+whole job is kept as JSON (`JobTable.data`); each source's own fields go in `Job.extras`.
 
-**Vaga repetida entre fontes** (13/10): a mesma vaga aparece em vários sites (a Lemon.io publica
-no Remotive, no Himalayas e no WWR). `Vaga.assinatura()` = empresa + título normalizados
-(minúsculas, sem acento, só letras e números: "Full-stack" = "full stack", "Lemon.io" = "lemon
-io"). Vale só entre **fontes diferentes**: na mesma fonte, título e empresa iguais são vagas
-diferentes (a Bjak tem "Frontend Engineer" em Singapura e na Irlanda, no Remote OK). Sem empresa
-não há assinatura — a VanHack nunca publica a empresa, e só o título juntaria vagas que não têm
-nada a ver. A repetida é **guardada** com `repete=<chave da original>` (senão seria detalhada de
-novo a cada coleta, gastando o limite por fonte), mas não conta como nova, não vai no aviso e
-não aparece na lista; o detalhe da original mostra "Também em <fonte>: <link>". Vagas de antes
-da coluna são assinadas e juntadas ao abrir o banco (`_assinar_vagas_antigas`, uma vez); no
-banco real, 2 pares da Lemon.io.
+**Duplicates across sources** (2026-10-13): the same job shows up on several sites (Lemon.io
+posts on Remotive, Himalayas and WWR). `Job.fingerprint()` = normalized company + title
+(lowercase, no accents, only letters and digits: "Full-stack" = "full stack", "Lemon.io" =
+"lemon io"). Only across **different sources**: within one source, equal title and company are
+different jobs (Bjak has "Frontend Engineer" in Singapore and in Ireland, on Remote OK). No
+company means no fingerprint: VanHack never publishes the company, and the title alone would
+merge unrelated jobs. The duplicate is **saved** with `duplicate_of=<the original's key>` (or it
+would be detailed again on every collection, using up the per-source limit), but it isn't new,
+isn't notified and isn't listed; the original's detail shows "Também em <source>: <link>".
 
-**Pesquisa** na aba Vagas (`listar_vagas(pesquisa=)`, `Vaga.contem`): cada palavra precisa
-aparecer no título, empresa, local, skills ou descrição, sem ligar para acento nem maiúsculas.
+**Search text** on the Jobs tab (`list_jobs(search_text=)`, `Job.matches`): every word has to
+appear in the title, company, location, skills or description, ignoring accents and case.
 
-**Coleta (`executar`):** buscar → filtrar → guardar → avisar; **não chama LLM**. Fontes rodam
-uma por vez (um navegador aberto de cada vez). Uma fonte que falha não derruba as outras — vira
-"Falhas parciais" na execução; só falha tudo se todas falharem. Cada fonte que implementa
-`FonteDePerfil` lê e guarda **o próprio perfil** a cada coleta; se a leitura falhar, fica o
-último salvo dela. **Avisos** (resumo das vagas novas: título, fonte, link) só com
-`avisar=True` — a coleta agendada e `peao run --avisar`; a do botão não avisa, porque quem
-pediu está olhando. Aviso que falha também vira "Falhas parciais" (as vagas ficam salvas). Os
-canais começam desligados (`NOTIFICADORES=[]`): ligado sem estar preenchido, todo aviso falharia.
-**Aviso de problema** (`Notificador.avisar_problema`, 13/10): com `avisar=True`, fonte que falha
-(ou a execução inteira, se não foi fonte) também é avisada — "VanHack: Sessão da VanHack
-expirada…". Sem isso a sessão vencida fazia a coleta agendada falhar todo dia em silêncio. Repete
-a cada coleta enquanto não for resolvido, de propósito: é o lembrete. O texto é o da exceção,
-sem o nome da classe (`fonte.rotulo: mensagem`).
+**Collection (`run_collection`):** search → filter → save → notify; **calls no LLM**. Sources run
+one at a time (one browser open at a time). A failing source doesn't stop the others: it becomes
+"Partial failures" on the run; everything fails only if every source fails. Each source that
+implements `ProfileSource` reads and saves **its own profile** on every collection; if reading
+fails, its last saved one stays. **Notices** (a digest of the new jobs: title, source, link) only
+with `notify=True`: the scheduled collection and `peao run --notify`; the button's doesn't
+notify, because whoever asked is watching. A failed notice also becomes "Partial failures" (the
+jobs stay saved). The channels start off (`NOTIFIERS=[]`): turned on before being filled in,
+every notice would fail. **Problem notices** (`Notifier.notify_problem`, 2026-10-13): with
+`notify=True`, a failing source (or the whole run, when it wasn't a source) is reported too:
+"VanHack: The VanHack session expired…". Without it an expired session made the scheduled
+collection fail every day in silence. It repeats on every collection until fixed, on purpose:
+it's the reminder. A failed *notice* is not reported as a problem (that channel is the broken
+one).
 
-**Perfil por fonte:** o perfil cadastrado na VanHack não é o do LinkedIn. `Perfil.fonte`; o
-repositório guarda, deduplica e mostra histórico **por fonte**. Bancos antigos ganharam a coluna
-`fonte` com `vanhack` (era a única fonte com perfil) — conferido numa cópia do banco real.
-
----
-
-## Coleta agendada e concorrência
-
-- **Tarefa** registrada pelo PowerShell 5.1 (`Register-ScheduledTask`; o `schtasks` não tem
-  `-StartWhenAvailable`): diária, roda ao ligar o PC se a hora passou com ele desligado,
-  `-MultipleInstances IgnoreNew`, limite de 2 h. Executa `.venv\Scripts\pythonw.exe -m
-  peao_bilingue.cli run --agendado` (coleta e avisa das vagas novas e dos problemas; nada de LLM) — ou o
-  próprio `PeaoBilingue.exe run --agendado`, ver "Executável" — com a
-  **pasta do projeto como diretório de trabalho** —
-  `data/`, `.env` e `profile_notes.md` são relativos a ela. Nome da tarefa em ASCII: a saída
-  do PowerShell 5.1 vem na página de código do console.
-- **Script sempre com `$ErrorActionPreference = 'Stop'` e `exit 0` no fim.** Sem isso,
-  `Get-ScheduledTask -ErrorAction SilentlyContinue` com a tarefa inexistente sai com código 1
-  e nenhuma mensagem. O `ConvertTo-Json` do 5.1 serializa data como `\/Date(...)\/`: as datas
-  são formatadas em ISO dentro do script. `LastRunTime` 30/11/1999 = nunca rodou;
-  `LastTaskResult` 0 = ok, 1 = nossa falha, 267009 = rodando, 267011 = nunca rodou.
-- O `pythonw` não tem console: com `--agendado`, o registro vai para `data/coleta.log`
-  (rotativo, 1 MB × 3).
-- **Uma execução por vez, entre processos:** `TravaDeArquivo` (`filelock` em
-  `data/execucao.lock`). A mesma instância do `FileLock` é **reentrante** — cada aquisição usa
-  uma instância nova, senão a segunda execução no mesmo processo entraria. Verificado no Windows:
-  app/CLI e tarefa agendada se excluem.
-- **Execução órfã:** com a trava na mão, nenhuma outra execução está viva — o que ainda consta
-  "rodando" é de processo que morreu (app fechado no meio, PC desligado, limite de tempo) e é
-  marcado como erro no início da execução seguinte.
-- SQLite em **WAL** com `busy_timeout` de 5 s: a interface lê enquanto a tarefa grava.
-- **PC suspenso no meio da coleta:** o processo volta junto com o PC e o Playwright falha com
-  `ERR_NETWORK_IO_SUSPENDED`; a execução fica registrada como erro (visto em 06/10). Sem
-  `-WakeToRun` de propósito: acordar o notebook do usuário é invasivo.
+**Profile per source:** the profile on VanHack isn't the one on LinkedIn. `Profile.source`; the
+repository saves, deduplicates and keeps the history **per source**.
 
 ---
 
-## Executável (Fase 8)
+## Text and translations
 
-- `empacotamento/peao_bilingue.spec`, build com
-  `uv run --group empacotar pyinstaller empacotamento/peao_bilingue.spec --noconfirm` →
-  `dist/PeaoBilingue/PeaoBilingue.exe` (~170 MB, a maior parte o driver node do Playwright).
-  O PyInstaller fica no grupo `empacotar`, fora do `uv sync` normal e do CI.
-- **Um .exe para os dois papéis** (`inicio.py`): sem argumentos abre a janela, com argumentos é
-  a CLI. É de janela (`console=False`); a tarefa agendada roda `PeaoBilingue.exe run --agendado`
-  (`comando_da_coleta()` escolhe entre isso e o `pythonw` do projeto por `sys.frozen`).
-- **Dados em `%LOCALAPPDATA%\PeaoBilingue`** quando congelado (`configuracao.pasta_base()`):
-  `data/`, `.env`, `profile_notes.md` e `artifacts/` saem de lá, não da pasta do .exe nem do
-  diretório de trabalho. No projeto continua tudo relativo à pasta atual.
-- Entram à mão no spec: os submódulos de `peao_bilingue` (adapters são importados pelo registro),
-  os backends do `keyring` + metadata (achados por entry points), `win32ctypes.core` e o dialeto
-  `sqlite` do SQLAlchemy. O Chromium do Playwright **não** entra: usa o Chrome instalado.
-- **Instalação do Gabriel (13/10):** programa em `%LOCALAPPDATA%\Programs\PeaoBilingue`, dados
-  em `%LOCALAPPDATA%\PeaoBilingue` (migrados do `data/` do projeto), atalho no Menu Iniciar e a
-  tarefa das 08:00 chamando o .exe. O `data/` do projeto virou só cópia de desenvolvimento.
-- **O Claude desktop é MSIX:** pasta **nova** criada em `AppData` por processo aberto pelo shell
-  do agente (inclusive o .exe) vai para `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\...` — só o
-  agente a vê. Assim a primeira migração "sumiu": a tarefa agendada abriu um banco vazio e saiu
-  com código 0 sem registro. Para instalar, atualizar ou testar o .exe de verdade, usar uma
-  **tarefa agendada temporária** (roda fora do contêiner) e removê-la depois.
-- **Bug achado pelo .exe (existia também no projeto):** se o `__aenter__` da VanHack falhava
-  depois de abrir o navegador (sessão expirada, desafio), o `async with` não chamava o
-  `__aexit__` e o Chrome + driver seguravam o processo — a coleta agendada com sessão vencida
-  nunca terminava (até o limite de 2 h). Agora o `__aenter__` fecha tudo antes de relançar.
+- **Every user-facing string goes through `_()`** (`peao_bilingue.i18n`): the English text is the
+  key, `locales/pt_BR.py` maps it to Brazilian Portuguese, and a missing entry falls back to
+  English. Placeholders use `str.format` names (`_("Run {id}").format(id=...)`) so a translator
+  can reorder them. `LOCALE` is fixed at startup (`pt_BR`); labels built at import time (adapter
+  labels, registry kinds) are translated once.
+- **Logs stay in English**, untranslated: they are for whoever maintains the app.
+- **The LLM prompt is in English** and asks for the answer in the user's language
+  (`i18n.response_language()`, "Brazilian Portuguese"). The readable profile (`to_text`) is in
+  English too.
+- `tests/test_i18n.py` checks that every `_()` literal has a translation, that no translation is
+  unused, that placeholders match, and that **no accented Portuguese** appears in `src/` outside
+  `locales/` (the product name "Peão Bilíngue" is the exception; text matched on a third-party
+  page, like a Cloudflare message, is written with `\u` escapes).
+- **The tests run in English** (`i18n.LOCALE = "en"` in `conftest.py`), so assertions read the
+  English text.
+- Don't call `_()` on something that isn't a literal: the coverage test can't see it.
 
 ---
 
-## Análise com LLMs
+## Migration from the Portuguese names (2026-10-17)
 
-- **Sob demanda:** `analisar_vaga(repositorio, provedor, chave, perfil_de=None)`, chamada pelo
-  botão Analisar da aba Vagas. Usa o perfil da **fonte da vaga**; o seletor de perfil escolhe o
-  de outra fonte (o caminho para fontes sem perfil, como as APIs públicas da Fase 5). Sem perfil
-  lido → `PerfilAusente`, antes de gastar com o LLM. A análise guarda o `perfil_id`: quando a
-  mesma fonte ganha snapshot mais novo, `AnaliseSalva.perfil_desatualizado` e a tela sugere
-  analisar de novo — não há mais reanálise automática.
-- O provedor só traduz a chamada (`gerar_json(sistema, mensagens, schema)` → texto JSON ou
-  recusa). **Validação e retry ficam em `aplicacao/analise.py`**, iguais para todos.
-- **Nenhum provedor garante `minItems`/`maxItems` no servidor.** Na Anthropic, o
-  `transform_schema` (o mesmo que o `messages.parse` usa) **move** esses limites e o
-  `minimum`/`maximum` para a `description` do schema. "Exatamente 20 perguntas" é garantido pela
-  validação Pydantic no cliente + até 3 tentativas devolvendo o erro ao modelo.
-- **Anthropic:** `beta.messages.create` com `output_config.format` (schema transformado). Tool use
-  forçado (`tool_choice` `any`/`tool`) devolve **400** nos modelos atuais — não usar. Nos modelos
-  que suportam (Sonnet 5.5, Opus 5.5/5, Fable 5.1), vai o fallback de recusa do servidor
-  (`fallbacks: "default"` + beta `server-side-fallback-2026-07-01`). Checar `stop_reason ==
-  "refusal"` antes de ler: recusa chega como HTTP 200.
-- **Ollama:** `format` recebe o JSON Schema (vira gramática; a saída já sai no formato). O
-  contexto padrão do Ollama é pequeno e **trunca o prompt em silêncio** — `num_ctx` sempre
-  explícito (`OLLAMA_CONTEXTO`, 8192 cabe nos 6 GB com modelo de 8B). Desligado ou modelo não
-  baixado viram `ProvedorIndisponivel` com a instrução (`ollama serve` / `ollama pull`).
-- **OpenAI:** `chat.completions.create` com `response_format` estrito (o conversor
-  `to_strict_json_schema` é o mesmo do `parse`). Não usar `parse`: ele valida dentro do SDK e
-  engole o texto que a aplicação devolve ao modelo no retry. Recusa vem em `message.refusal`.
-- **Gemini:** o assistente se chama `"model"`; bloqueio de segurança **não** levanta exceção —
-  chega como resposta sem texto e `finish_reason` `SAFETY`/`PROHIBITED_CONTENT`/`BLOCKLIST`.
-- **OpenAI e Gemini não têm modelo padrão** (`OPENAI_MODELO`/`GEMINI_MODELO` obrigatórios): o
-  catálogo muda e um nome inventado só falharia na hora de rodar.
-- **Triagem removida em 07/10:** com a análise pedida vaga a vaga, o filtro automático por LLM
-  barato perdeu a razão de existir.
-- **Antes de escrever um adapter novo:** conferir a API no SDK instalado (introspecção) e na doc
-  oficial. Nunca supor nome de método ou parâmetro.
-- Prompt em PT-BR; `melhorias_perfil` cita itens concretos do perfil, não conselho genérico.
-  Entrada: texto do perfil + `profile_notes.md` (opcional) + a vaga em JSON.
+Up to 2026-10-16 the database tables and columns, the enum values, the keys inside the JSON
+columns, the settings and the CLI commands were in Portuguese. The update migrates by itself:
+
+- **Database** (`persistence/sqlite/legacy.py`, on the first open, when table `vaga` exists):
+  backs up the file as `peao.before-english-<date>.db` (SQLite backup API, safe with WAL),
+  creates the new tables, copies every row translating columns, enum values (`nova` → `new`,
+  `agendado` → `scheduled`, `erro` → `error`...) and the JSON keys (`JOB_KEYS`, `ANALYSIS_KEYS`,
+  `PROFILE_KEYS`; VanHack's question labels in `other_fields` are kept verbatim), recomputes
+  each profile's `content_hash` (so the next reading isn't a fake change), renames Himalayas
+  keys `sem-empresa/` → `no-company/`, and drops the old tables, all in one transaction. The
+  readable profile text and old run errors stay in Portuguese until they're rewritten.
+- **Settings** (`config.migrate_legacy_names`, on every start, cheap): old names in
+  `config.json` and `.env` (`fontes_habilitadas`, `llm_analise`, `HIMALAYAS_PAIS`...) are
+  renamed in place; a new name already present wins.
+- **API caches** with the old keys simply count as misses.
+- **CLI:** `run --agendado` is still accepted (hidden) as `--scheduled`, for tasks registered
+  before the change.
+- **Scheduled task:** renamed to "Peao Bilingue - daily collection". `schedule()` removes the old
+  "Peao Bilingue - coleta diaria" (two tasks would collect twice); `status()` still finds it; and
+  the window, on startup, calls `upgrade_legacy_task()` (off the window's thread), which
+  re-registers it under the new name and command at the same time.
+- **Files:** `coleta.log` → `collection.log`, `execucao.lock` → `run.lock`; the old ones are just
+  left behind.
 
 ---
 
-## Adapter VanHack: o que o site real mostrou
+## Scheduled collection and concurrency
 
-**Login:** `app.vanhack.com/login` dá 404. O login fica em `auth.vanhack.com`, é **passwordless**
-(magic link, Google ou LinkedIn) e tem Cloudflare Turnstile e honeypot (input "Website" — nunca
-tocar). `uv run peao login` abre o Chrome visível; se for por email, **colar o link na janela
-aberta**, não clicar pelo cliente de email. Sessão salva em `data/state.json`.
+- **The task** is registered through PowerShell 5.1 (`Register-ScheduledTask`; `schtasks` has no
+  `-StartWhenAvailable`): daily, runs when the PC turns on if the time went by while it was off,
+  `-MultipleInstances IgnoreNew`, a 2 h limit. It runs `.venv\Scripts\pythonw.exe -m
+  peao_bilingue.cli run --scheduled` (collects and reports new jobs and problems; no LLM), or
+  `PeaoBilingue.exe run --scheduled` in the .exe (see "Executable"), with the **project folder as
+  the working directory**: `data/`, `.env` and `profile_notes.md` are relative to it. ASCII task
+  name: PowerShell 5.1's output comes in the console's code page.
+- **The script always has `$ErrorActionPreference = 'Stop'` and `exit 0` at the end.** Without
+  it, `Get-ScheduledTask -ErrorAction SilentlyContinue` with a missing task exits with code 1 and
+  no message. 5.1's `ConvertTo-Json` serializes dates as `\/Date(...)\/`: dates are formatted as
+  ISO inside the script. `LastRunTime` 1999-11-30 = never ran; `LastTaskResult` 0 = ok, 1 = our
+  failure, 267009 = running, 267011 = never ran.
+- `pythonw` has no console: with `--scheduled`, the log goes to `data/collection.log` (rotating,
+  1 MB × 3).
+- **One run at a time, across processes:** `FileRunLock` (`filelock` on `data/run.lock`). The same
+  `FileLock` instance is **reentrant**, so every acquisition uses a new instance, or a second run
+  in the same process would get in. Verified on Windows: app/CLI and the scheduled task exclude
+  each other.
+- **Orphan runs:** holding the lock, no other run is alive; anything still listed as running
+  belongs to a process that died (app closed halfway, PC turned off, the time limit) and is
+  marked as an error when the next run starts.
+- SQLite in **WAL** with a 5 s `busy_timeout`: the window reads while the task writes.
+- **PC suspended during a collection:** the process comes back with the PC and Playwright fails
+  with `ERR_NETWORK_IO_SUSPENDED`; the run is recorded as an error (seen on 2026-10-06). No
+  `-WakeToRun` on purpose: waking the user's laptop is intrusive.
 
-**Sessão:** `/jobs` é **público** — carregá-lo não prova nada. A prova é `/profile`, que dispara o
-fluxo OIDC sem autenticação. O cookie `.AspNetCore.Antiforgery.*` existe mesmo deslogado.
+---
 
-**Navegador:** usa o Chrome instalado (`BROWSER_CHANNEL=chrome`), não o Chromium empacotado — o
-Cloudflare recusa navegadores atípicos. O app logado **não** é bloqueado sob Playwright headless.
+## Executable (Phase 8)
 
-**Listagem:** busca por URL (`/jobs/{slug}-jobs`), que filtra de verdade. **Scroll infinito**
-(10 cards no primeiro render, 25 depois de rolar). Busca sem resultado mostra "You're seeing 0
-jobs" e devolve `[]`. A renderização às vezes demora: espera-se o card **anexado ao DOM** (não
-"visível") e recarrega-se uma vez antes de desistir. Escopar links a `div.vh-cards`: a página da
-vaga tem minicards de **outras** vagas.
+- `packaging/peao_bilingue.spec`, built with
+  `uv run --group packaging pyinstaller packaging/peao_bilingue.spec --noconfirm` →
+  `dist/PeaoBilingue/PeaoBilingue.exe` (~170 MB, mostly Playwright's node driver). PyInstaller is
+  in the `packaging` group, outside the normal `uv sync` and CI.
+- **One .exe for both roles** (`launcher.py`): no arguments opens the window, arguments run the
+  CLI. It is a GUI app (`console=False`); the scheduled task runs `PeaoBilingue.exe run
+  --scheduled` (`collection_command()` picks between that and the project's `pythonw` by
+  `sys.frozen`).
+- **Data in `%LOCALAPPDATA%\PeaoBilingue`** when frozen (`config.base_dir()`): `data/`, `.env`,
+  `profile_notes.md` and `artifacts/` come from there, not from the .exe's folder or the working
+  directory. In the project, everything stays relative to the current folder.
+- Added by hand in the spec: `peao_bilingue`'s submodules (adapters are imported by the
+  registry), the `keyring` backends + metadata (found through entry points), `win32ctypes.core`
+  and SQLAlchemy's `sqlite` dialect. Playwright's Chromium is **not** bundled: it uses the
+  installed Chrome. The spec isn't type-checked: a name that looks like a word (`datas` is
+  PyInstaller's argument) must stay as it is.
+- **Gabriel's installation (2026-10-13):** the program in `%LOCALAPPDATA%\Programs\PeaoBilingue`,
+  data in `%LOCALAPPDATA%\PeaoBilingue` (migrated from the project's `data/`), a Start menu
+  shortcut and the 08:00 task calling the .exe. The project's `data/` is only a development copy.
+- **Claude desktop is MSIX:** a **new** folder created in `AppData` by a process started from the
+  agent's shell (the .exe included) goes to `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\...`,
+  which only the agent sees. That's how the first migration "vanished": the scheduled task
+  opened an empty database and exited with code 0 and no log. To install, update or really test
+  the .exe, use a **temporary scheduled task** (it runs outside the container) and remove it
+  afterwards.
+- **A bug the .exe found (it was in the project too):** when VanHack's `__aenter__` failed after
+  opening the browser (expired session, challenge), `async with` didn't call `__aexit__` and
+  Chrome + the driver held the process open: a scheduled collection with an expired session
+  never ended (until the 2 h limit). Now `__aenter__` closes everything before re-raising.
 
-**Vaga:** a VanHack **nunca publica a empresa** ("our hiring partner") — `empresa` é `None`.
-Skills vêm em chips `span.vh-jd-skill` com os anos num `<small>`.
+---
 
-**Perfil (`/profile`):** formulário editável; valores em `input_value()`, dropdowns `.vh-dd`,
-radios e checkboxes marcados — `inner_text()` não basta. Ids do Blazor (`0HNP0Q2EPN2A7`,
-`vhdd-<guid>-button`) **mudam a cada render**: nunca usar como seletor. Estrutura:
+## Analysis with LLMs
+
+- **On demand:** `analyze_job(key, provider, jobs=, profiles=, analyses=, profile_source=None,
+  notes="")`, called by the Analyze button on the Jobs tab. It uses the profile of the **job's
+  source**; the profile picker chooses another source's (the way for sources with no profile,
+  like the public APIs). No profile read → `MissingProfile`, before spending on the LLM. The
+  analysis keeps `profile_id`: when the same source gets a newer snapshot,
+  `SavedAnalysis.profile_outdated` and the screen suggests analyzing again; there's no automatic
+  re-analysis.
+- The provider only translates the call (`generate_json(system, messages, schema)` → JSON text or
+  a refusal). **Validation and retries live in `application/analysis.py`**, the same for all.
+- **No provider enforces `minItems`/`maxItems` on the server.** On Anthropic, `transform_schema`
+  (the same one `messages.parse` uses) **moves** those limits and `minimum`/`maximum` into the
+  schema's `description`. "Exactly 20 questions" is guaranteed by Pydantic validation on the
+  client + up to 3 attempts sending the error back to the model.
+- **Anthropic:** `beta.messages.create` with `output_config.format` (the transformed schema).
+  Forced tool use (`tool_choice` `any`/`tool`) returns **400** on the current models; don't use
+  it. On the models that support it (Sonnet 5.5, Opus 5.5/5, Fable 5.1), the server-side refusal
+  fallback goes along (`fallbacks: "default"` + beta `server-side-fallback-2026-07-01`). Check
+  `stop_reason == "refusal"` before reading: a refusal arrives as HTTP 200.
+- **Ollama:** `format` gets the JSON Schema (it becomes a grammar; the output already fits). Its
+  default context is small and **truncates the prompt silently**: `num_ctx` is always explicit
+  (`OLLAMA_CONTEXT`; 8192 fits 6 GB with an 8B model). Down, or the model not downloaded, become
+  `ProviderUnavailable` with the instruction (`ollama serve` / `ollama pull`).
+- **OpenAI:** `chat.completions.create` with a strict `response_format` (`to_strict_json_schema`
+  is the converter `parse` uses). Don't use `parse`: it validates inside the SDK and swallows the
+  text the application sends back to the model on retry. A refusal comes in `message.refusal`.
+- **Gemini:** the assistant is called `"model"`; a safety block **doesn't** raise: it arrives as
+  a response with no text and `finish_reason` `SAFETY`/`PROHIBITED_CONTENT`/`BLOCKLIST`.
+- **OpenAI and Gemini have no default model** (`OPENAI_MODEL`/`GEMINI_MODEL` are required): the
+  catalog changes and a made-up name would only fail at run time.
+- **Before writing a new adapter:** check the API in the installed SDK (introspection) and in
+  the official docs. Never guess a method or parameter name.
+- `profile_improvements` points at concrete items of the profile, not generic advice. Input: the
+  profile text + `profile_notes.md` (optional) + the job as JSON.
+
+---
+
+## VanHack adapter: what the real site showed
+
+**Login:** `app.vanhack.com/login` is a 404. Login lives on `auth.vanhack.com`, is
+**passwordless** (magic link, Google or LinkedIn) and has Cloudflare Turnstile and a honeypot
+(the "Website" input: never touch it). `uv run peao login` opens a visible Chrome; with email,
+**paste the link in the open window**, don't click it in the email client. The session is saved
+in `data/state.json`.
+
+**Session:** `/jobs` is **public**: loading it proves nothing. The proof is `/profile`, which
+starts the OIDC flow without authentication. The `.AspNetCore.Antiforgery.*` cookie exists even
+logged out.
+
+**Browser:** the installed Chrome (`BROWSER_CHANNEL=chrome`), not the bundled Chromium:
+Cloudflare rejects unusual browsers. The logged-in app is **not** blocked under headless
+Playwright.
+
+**Listing:** search by URL (`/jobs/{slug}-jobs`), which really filters. **Infinite scroll** (10
+cards on the first render, 25 after scrolling). A search with no results shows "You're seeing 0
+jobs" and returns `[]`. Rendering is sometimes slow: it waits for a card **attached to the DOM**
+(not "visible") and reloads once before giving up. Links are scoped to `div.vh-cards`: the job
+page has minicards of **other** jobs.
+
+**Job:** VanHack **never publishes the company** ("our hiring partner"): `company` is `None`.
+Skills come as `span.vh-jd-skill` chips with the years in a `<small>`.
+
+**Profile (`/profile`):** an editable form; values in `input_value()`, `.vh-dd` dropdowns, checked
+radios and checkboxes: `inner_text()` isn't enough. Blazor ids (`0HNP0Q2EPN2A7`,
+`vhdd-<guid>-button`) **change on every render**: never use them as selectors. Structure:
 
 ```
 section.pf-section > h5.pf-section-title + div.pf-card
@@ -294,219 +355,191 @@ section.pf-section > h5.pf-section-title + div.pf-card
   div.pf-exp > a.pf-item-title + .pf-item-sub + div.pf-role(.pf-role-head/.pf-role-desc/.pf-chips)
 ```
 
-O snapshot guarda **todos** os pares pergunta/resposta (sobrevive a mudança de texto da
-pergunta). Não há campo de bio: o "headline" é a resposta de "Which role best applies...". O card
-do Intro Video traz URL assinada do vídeo e a transcrição falada — só o "Level: X" é usado.
+The snapshot keeps **every** question/answer pair (it survives a question being reworded). There's
+no bio field: the "headline" is the answer to "Which role best applies...". The Intro Video card
+has the video's signed URL and the spoken transcript: only "Level: X" is used.
 
-Seletores **somente** em `selectors.py`, documentados. Fixtures reais anonimizadas em
-`tests/fixtures/vanhack/` (o README de lá explica a anonimização e o que auditar).
-
----
-
-## Fontes por API
-
-Sem login e sem perfil: a análise de uma vaga delas usa o perfil escolhido no seletor (o padrão
-cai no primeiro perfil salvo, hoje o da VanHack). Descrição em HTML vira texto com uma linha por
-parágrafo (`adaptadores/fontes/html.py`). Fixture = resposta real salva em
-`tests/fixtures/<fonte>/`; os testes usam `ApiFalsa` (em `dubles.py`, sobre
-`httpx.MockTransport`), sem rede, e contam as chamadas.
-
-**Base `FonteDeApi`** (`adaptadores/fontes/api.py`), dois jeitos de consultar:
-- **lista inteira** (`parametros()`): uma chamada por coleta, e cada termo é filtrado localmente
-  com o mesmo texto do filtro das buscas — Remotive, Remote OK, Arbeitnow;
-- **por termo** (`parametros_do_termo()`): a API já busca, uma chamada por termo, com `pausa_s`
-  entre chamadas de verdade — Himalayas;
-- **algumas consultas fixas** (`consultas()`): a lista vem em partes — We Work Remotely, um feed
-  por categoria. `decodificar()` troca o JSON por outro formato (RSS).
-Cache por consulta em `data/cache/<fonte>[-<hash>].json` (`validade_s`, padrão 6 h; só vale para
-a mesma consulta); `detalhar` não chama a API. Cada fonte define `url`, os parâmetros e
-`converter()`. 429 vira `ErroDeColeta` legível.
-
-**Remotive** (`GET https://remotive.com/api/remote-jobs?category=software-dev`). Termos, no
-aviso legal da própria resposta: linkar a vaga no Remotive **e** citar o Remotive como fonte;
-**no máximo ~4 chamadas por dia** (mais de 2 por minuto são bloqueadas); dados com 24 h de
-atraso; não republicar em outros sites de vagas. Por isso **uma chamada por coleta** (a
-categoria vem inteira — 17 vagas em 07/10 — e cada termo é filtrado localmente com o mesmo
-texto do filtro das buscas) e **cache de 6 h** em `data/cache/remotive.json`. O `limit` da API
-foi ignorado no teste real. Salário vem `""` quando não informado. A listagem já traz a vaga
-inteira: `detalhar` não chama a API. Desligada por padrão: liga na aba Fontes.
-
-**Remote OK** (`GET https://remoteok.com/api`). Termos no primeiro item da resposta: linkar a
-vaga no Remote OK (sem `nofollow`) e citar "Remote OK"; não usar o logo. Sem limite declarado;
-a base já faz uma chamada por coleta. Vêm as ~100 vagas mais recentes de **todas as áreas**,
-com a descrição **resumida** (o texto inteiro só no site, que não é raspado). Três armadilhas:
-- toda descrição termina com uma frase anti-spam ("Please mention the word **X** and tag R…")
-  cujo token é o **IP de quem chamou** em base64 — `limpar_descricao` tira a frase e qualquer
-  token solto; na fixture o token é o de `2001:db8::1` (documentação);
-- texto em UTF-8 lido como Latin-1 ("â€“"), vindo do próprio servidor — `consertar_codificacao`;
-- `<img>` com imagem em base64 escapado no meio do texto, às vezes cortado — removido.
-Salário em `salary_min`/`salary_max` (0 = não informado); `location` vem `""` quando a vaga não
-diz. 12 vagas na primeira coleta real (07/10).
-
-**Arbeitnow** (`GET https://www.arbeitnow.com/api/job-board-api?visa_sponsorship=true`). Termos
-(`meta.terms` da resposta e seção 11 dos termos do site): API gratuita, "não abuse", **linkar de
-volta** para o Arbeitnow; o acesso pode ser revogado. Limite de 50 chamadas
-(`X-RateLimit-Limit`). Só vagas **com patrocínio de visto** — o caminho de relocação, como na
-VanHack; a lista padrão é de vagas locais na Alemanha, muitas em alemão. Em 07/10: 312 vagas numa
-página só. `remote=true` é **ignorado** pela API. A descrição vem com o HTML **escapado**, às
-vezes só em parte (`&lt;p&gt;` dentro de tags de verdade): `descricao_em_texto` converte e, se
-sobrar tag de fechamento, converte de novo. `created_at` é epoch. Primeira coleta real (08/10):
-93 vagas casaram com as buscas, 15 novas (o limite por fonte).
-
-**Himalayas** (`GET https://himalayas.app/jobs/api/search?q=<termo>&country=BR&sort=recent`).
-Termos (https://himalayas.app/api): linkar a vaga no Himalayas **e** citar o Himalayas; não
-republicar em outros sites; abuso dá 429. **No máximo 20 vagas por chamada** e mais de 5.000 na
-lista inteira, então a busca é **por termo** (`parametros_do_termo` na base): uma chamada por
-palavra-chave das buscas (8 hoje), **2 s de pausa** entre chamadas de verdade e cache de **12 h por
-termo** (os dados mudam a cada 24 h). `country=BR` (`HIMALAYAS_PAIS`) traz só vagas abertas ao
-Brasil ou ao mundo — sem ele, 3 de 18 serviam. O id é `empresa/slug`: o slug sozinho se repete
-entre empresas. `locationRestrictions` vira o "local" (até 3 países; acima disso, a contagem) e
-fica inteiro em `extras["paises"]`. Primeira coleta real (08/10): 117 listadas, 15 novas.
-
-**We Work Remotely** (RSS: `https://weworkremotely.com/categories/<categoria>.rss`). A página do
-feed diz: *"Anyone can use the feed, all we ask is that you attribute the links back to We Work
-Remotely."* O feed geral (`remote-jobs.rss`) traz só as ~90 mais recentes de **todas** as áreas —
-faltavam nele 38 das 57 vagas de programação —, então são os feeds de back-end, full-stack e
-front-end: **3 chamadas por coleta**, 2 s de pausa, cache de 6 h. O título vem "Empresa: Cargo";
-`skills` vem "A, B, and C". O WebFetch leva 403 do Cloudflare deles, mas o acesso honesto (nosso
-User-Agent) recebe 200 — nada de disfarce. XML pelo `ElementTree` da stdlib (o expat do Python já
-se protege de expansão de entidades). Primeira coleta real (08/10): 27 listadas, 15 novas.
+Selectors **only** in `selectors.py`, documented. Real anonymized fixtures in
+`tests/fixtures/vanhack/` (its README explains the anonymization and what to audit).
 
 ---
 
-## Sites brasileiros (Fase 6): o que os termos permitem
+## API sources
 
-Investigado em 08/10, antes de qualquer código, como o roteiro manda (termos lidos no site de
-cada um, com acesso honesto):
+No login and no profile: a job from them is analyzed with the profile picked in the selector
+(the default falls back to the first saved profile, VanHack's today). HTML descriptions become
+text with one line per paragraph (`adapters/sources/html.py`). Fixture = a real response saved in
+`tests/fixtures/<source>/`; the tests use `FakeApi` (in `fakes.py`, over
+`httpx.MockTransport`), with no network, and count the calls.
 
-| Site | API/feed oficial | O que os termos dizem | Veredito |
+**The `ApiSource` base** (`adapters/sources/api.py`), three ways to query:
+- **the whole list** (`params()`): one call per collection, and each term is filtered locally
+  against the same text the search filter uses: Remotive, Remote OK, Arbeitnow;
+- **per term** (`params_for_term()`): the API searches, one call per term, with `pause_s`
+  between real calls: Himalayas;
+- **a few fixed queries** (`queries()`): the list comes in parts: We Work Remotely, one feed per
+  category. `decode()` swaps JSON for another format (RSS).
+A cache per query in `data/cache/<source>[-<hash>].json` (`validity_s`, 6 h by default; only for
+the same query); `detail` doesn't call the API. Each source defines `url`, the parameters,
+`brand` (how it asks to be credited) and `convert()`. A 429 becomes a readable
+`CollectionError`.
+
+**Remotive** (`GET https://remotive.com/api/remote-jobs?category=software-dev`). Terms, in the
+response's own legal notice: link the job on Remotive **and** credit Remotive as the source; **at
+most ~4 calls a day** (more than 2 a minute get blocked); data is 24 h behind; don't republish on
+other job sites. Hence **one call per collection** (the category comes whole, 17 jobs on
+2026-10-07, and each term is filtered locally) and a **6 h cache** in `data/cache/remotive.json`.
+The API ignored `limit` in a real test. Salary is `""` when not given. The listing already has
+the whole job.
+
+**Remote OK** (`GET https://remoteok.com/api`). Terms in the response's first item: link the job
+on Remote OK (no `nofollow`) and credit "Remote OK"; don't use the logo. No declared limit; the
+base makes one call per collection. It returns the ~100 latest jobs from **every field**, with a
+**shortened** description (the full text only on the site, which isn't scraped). Three traps:
+- every description ends with an anti-spam sentence ("Please mention the word **X** and tag R…")
+  whose token is **the caller's IP address** in base64: `clean_description` removes the sentence
+  and any loose token; in the fixture the token is the one for `2001:db8::1` (documentation);
+- UTF-8 read as Latin-1, from the server itself: `fix_encoding`;
+- an escaped `<img>` with a base64 image in the middle of the text, sometimes cut: removed.
+Salary in `salary_min`/`salary_max` (0 = not given); `location` is `""` when the job doesn't say.
+
+**Arbeitnow** (`GET https://www.arbeitnow.com/api/job-board-api?visa_sponsorship=true`). Terms
+(`meta.terms` in the response and section 11 of the site's terms): a free API, "don't abuse it",
+**link back** to Arbeitnow; access may be revoked. A limit of 50 calls (`X-RateLimit-Limit`).
+Only jobs **with visa sponsorship**: the relocation path, like VanHack; the default list is local
+jobs in Germany, many in German. On 2026-10-07: 312 jobs in a single page. The API **ignores**
+`remote=true`. The description comes with **escaped** HTML, sometimes only partly (`&lt;p&gt;`
+inside real tags): `description_as_text` converts and, if a closing tag is left, converts again.
+`created_at` is epoch.
+
+**Himalayas** (`GET https://himalayas.app/jobs/api/search?q=<term>&country=BR&sort=recent`).
+Terms (https://himalayas.app/api): link the job on Himalayas **and** credit Himalayas; don't
+republish on other sites; abuse gets a 429. **At most 20 jobs per call** and more than 5,000 in
+the whole list, so it searches **per term**: one call per search keyword, a **2 s pause** between
+real calls and a **12 h cache per term** (the data changes every 24 h). `country=BR`
+(`HIMALAYAS_COUNTRY`) brings only jobs open to Brazil or worldwide; without it, 3 out of 18 fit.
+The id is `company/slug` (`no-company/slug` without a company slug): the slug alone repeats
+across companies. `locationRestrictions` becomes the location (up to 3 countries; above that,
+the count) and stays whole in `extras["countries"]`.
+
+**We Work Remotely** (RSS: `https://weworkremotely.com/categories/<category>.rss`). The feed page
+says: *"Anyone can use the feed, all we ask is that you attribute the links back to We Work
+Remotely."* The general feed (`remote-jobs.rss`) only has the ~90 latest from **every** field (it
+was missing 38 of the 57 programming jobs), so it's the back-end, full-stack and front-end feeds:
+**3 calls per collection**, a 2 s pause, a 6 h cache. The title comes as "Company: Role";
+`skills` as "A, B, and C". WebFetch gets a 403 from their Cloudflare, but honest access (our
+User-Agent) gets a 200: no disguise. XML through the stdlib's `ElementTree` (Python's expat
+already guards against entity expansion).
+
+---
+
+## Brazilian sites (Phase 6): what the terms allow
+
+Investigated on 2026-10-08, before any code, as the roadmap says (terms read on each site, with
+honest access):
+
+| Site | Official API/feed | What the terms say | Verdict |
 |---|---|---|---|
-| Gupy | só para empresas clientes | proíbe "agregar, copiar ou duplicar partes do Gupy [...] incluindo oportunidades de trabalho" | **não** |
-| Remotar | não | proíbe "mecanismos, software ou scripts"; cópia por "Robot/Crawler" "expressamente proibido" | **não** |
-| GeekHunter | não | proíbe "scraping, spiders, crawlers, bots" sem autorização prévia e escrita | **não** |
-| Trampos | não | mesma cláusula da Remotar (scripts e robôs proibidos) | **não** |
-| Programathor | não (`/jobs.rss` dá 500) | **silencia** sobre acesso automatizado; `robots.txt` libera as páginas de vagas | **a decidir pelo Gabriel** |
+| Gupy | only for client companies | forbids "aggregating, copying or duplicating parts of Gupy [...] including job opportunities" | **no** |
+| Remotar | no | forbids "mechanisms, software or scripts"; copying by "Robot/Crawler" "expressly forbidden" | **no** |
+| GeekHunter | no | forbids "scraping, spiders, crawlers, bots" without prior written authorization | **no** |
+| Trampos | no | the same clause as Remotar (scripts and robots forbidden) | **no** |
+| Programathor | no (`/jobs.rss` returns 500) | **silent** about automated access; `robots.txt` allows the job pages | **Gabriel decides** |
 
-O Programathor exigiria ler o HTML das páginas (não há alternativa oficial): os termos não
-proíbem, mas também não autorizam. Fica parado até o Gabriel decidir.
-
----
-
-## Roteiro
-
-Uma fase por vez; ao fim de cada uma: `uv run pytest`, `uv run ruff check .`, `uv run mypy`, commit e push.
-
-- [x] **Fase 1 — Núcleo hexagonal.** Domínio, portas, fábricas, composição; VanHack e Anthropic
-      como adapters; FastAPI/APScheduler removidos; bug da listagem corrigido (busca vazia e
-      renderização lenta); evidência salva em qualquer falha de leitura.
-- [x] **Fase 2 — LLMs:** Ollama, OpenAI, Gemini; contrato comum testado contra os quatro.
-      **Falta validar contra os serviços reais:** o Ollama não está instalado na máquina, e
-      OpenAI/Gemini precisam de chave.
-- [x] **Fase 3 — UI CustomTkinter:** abas Vagas/Buscas/Fontes/LLMs/Perfil/Execuções/
-      Configurações; executor assíncrono em thread própria; segredos no cofre; janela conferida
-      por captura de tela (corrigidos botões cortados e coluna fora da borda). A descrição da vaga
-      passou a manter os parágrafos — melhora a tela e o prompt.
-- [x] **Fase 4 — Agendador do Windows:** tarefa diária pelo app ou por `peao agenda`; lock
-      entre processos com `filelock`; SQLite em WAL; execuções órfãs encerradas. Verificado de
-      ponta a ponta: a tarefa roda o `pythonw` na pasta certa, grava em `coleta.log`, e app e
-      tarefa se excluem. Corrigido de quebra o teste de interface intermitente (ver "Testes").
-- [x] **Análise sob demanda e perfil por fonte** (pedido de 07/10): a coleta não chama LLM;
-      botão Analisar com seletor de LLM e de perfil; um perfil por fonte; triagem e reanálise
-      automática removidas; avisos viraram resumo das vagas novas após a coleta agendada.
-- [x] **Fase 5 — APIs públicas:** Remotive, Remote OK, Arbeitnow (Alemanha com visto),
-      Himalayas (aberto ao Brasil) e We Work Remotely (RSS), sobre a base `FonteDeApi`. Termos
-      conferidos um a um e documentados em "Fontes por API"; todas desligadas por padrão.
-- [~] **Fase 6 — Sites brasileiros:** investigação feita (ver "Sites brasileiros"): Gupy,
-      Remotar, GeekHunter e Trampos proíbem; o Programathor silencia e só daria por HTML —
-      **aguarda decisão do Gabriel**.
-- [ ] **Fase 7 — LinkedIn/Indeed:** opt-in, desligados por padrão, mesmas regras da VanHack. Os
-      termos proíbem automação (risco de restrição da conta); se bloquearem, **não** escalar para
-      evasão — a alternativa é ler os alertas de vaga por email (IMAP).
-- [x] **Fase 8 — `.exe`** com PyInstaller, uma pasta, sem Chromium (ver "Executável").
-      Verificado sem Python/uv no PATH: janela abre, CLI coleta, o Agendador chama o .exe.
-
-Pendências que dependem do Gabriel (custam dinheiro ou exigem ação dele): primeira análise real
-pelo botão Analisar (com o Claude gasta crédito; com o Ollama é grátis, mas precisa instalar),
-aviso real por email (preencher o SMTP, ligar o canal em Configurações e rodar
-`peao run --avisar`), e editar o perfil na VanHack para ver o aviso de perfil desatualizado.
+Programathor would need reading the HTML pages (there's no official alternative): the terms
+don't forbid it, but don't authorize it either. On hold until Gabriel decides.
 
 ---
 
-## Comandos
+## Roadmap
+
+One phase at a time; at the end of each: `uv run pytest`, `uv run ruff check .`, `uv run mypy`,
+commit and push.
+
+- [x] **Phase 1 — Hexagonal core.** Domain, ports, factories, composition; VanHack and Anthropic
+      as adapters; FastAPI/APScheduler removed; the listing bug fixed (empty search and slow
+      rendering); evidence saved on any reading failure.
+- [x] **Phase 2 — LLMs:** Ollama, OpenAI, Gemini; a common contract tested against all four.
+      **Still to validate against the real services:** Ollama isn't installed on the machine,
+      and OpenAI/Gemini need a key.
+- [x] **Phase 3 — CustomTkinter UI:** the tabs; an async executor on its own thread; secrets in
+      the vault; the window checked by screenshot.
+- [x] **Phase 4 — Windows Task Scheduler:** a daily task from the app or `peao schedule`; a lock
+      across processes with `filelock`; SQLite in WAL; orphan runs closed. Verified end to end.
+- [x] **On-demand analysis and profile per source** (2026-10-07).
+- [x] **Phase 5 — Public APIs:** Remotive, Remote OK, Arbeitnow (Germany with a visa), Himalayas
+      (open to Brazil) and We Work Remotely (RSS), over the `ApiSource` base. Terms checked one
+      by one; all off by default.
+- [~] **Phase 6 — Brazilian sites:** investigated (see above); **waits for Gabriel**.
+- [ ] **Phase 7 — LinkedIn/Indeed:** opt-in, off by default, the same rules as VanHack. Their
+      terms forbid automation (risk of the account being restricted); if they block, **don't**
+      escalate to evasion: the alternative is reading their job-alert emails (IMAP).
+- [x] **Phase 8 — `.exe`** with PyInstaller, one folder, no Chromium (see "Executable").
+- [x] **Code in English** (2026-10-17): identifiers, comments, docs, the database, settings and
+      CLI, with automatic migration; the app stays in Brazilian Portuguese through `_()`.
+- [ ] **Launch items requested on 2026-10-17:** manual profile + notes in the app (2), a guided
+      first run (3), native Windows notifications (4), version + update check (7), an app log +
+      "open the logs folder" (8).
+
+Waiting on Gabriel (costs money or needs him): the first real analysis with the Analyze button
+(Claude spends credit; Ollama is free but needs installing), a real email notice (fill in SMTP,
+turn the channel on in Settings and run `peao run --notify`).
+
+---
+
+## Commands
 
 ```bash
 uv sync
-uv run peao-ui                       # o app desktop
-uv run peao login                    # login manual na VanHack (--fonte para outras)
-uv run peao check                    # a sessão salva ainda vale?
-uv run peao buscas                   # lista; `buscas adicionar NOME kw1 kw2 --exclude x`
-uv run peao adaptadores              # fontes, LLMs e notificadores registrados
-uv run peao run                      # coleta e salva; não chama LLM (análise é no app)
-uv run peao run --fonte vanhack      # só uma fonte
-uv run peao run --avisar             # também avisa das vagas novas e dos problemas
-uv run peao agenda                   # situação da coleta diária
-uv run peao agenda ativar --horario 08:00            # ou `agenda desativar`
+uv run peao-ui                       # the desktop app
+uv run peao login                    # manual login to VanHack (--source for others)
+uv run peao check                    # is the saved session still valid?
+uv run peao searches                 # list; `searches add NAME kw1 kw2 --exclude x`
+uv run peao adapters                 # registered sources, LLMs and notifiers
+uv run peao run                      # collect and save; no LLM (analysis is in the app)
+uv run peao run --source vanhack     # only one source
+uv run peao run --notify             # also report new jobs and problems
+uv run peao schedule                 # the daily collection's status
+uv run peao schedule enable --time 08:00             # or `schedule disable`
 uv run pytest
 uv run ruff check . && uv run ruff format .
-uv run mypy                          # strict em src/ (configurado no pyproject)
+uv run mypy                          # strict on src/ and tests/ (configured in pyproject)
 ```
 
-## Testes
+## Tests
 
-- Todos offline: dublês das portas, SQLite em memória, keyring em memória e `PEAO_DADOS`
-  temporário (o `conftest.py` prepara isso **antes** de importar o projeto).
-- **Unidade × integração** pelo marcador `integracao` (`--strict-markers`: nome errado falha).
-  Integração = componente real fora do Python: Chromium do Playwright (todo teste com a fixture
-  `page` é marcado sozinho no `conftest.py`), janela Tk (`test_ui_app.py` inteiro), outro
-  processo (trava entre processos) e o PowerShell. O resto é unidade (~5 s).
-- **CI** em `.github/workflows/ci.yml`, em todo PR e push na `main`: `lint` (ruff + mypy, Linux;
-  o mypy é fixado em `platform = "win32"` para não depender do runner), `unidade` e
-  `integracao` (Windows; instala o Chromium com cache pela hash do `uv.lock`). Tudo com
-  `uv sync --locked`: `uv.lock` desatualizado quebra o CI de propósito.
-- **`--capture=sys` no `pyproject.toml` é obrigatório.** A captura padrão do pytest (fd) troca os
-  handles de stdout/stderr do processo a cada fase; o Tcl guarda esses handles e o Windows recicla
-  os valores, então a janela do teste seguinte falhava ao ler os próprios arquivos do Tcl
-  (`Can't find a usable init.tcl`, `tcl_findLibrary`), ao acaso. Fora do pytest, 40 janelas
-  seguidas abrem sem erro.
-- Com o app aberto, `uv run` falha ao reinstalar o projeto (`peao-ui.exe` em uso) quando o
-  `pyproject.toml` mudou: use `uv run --no-sync ...` ou feche o app.
+- All offline: fakes of the ports, in-memory SQLite, an in-memory keyring and a temp
+  `PEAO_DATA_DIR` (`conftest.py` sets this up **before** importing the project), in English
+  (`i18n.LOCALE = "en"`).
+- **Unit × integration** by the `integration` marker (`--strict-markers`: a wrong name fails).
+  Integration = a real component outside Python: Playwright's Chromium (every test with the
+  `page` fixture is marked by `conftest.py`), a Tk window (all of `test_ui_app.py`), another
+  process (the cross-process lock) and PowerShell. The rest is unit (~5 s).
+- **CI** in `.github/workflows/ci.yml`, on every PR and push to `main`: `lint` (ruff + mypy,
+  Linux; mypy is pinned to `platform = "win32"` so it doesn't depend on the runner), `unit` and
+  `integration` (Windows; installs Chromium with a cache keyed by `uv.lock`'s hash). Everything
+  with `uv sync --locked`: an outdated `uv.lock` breaks CI on purpose.
+- **`--capture=sys` in `pyproject.toml` is required.** pytest's default capture (fd) swaps the
+  process's stdout/stderr handles on every phase; Tcl keeps those handles and Windows recycles
+  the values, so the next test's window failed to read Tcl's own files (`Can't find a usable
+  init.tcl`, `tcl_findLibrary`), at random. Outside pytest, 40 windows in a row open fine.
+- With the app open, `uv run` fails to reinstall the project (`peao-ui.exe` in use) when
+  `pyproject.toml` changed: use `uv run --no-sync ...` or close the app.
 
-## Lint e tipagem
+## Lint and typing
 
-- **ruff** com regras além do padrão (bugbear, pyupgrade, async, datas com fuso, `except`
-  genérico etc., ver `[tool.ruff.lint]`). Fora de propósito: `E501` (o formatter cuida),
-  `RUF001-003` (travessão e aspas tipográficos nos textos em PT-BR), `PT018`. Um `noqa` sempre
-  diz o porquê.
-- **mypy `--strict` em `src/` e `tests/`**, com o plugin do pydantic (`mypy_path = tests` para
-  `dubles`/`construtores`/`consultas`). O CustomTkinter não tem tipos: seus
-  widgets são `Any` e as abas podem herdar deles (override só em `peao_bilingue.ui.*`).
-- Colunas do SQLModel em `order_by`/`.desc()` passam por `col(...)`, senão o mypy as vê como
+- **ruff** with rules beyond the default (bugbear, pyupgrade, async, timezone-aware dates, broad
+  `except`, etc., see `[tool.ruff.lint]`). Off on purpose: `E501` (the formatter handles it),
+  `RUF001-003` (typographic dashes and quotes in the texts), `PT018`. A `noqa` always says why.
+- **mypy `--strict` on `src/` and `tests/`**, with the pydantic plugin (`mypy_path = tests` for
+  `fakes`/`builders`/`queries`). CustomTkinter has no types: its widgets are `Any` and the tabs
+  may inherit from them (override only in `peao_bilingue.ui.*`).
+- SQLModel columns in `order_by`/`.desc()` go through `col(...)`, or mypy sees them as
   `int | None`/`datetime`.
-- Mensagens para os SDKs vão tipadas (`BetaMessageParam`, `ChatCompletionMessageParam`), e
-  parâmetro opcional da Anthropic que não deve ir na requisição é `omit` — não `**kwargs`
-  montado à parte, que o mypy não consegue conferir. Há teste com o SDK de verdade sobre um
-  transporte local (`httpx2`, que o SDK usa) provando que o `omit` não chega à API.
-
-## Auditoria de qualidade (07–08/10, concluída)
-
-Critérios pedidos: arquivos separados por domínio, SOLID, funções tipadas na entrada e na saída.
-
-- [x] `Any` evitável em assinaturas de `src/` (JSON das APIs virou `Json` com checagem do
-      formato; callbacks da UI tipados). Sobra só widget do CustomTkinter, sem tipos.
-- [x] Raiz de composição respeitada: UI e CLI pegam o repositório em `montar_repositorio()`.
-- [x] CLI não importa de `ui/` (textos comuns em `textos.py`).
-- [x] Adapter não importa da aplicação: o texto pesquisável da vaga é regra de domínio
-      (`Vaga.texto_pesquisavel()`).
-- [x] **D** (inversão de dependência): `aplicacao/` não importa mais `configuracao` — o limite
-      de detalhes vem em `Servicos.max_detalhes` e as notas do perfil em `notas=`; quem lê
-      configuração e arquivo é a composição (`ler_notas_do_perfil`).
-- [x] **Domínio em arquivos**: um módulo por subdomínio (vagas, buscas, perfil, análise,
-      coleta, avisos, agenda), cada um com suas entidades e portas; `entidades.py` e
-      `portas.py` saíram. O domínio não importa nada de fora dele.
-- [x] **I/S** (interfaces enxutas, responsabilidade única): cinco portas de repositório, uma
-      por agregado; os casos de uso pedem só as que usam (`analisar_vaga(vagas=, perfis=,
-      analises=)`, `Servicos(buscas=, vagas=, perfis=, execucoes=)`). `sqlite.py` (434 linhas)
-      virou o pacote `persistencia/sqlite/`, um arquivo por agregado (o maior tem 87 linhas).
-- [x] Testes tipados: `mypy --strict` agora cobre `src/` **e** `tests/` (343 pendências
-      zeradas), inclusive no CI. Restam 4 `type: ignore`, todos comentados (keyring sem tipos,
-      nome por instância nos dublês, teste que instancia ABC de propósito).
+- Messages to the SDKs are typed (`BetaMessageParam`, `ChatCompletionMessageParam`), and an
+  optional Anthropic parameter that must not be sent is `omit`, not `**kwargs` built apart, which
+  mypy can't check. A test with the real SDK over a local transport (`httpx2`, which the SDK uses)
+  proves `omit` doesn't reach the API.
+- A name that is both a library's and looks Portuguese (`le=` in pydantic's `Field`, `os`,
+  `datas` in the PyInstaller spec) was kept as is in the rename; remember them when renaming in
+  bulk again.

@@ -1,199 +1,222 @@
-"""Linha de comando. É o que o Agendador do Windows chama na coleta diária."""
+"""Command line. It is what Windows Task Scheduler runs for the daily collection."""
 
 import argparse
 import asyncio
 import logging
 from logging.handlers import RotatingFileHandler
 
-from peao_bilingue import fabricas
-from peao_bilingue.aplicacao.execucao import executar
-from peao_bilingue.composicao import (
-    montar_agendador,
-    montar_repositorio,
-    montar_servicos,
+from peao_bilingue import factories
+from peao_bilingue.application.collect import run_collection
+from peao_bilingue.composition import (
+    build_repository,
+    build_scheduler,
+    build_services,
 )
-from peao_bilingue.configuracao import DIRETORIO_DADOS, settings
-from peao_bilingue.dominio.buscas import Busca
-from peao_bilingue.dominio.coleta import Gatilho, SessaoManual, StatusExecucao
-from peao_bilingue.dominio.erros import (
-    ErroDeAgendamento,
-    ExecucaoEmAndamento,
-    LoginFalhou,
-    NomeDesconhecido,
-    ProvedorIndisponivel,
+from peao_bilingue.config import DATA_DIR, settings
+from peao_bilingue.domain.collection import ManualSession, RunStatus, Trigger
+from peao_bilingue.domain.errors import (
+    LoginFailed,
+    ProviderUnavailable,
+    RunInProgress,
+    SchedulingError,
+    UnknownName,
 )
-from peao_bilingue.textos import descrever_agenda
+from peao_bilingue.domain.searches import Search
+from peao_bilingue.i18n import _
+from peao_bilingue.texts import describe_schedule
 
-ARQUIVO_DE_LOG = DIRETORIO_DADOS / "coleta.log"
+LOG_FILE = DATA_DIR / "collection.log"
 
 
-def _fonte_com_login(nome: str) -> type[SessaoManual]:
-    classe = fabricas.fontes.classe(nome)
-    if not issubclass(classe, SessaoManual):
-        raise SystemExit(f"A fonte {nome!r} não usa login manual.")
-    return classe
+def _source_with_login(name: str) -> type[ManualSession]:
+    cls = factories.sources.class_of(name)
+    if not issubclass(cls, ManualSession):
+        raise SystemExit(
+            _("The {source!r} source doesn't use a manual login.").format(source=name)
+        )
+    return cls
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="peao", description="Peão Bilíngue: radar de vagas."
+        prog="peao", description=_("Peão Bilíngue: a job radar.")
     )
-    comandos = parser.add_subparsers(dest="comando", required=True)
+    commands = parser.add_subparsers(dest="command", required=True)
 
-    login = comandos.add_parser("login", help="login manual numa fonte (abre o Chrome)")
-    login.add_argument("--fonte", default="vanhack")
+    login = commands.add_parser(
+        "login", help=_("log in to a source by hand (opens Chrome)")
+    )
+    login.add_argument("--source", default="vanhack")
 
-    check = comandos.add_parser("check", help="a sessão salva de uma fonte ainda vale?")
-    check.add_argument("--fonte", default="vanhack")
-    check.add_argument("--headed", action="store_true", help="mostra o navegador")
+    check = commands.add_parser(
+        "check", help=_("is a source's saved session still valid?")
+    )
+    check.add_argument("--source", default="vanhack")
+    check.add_argument("--headed", action="store_true", help=_("show the browser"))
 
-    run = comandos.add_parser(
-        "run", help="coleta agora (sem LLM: a análise é pedida na interface)"
+    run = commands.add_parser(
+        "run", help=_("collect now (no LLM: analysis is requested in the window)")
     )
     run.add_argument(
-        "--fonte", action="append", help="limita a estas fontes (repetível)"
+        "--source", action="append", help=_("only these sources (repeatable)")
     )
     run.add_argument(
-        "--avisar",
+        "--notify",
         action="store_true",
-        help="manda o resumo das vagas novas, como a coleta agendada",
+        help=_("send the new jobs and problems, like the scheduled collection"),
     )
-    run.add_argument("--agendado", action="store_true", help=argparse.SUPPRESS)
-
-    buscas = comandos.add_parser("buscas", help="lista ou cadastra buscas")
-    acoes = buscas.add_subparsers(dest="acao")
-    adicionar = acoes.add_parser("adicionar", help="nova busca")
-    adicionar.add_argument("nome")
-    adicionar.add_argument("keywords", nargs="+")
-    adicionar.add_argument("--exclude", nargs="*", default=[])
-    adicionar.add_argument("--fonte", action="append", default=[], help="vazio = todas")
-
-    agenda = comandos.add_parser(
-        "agenda", help="coleta diária pelo Agendador do Windows"
+    # `--agendado` is what tasks registered before the code was in English call.
+    run.add_argument(
+        "--scheduled", "--agendado", action="store_true", help=argparse.SUPPRESS
     )
-    acoes_agenda = agenda.add_subparsers(dest="acao")
-    ativar = acoes_agenda.add_parser(
-        "ativar", help="agenda (ou reagenda) a coleta diária"
-    )
-    ativar.add_argument("--horario", help="HH:MM; padrão: o da configuração")
-    acoes_agenda.add_parser("desativar", help="remove a tarefa agendada")
 
-    comandos.add_parser(
-        "adaptadores", help="lista fontes, LLMs e notificadores disponíveis"
+    searches = commands.add_parser("searches", help=_("list or add searches"))
+    actions = searches.add_subparsers(dest="action")
+    add = actions.add_parser("add", help=_("new search"))
+    add.add_argument("name")
+    add.add_argument("keywords", nargs="+")
+    add.add_argument("--exclude", nargs="*", default=[])
+    add.add_argument(
+        "--source", action="append", default=[], help=_("none = every source")
+    )
+
+    schedule = commands.add_parser(
+        "schedule", help=_("daily collection through Windows Task Scheduler")
+    )
+    schedule_actions = schedule.add_subparsers(dest="action")
+    enable = schedule_actions.add_parser(
+        "enable", help=_("schedule (or reschedule) the daily collection")
+    )
+    enable.add_argument("--time", help=_("HH:MM; default: the configured one"))
+    schedule_actions.add_parser("disable", help=_("remove the scheduled task"))
+
+    commands.add_parser(
+        "adapters", help=_("list the available sources, LLMs and notifiers")
     )
 
     args = parser.parse_args()
-    _configurar_log(agendado=args.comando == "run" and args.agendado)
+    _configure_log(scheduled=args.command == "run" and args.scheduled)
 
-    # Erro de configuração do usuário vira mensagem, não traceback.
+    # A configuration mistake becomes a message, not a traceback.
     try:
-        _executar_comando(args)
+        _run_command(args)
     except (
-        NomeDesconhecido,
-        ProvedorIndisponivel,
-        LoginFalhou,
-        ErroDeAgendamento,
-        ExecucaoEmAndamento,
+        UnknownName,
+        ProviderUnavailable,
+        LoginFailed,
+        SchedulingError,
+        RunInProgress,
         ValueError,
-    ) as falha:
-        logging.getLogger(__name__).error("%s", falha)
-        raise SystemExit(str(falha)) from None
+    ) as failure:
+        logging.getLogger(__name__).error("%s", failure)
+        raise SystemExit(str(failure)) from None
 
 
-def _configurar_log(*, agendado: bool) -> None:
-    if not agendado:
+def _configure_log(*, scheduled: bool) -> None:
+    if not scheduled:
         logging.basicConfig(
             level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
         )
         return
-    # A tarefa agendada roda sem console (pythonw): o registro vai para arquivo,
-    # senão uma falha às 08:00 não deixaria rastro.
-    DIRETORIO_DADOS.mkdir(parents=True, exist_ok=True)
-    arquivo = RotatingFileHandler(
-        ARQUIVO_DE_LOG, maxBytes=1_000_000, backupCount=3, encoding="utf-8"
+    # The scheduled task runs with no console (pythonw / the .exe): the log goes to a
+    # file, or a failure at 08:00 would leave no trace.
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    handler = RotatingFileHandler(
+        LOG_FILE, maxBytes=1_000_000, backupCount=3, encoding="utf-8"
     )
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-        handlers=[arquivo],
+        handlers=[handler],
     )
 
 
-def _executar_comando(args: argparse.Namespace) -> None:
-    match args.comando:
+def _run_command(args: argparse.Namespace) -> None:
+    match args.command:
         case "login":
-            asyncio.run(_fonte_com_login(args.fonte).login_manual(print))
+            asyncio.run(_source_with_login(args.source).login_manual(print))
         case "check":
-            fonte = _fonte_com_login(args.fonte)
+            source = _source_with_login(args.source)
             raise SystemExit(
-                asyncio.run(fonte.verificar_sessao(print, headless=not args.headed))
+                asyncio.run(source.check_session(print, headless=not args.headed))
             )
         case "run":
             _run(args)
-        case "buscas":
-            _buscas(args)
-        case "agenda":
-            _agenda(args)
-        case "adaptadores":
-            for rotulo, registro in (
-                ("Fontes", fabricas.fontes),
-                ("LLMs", fabricas.llms),
-                ("Notificadores", fabricas.notificadores),
+        case "searches":
+            _searches(args)
+        case "schedule":
+            _schedule(args)
+        case "adapters":
+            for label, registry in (
+                (_("Sources"), factories.sources),
+                (_("LLMs"), factories.llms),
+                (_("Notifiers"), factories.notifiers),
             ):
-                print(f"{rotulo}: {', '.join(registro.disponiveis())}")
+                print(f"{label}: {', '.join(registry.available())}")
 
 
 def _run(args: argparse.Namespace) -> None:
-    servicos = montar_servicos(fontes=args.fonte)
-    execucao = asyncio.run(
-        executar(
-            servicos,
-            Gatilho.agendado if args.agendado else Gatilho.manual,
-            # A coleta agendada roda sem ninguém olhando: é ela que avisa.
-            avisar=args.agendado or args.avisar,
+    services = build_services(sources=args.source)
+    run = asyncio.run(
+        run_collection(
+            services,
+            Trigger.scheduled if args.scheduled else Trigger.manual,
+            # The scheduled collection runs with nobody watching: it is the one that
+            # notifies.
+            notify=args.scheduled or args.notify,
         )
     )
-    resumo = (
-        f"Execução {execucao.id}: {execucao.status.value} — "
-        f"{execucao.vagas_listadas} listadas, {execucao.vagas_novas} novas."
+    logging.getLogger(__name__).info(
+        "Run %s: %s, %s listed, %s new.",
+        run.id,
+        run.status.value,
+        run.listed_jobs,
+        run.new_jobs,
     )
-    logging.getLogger(__name__).info("%s", resumo)
-    print(resumo)
-    if execucao.erro:
-        print(execucao.erro)
-    if execucao.artefato:
-        print(f"Evidência em {execucao.artefato}.*")
-    if execucao.status != StatusExecucao.ok:
+    print(
+        _("Run {id}: {status}, {listed} listed, {new} new.").format(
+            id=run.id, status=run.status.value, listed=run.listed_jobs, new=run.new_jobs
+        )
+    )
+    if run.error:
+        print(run.error)
+    if run.artifact:
+        print(_("Evidence in {path}.*").format(path=run.artifact))
+    if run.status != RunStatus.ok:
         raise SystemExit(1)
 
 
-def _buscas(args: argparse.Namespace) -> None:
-    repositorio = montar_repositorio()
-    if args.acao == "adicionar":
-        busca = repositorio.salvar_busca(
-            Busca(
-                nome=args.nome,
+def _searches(args: argparse.Namespace) -> None:
+    repository = build_repository()
+    if args.action == "add":
+        search = repository.save_search(
+            Search(
+                name=args.name,
                 keywords=args.keywords,
                 exclude=args.exclude,
-                fontes=args.fonte,
+                sources=args.source,
             )
         )
-        print(f"Busca {busca.id} criada.")
-    for busca in repositorio.listar_buscas():
-        fontes = ", ".join(busca.fontes) or "todas"
-        situacao = "ativa" if busca.ativa else "inativa"
+        print(_("Search {id} created.").format(id=search.id))
+    for search in repository.list_searches():
         print(
-            f"[{busca.id}] {busca.nome}: {', '.join(busca.keywords)} | fontes: {fontes} | {situacao}"
+            _("[{id}] {name}: {keywords} | sources: {sources} | {status}").format(
+                id=search.id,
+                name=search.name,
+                keywords=", ".join(search.keywords),
+                sources=", ".join(search.sources) or _("all"),
+                status=_("active") if search.active else _("inactive"),
+            )
         )
 
 
-def _agenda(args: argparse.Namespace) -> None:
-    agendador = montar_agendador()
-    if args.acao == "ativar":
-        agendador.agendar(args.horario or settings.horario_coleta)
-    elif args.acao == "desativar":
-        agendador.cancelar()
-    print(descrever_agenda(agendador.situacao()))
+def _schedule(args: argparse.Namespace) -> None:
+    scheduler = build_scheduler()
+    if args.action == "enable":
+        scheduler.schedule(args.time or settings.collection_time)
+    elif args.action == "disable":
+        scheduler.cancel()
+    print(describe_schedule(scheduler.status()))
 
 
 if __name__ == "__main__":
