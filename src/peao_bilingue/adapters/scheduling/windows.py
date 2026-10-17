@@ -5,7 +5,6 @@ PC turns on if the scheduled time went by while it was off.
 """
 
 import json
-import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -17,8 +16,7 @@ from peao_bilingue.adapters.powershell import (
 )
 from peao_bilingue.adapters.powershell import quote as _ps
 from peao_bilingue.config import is_frozen
-from peao_bilingue.domain.schedule import Scheduler, ScheduleStatus
-from peao_bilingue.i18n import _
+from peao_bilingue.domain.schedule import Scheduler, ScheduleStatus, check_time
 
 # ASCII on purpose: PowerShell 5.1's output comes in the console's code page.
 TASK_NAME = "Peao Bilingue - daily collection"
@@ -28,7 +26,6 @@ LEGACY_TASK_NAMES = ("Peao Bilingue - coleta diaria",)
 ARGUMENTS = "-m peao_bilingue.cli run --scheduled"
 ARGUMENTS_EXE = "run --scheduled"
 DESCRIPTION = "Peao Bilingue daily job collection."
-TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 RUN_LIMIT_HOURS = 2
 
 
@@ -84,10 +81,7 @@ class WindowsScheduler(Scheduler):
         )
 
     def schedule(self, time: str) -> None:
-        if not TIME.match(time):
-            raise ValueError(
-                _("Invalid time: {time!r}. Use HH:MM, e.g. 08:00.").format(time=time)
-            )
+        check_time(time)
         self._run(
             script(
                 (

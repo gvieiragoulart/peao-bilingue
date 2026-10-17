@@ -94,6 +94,14 @@ class SettingsTab(ctk.CTkScrollableFrame):
                 f"https://github.com/{settings.update_repository}"
             ),
         ).pack(side="left", padx=6)
+        ctk.CTkButton(
+            support,
+            text=_("Run the setup guide again"),
+            width=190,
+            fg_color="transparent",
+            border_width=1,
+            command=self.app.open_onboarding,
+        ).pack(side="left")
 
         ctk.CTkButton(self, text=_("Save"), width=120, command=self._save).pack(
             anchor="w", pady=12

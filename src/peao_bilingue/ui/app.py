@@ -11,7 +11,7 @@ from typing import Any
 
 import customtkinter as ctk
 
-from peao_bilingue import __version__
+from peao_bilingue import APP_NAME, __version__
 from peao_bilingue.application.updates import newer_release
 from peao_bilingue.composition import (
     build_release_feed,
@@ -25,6 +25,7 @@ from peao_bilingue.domain.updates import Release, ReleaseFeed
 from peao_bilingue.i18n import _
 from peao_bilingue.logs import log_to_file, record_uncaught_exceptions
 from peao_bilingue.ui.executor import AsyncExecutor, LogQueue, track
+from peao_bilingue.ui.onboarding import Onboarding, needs_onboarding
 from peao_bilingue.ui.tabs.jobs import JobsTab
 from peao_bilingue.ui.tabs.llms import LLMsTab
 from peao_bilingue.ui.tabs.profile import ProfileTab
@@ -33,7 +34,6 @@ from peao_bilingue.ui.tabs.searches import SearchesTab
 from peao_bilingue.ui.tabs.settings import SettingsTab
 from peao_bilingue.ui.tabs.sources import SourcesTab
 
-APP_NAME = "Peão Bilíngue"
 LOG_INTERVAL_MS = 200
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,11 @@ class App(ctk.CTk):
             command=self.update_banner.pack_forget,
         ).pack(side="right", padx=6)
 
-        self.tabs = ctk.CTkTabview(self)
+        # The tabs, or the first-run guide in their place.
+        self.body = ctk.CTkFrame(self, fg_color="transparent")
+        self.body.pack(fill="both", expand=True)
+        self.onboarding: Onboarding | None = None
+        self.tabs = ctk.CTkTabview(self.body)
         self.tabs.pack(fill="both", expand=True, padx=12, pady=12)
         self.panels: dict[str, Any] = {}
         for identifier, title, cls in tabs():
@@ -101,6 +105,8 @@ class App(ctk.CTk):
             self.panels[identifier] = panel
 
         self.on_change()
+        if needs_onboarding(self.repository):
+            self.open_onboarding()
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.after(LOG_INTERVAL_MS, self._drain_log)
         self._upgrade_legacy_task()
@@ -174,7 +180,22 @@ class App(ctk.CTk):
             )
         )
         self.update_button.configure(command=lambda: webbrowser.open(release.url))
-        self.update_banner.pack(fill="x", padx=12, pady=(12, 0), before=self.tabs)
+        self.update_banner.pack(fill="x", padx=12, pady=(12, 0), before=self.body)
+
+    def open_onboarding(self) -> None:
+        if self.onboarding is not None:
+            return
+        self.tabs.pack_forget()
+        self.onboarding = Onboarding(self.body, self, on_close=self._close_onboarding)
+        self.onboarding.pack(fill="both", expand=True, padx=12, pady=12)
+
+    def _close_onboarding(self) -> None:
+        if self.onboarding is not None:
+            self.onboarding.destroy()
+            self.onboarding = None
+        self.tabs.pack(fill="both", expand=True, padx=12, pady=12)
+        self.tabs.set(_("Runs"))
+        self.on_change()
 
     def on_change(self) -> None:
         for panel in self.panels.values():

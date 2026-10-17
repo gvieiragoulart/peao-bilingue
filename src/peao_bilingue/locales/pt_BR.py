@@ -471,4 +471,102 @@ MESSAGES: dict[str, str] = {
     ),
     "Open the logs folder": "Abrir pasta de registros",
     "Project page": "Página do projeto",
+    # The first-run guide
+    "Run the setup guide again": "Abrir o guia de configuração de novo",
+    "Skip the guide": "Pular o guia",
+    "Next": "Avançar",
+    "Back": "Voltar",
+    "Finish": "Concluir",
+    "Step {number} of {total}": "Passo {number} de {total}",
+    "Welcome": "Boas-vindas",
+    "What are you looking for?": "O que você procura?",
+    "Where to look": "Onde procurar",
+    "Your profile": "Seu perfil",
+    "Who analyzes the jobs": "Quem analisa as vagas",
+    "Collection and notices": "Coleta e avisos",
+    "{app} collects jobs from several sites every day, keeps the ones that match your "
+    "searches and tells you about the new ones. When a job interests you, an LLM "
+    "compares it with your profile: a fit score, what to prepare and 20 interview "
+    "questions.": (
+        "O {app} coleta vagas de vários sites todo dia, guarda as que batem com as suas "
+        "buscas e avisa das novas. Quando uma vaga interessar, um LLM compara a vaga com "
+        "o seu perfil: nota de aderência, o que estudar e 20 perguntas de entrevista."
+    ),
+    "How your data is treated": "Como seus dados são tratados",
+    "Everything stays on this computer: the jobs, your profile and the settings. Keys "
+    "and passwords go to Windows Credential Manager.": (
+        "Tudo fica neste computador: as vagas, o seu perfil e as configurações. Chaves e "
+        "senhas vão para o Gerenciador de Credenciais do Windows."
+    ),
+    "The collection calls no LLM. Your profile only goes to the LLM you pick, when you "
+    "click Analyze on a job.": (
+        "A coleta não chama nenhum LLM. O seu perfil só vai para o LLM que você escolher, "
+        "quando clicar em Analisar numa vaga."
+    ),
+    "Emails, phone numbers and links are removed from your CV before it's saved.": (
+        "Emails, telefones e links são tirados do seu currículo antes de salvar."
+    ),
+    "Sites that need an account use your own manual login: the app never types a "
+    "password or solves a human check.": (
+        "Sites que pedem conta usam o seu próprio login, feito à mão: o app nunca digita "
+        "senha nem resolve verificação humana."
+    ),
+    "It takes about 3 minutes, and everything can be changed later.": (
+        "Leva uns 3 minutos, e tudo pode ser mudado depois."
+    ),
+    "Jobs whose title, skills or description have one of the keywords are kept. You can "
+    "add more searches later, on the Searches tab.": (
+        "Ficam as vagas com alguma das palavras-chave no título, nas habilidades ou na "
+        "descrição. Dá para criar mais buscas depois, na aba Buscas."
+    ),
+    "e.g. python, django, backend": "ex.: python, django, backend",
+    "e.g. intern, wordpress": "ex.: estágio, wordpress",
+    "Name (optional)": "Nome (opcional)",
+    "e.g. Python backend": "ex.: Backend Python",
+    "Give it at least one keyword, or leave the search blank.": (
+        "Coloque pelo menos uma palavra-chave, ou deixe a busca em branco."
+    ),
+    "Public APIs need no account. Sites with a login use yours: after the guide, log in "
+    "on the Sources tab.": (
+        "As APIs públicas não pedem conta. Sites com login usam o seu: depois do guia, "
+        "faça login na aba Fontes."
+    ),
+    "needs your login": "precisa do seu login",
+    "Pick at least one source.": "Escolha pelo menos uma fonte.",
+    "Paste your CV or LinkedIn profile, or import a .pdf, .txt or .md file. It's what "
+    "the LLM compares each job with. Emails, phone numbers, links and CPF are removed "
+    "automatically; remove your name and address yourself. You can also skip this and "
+    "do it later, on the Profile tab.": (
+        "Cole o seu currículo ou perfil do LinkedIn, ou importe um arquivo .pdf, .txt ou "
+        ".md. É com ele que o LLM compara cada vaga. Emails, telefones, links e CPF saem "
+        "automaticamente; nome e endereço, tire você mesmo. Também dá para pular e fazer "
+        "isso depois, na aba Perfil."
+    ),
+    "Ollama runs on your computer, for free, but needs installing (ollama.com) and a "
+    "good graphics card. Claude, OpenAI and Gemini need an API key and charge per "
+    "analysis (cents each). Nothing is spent until you click Analyze on a job.": (
+        "O Ollama roda no seu computador, de graça, mas precisa ser instalado "
+        "(ollama.com) e de uma boa placa de vídeo. Claude, OpenAI e Gemini pedem uma "
+        "chave de API e cobram por análise (centavos cada). Nada é gasto até você clicar "
+        "em Analisar numa vaga."
+    ),
+    "Collect every day at": "Coletar todo dia às",
+    "Even with the app closed (Windows Task Scheduler). If the computer is off at that "
+    "time, it collects when it's turned on.": (
+        "Mesmo com o app fechado (Agendador de Tarefas do Windows). Se o computador "
+        "estiver desligado nesse horário, coleta quando for ligado."
+    ),
+    "Email and WhatsApp can be set up later, on the Settings tab.": (
+        "Email e WhatsApp podem ser configurados depois, na aba Configurações."
+    ),
+    'All set. Click "Collect now" on the Runs tab for the first collection, or wait for '
+    "the daily one.": (
+        'Tudo pronto. Clique em "Coletar agora" na aba Execuções para a primeira coleta, '
+        "ou espere a diária."
+    ),
+    "Before the first collection, log in to the sources that need it, on the Sources "
+    "tab.": (
+        "Antes da primeira coleta, faça login nas fontes que pedem, na aba Fontes."
+    ),
+    "Your CV:": "Seu currículo:",
 }

@@ -19,7 +19,10 @@ uv run peao-ui
 ```
 
 The app opens with no console. Run it from the project folder: the data (`data/`) and `.env`
-are looked up in the current folder. Everything is configured on its tabs: sources, searches,
+are looked up in the current folder. **The first time**, a six-step guide takes the place of the
+tabs: what the app does with your data, a first search, the sources, your CV, the LLM, and the
+daily collection with its notices. Nothing is saved until "Concluir"; it can be skipped, and
+reopened from Settings. After that, everything is configured on its tabs: sources, searches,
 LLM providers, notices and limits. **Keys and passwords live in Windows Credential Manager**,
 not in a file; the rest goes to `data/config.json`. `.env` (copied from `.env.example`) still
 works as an alternative for the command line.

@@ -1,9 +1,22 @@
 """Schedule: the daily collection, started outside the app."""
 
+import re
 from abc import ABC, abstractmethod
 from datetime import datetime
 
 from pydantic import BaseModel
+
+from peao_bilingue.i18n import _
+
+TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+
+def check_time(time: str) -> None:
+    """The daily collection's time, as HH:MM."""
+    if not TIME.match(time):
+        raise ValueError(
+            _("Invalid time: {time!r}. Use HH:MM, e.g. 08:00.").format(time=time)
+        )
 
 
 class ScheduleStatus(BaseModel):

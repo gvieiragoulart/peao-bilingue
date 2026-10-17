@@ -99,7 +99,8 @@ src/peao_bilingue/
 ├── i18n.py            # `_()` and the locale; locales/pt_BR.py has the translations
 ├── texts.py           # user-facing text shared by the CLI and the window
 ├── launcher.py        # the .exe's entry point: window or CLI
-├── ui/                # CustomTkinter: app, async executor, tabs, widgets, presentation
+├── ui/                # CustomTkinter: app, async executor, tabs, widgets, presentation,
+│                      #   onboarding (the first-run guide)
 └── cli.py             # peao login | check | run | searches | schedule | adapters
 ```
 
@@ -177,6 +178,18 @@ address can't be found by a pattern: the screen asks the user to check. The **no
 (`profile_notes.md`) are edited on the same tab and cleaned the same way. An unsaved paste
 survives a refresh (`edit_modified`); the tab starts on a source with a saved profile, else on
 the CV, until the user picks one.
+
+**The first-run guide** (`ui/onboarding.py`, 2026-10-17): six steps (welcome and privacy, a
+first search, sources, the CV, the LLM and its key, the daily collection + the Windows notice)
+**in the place of the tabs**, not in a `CTkToplevel` (Windows may open it behind the window).
+Shown when `needs_onboarding`: `onboarding_done` is false **and** there's no search and no
+profile, so whoever set the app up before the guide existed never sees it. Each Next checks its
+step (`Step.check` raises `ValueError`); **nothing is saved until Finish**, which saves the
+search, the CV (cleaned), the settings and `onboarding_done`, and schedules the task off the
+window's thread. Skip only saves `onboarding_done`. Email/WhatsApp turned on earlier are kept;
+"collect every day" off leaves an existing schedule alone. Settings → "Run the setup guide
+again". The UI tests' `window` fixture starts with `onboarding_done = True`; `new_user_window`
+doesn't.
 
 ---
 
@@ -531,9 +544,9 @@ commit and push.
 - [x] **Phase 8 — `.exe`** with PyInstaller, one folder, no Chromium (see "Executable").
 - [x] **Code in English** (2026-10-17): identifiers, comments, docs, the database, settings and
       CLI, with automatic migration; the app stays in Brazilian Portuguese through `_()`.
-- [ ] **Launch items requested on 2026-10-17:** a guided first run (3); done: manual profile +
-      notes in the app (2), native Windows notifications (4), version + update check (7), an app
-      log + "open the logs folder" (8).
+- [x] **Launch items requested on 2026-10-17:** manual profile + notes in the app (2), a guided
+      first run (3), native Windows notifications (4), version + update check (7), an app log +
+      "open the logs folder" (8).
 
 Waiting on Gabriel (costs money or needs him): the first real analysis with the Analyze button
 (Claude spends credit; Ollama is free but needs installing), a real email notice (fill in SMTP,
