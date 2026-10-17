@@ -104,7 +104,7 @@ app closed; if the PC was off at that time, it runs as soon as it turns on. It c
 `uv run peao run` and **reports the new jobs** (title, source and link) on the channels enabled
 in Settings; they start off, so turn on the ones you have filled in. If something fails (the
 VanHack session expired, a site went down), a notice says what, on every collection, until it is
-fixed. Since it runs with no window, the log goes to `data/collection.log`. One collection runs
+fixed. Since it runs with no window, the log goes to `data/logs/collection.log`. One collection runs
 at a time: if the task starts while you collect from the app (or the other way around), the
 second one is turned away.
 
@@ -153,6 +153,17 @@ Details and decisions are in [CLAUDE.md](CLAUDE.md).
 
 Each run is recorded with counters and errors. A failing source doesn't stop the others; any
 reading failure leaves a screenshot + HTML in `artifacts/`.
+
+## Logs, version and updates
+
+The app logs to `data/logs/app.log`, the scheduled collection to `data/logs/collection.log`, and
+a hard crash to `data/logs/crash.log` (in the .exe, under `%LOCALAPPDATA%\PeaoBilingue`).
+**Configurações → Sobre e suporte** (Settings → About and support) shows the version and opens
+the logs folder: that folder is what to send when asking for help.
+
+When the app opens it asks GitHub Releases whether there's a newer version and, if there is,
+shows a banner with a download button. It sends nothing about you; turn it off in the same
+section.
 
 ## Expired session
 

@@ -10,11 +10,13 @@ from peao_bilingue import factories
 from peao_bilingue.adapters.persistence.lock import FileRunLock
 from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
 from peao_bilingue.adapters.scheduling.windows import WindowsScheduler
+from peao_bilingue.adapters.updates.github import GitHubReleases
 from peao_bilingue.application.collect import Services
 from peao_bilingue.config import BASE_DIR, DATA_DIR, settings
 from peao_bilingue.domain.analysis import LLMProvider
 from peao_bilingue.domain.repository import Repository
 from peao_bilingue.domain.schedule import Scheduler
+from peao_bilingue.domain.updates import ReleaseFeed
 
 LOCK_PATH = DATA_DIR / "run.lock"
 
@@ -60,3 +62,7 @@ def read_profile_notes() -> str:
 
 def build_scheduler() -> Scheduler:
     return WindowsScheduler()
+
+
+def build_release_feed() -> ReleaseFeed:
+    return GitHubReleases(settings.update_repository)

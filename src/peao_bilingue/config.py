@@ -197,6 +197,10 @@ class Settings(BaseSettings):
     # Analysis: notes that complement the profile in every analysis.
     profile_notes_path: str = "profile_notes.md"
 
+    # Updates: when the app opens, ask GitHub Releases whether there's a newer version.
+    check_for_updates: bool = True
+    update_repository: str = "gvieiragoulart/peao-bilingue"
+
     # Email
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 465

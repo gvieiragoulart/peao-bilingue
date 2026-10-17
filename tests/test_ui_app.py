@@ -6,13 +6,14 @@ from collections.abc import Callable, Iterator
 
 import pytest
 from builders import analysis, job, profile
-from fakes import FakeProvider, FakeScheduler
+from fakes import FakeProvider, FakeReleaseFeed, FakeScheduler
 from queries import saved_analysis
 
 from peao_bilingue import config
 from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
 from peao_bilingue.config import settings
 from peao_bilingue.domain.jobs import Job, JobStatus
+from peao_bilingue.domain.updates import Release
 from peao_bilingue.ui.app import App, tabs
 from peao_bilingue.ui.tabs import jobs as jobs_tab
 
@@ -30,8 +31,12 @@ def window(
         App, "show_error", lambda self, f: notices["errors"].append(str(f))
     )
     monkeypatch.setattr(App, "inform", lambda self, m: notices["infos"].append(m))
-    # A fake scheduler: the tests never read or touch Windows Task Scheduler.
-    app = App(repository=repository, scheduler=FakeScheduler())
+    # Fakes: the tests never touch Windows Task Scheduler or call GitHub.
+    app = App(
+        repository=repository,
+        scheduler=FakeScheduler(),
+        release_feed=FakeReleaseFeed(),
+    )
     app.withdraw()
     app.update()
     app.notices = notices
@@ -318,3 +323,22 @@ def test_analyze_without_selected_job_warns(
 def test_chosen_llm_becomes_default(window: App) -> None:
     window.panels["jobs"]._remember_llm("Ollama (local, free)")
     assert settings.analysis_llm == "ollama"
+
+
+# --- updates ------------------------------------------------------------------------
+
+
+def test_banner_shows_only_when_a_newer_version_is_out(window: App) -> None:
+    assert not window.update_banner.winfo_ismapped()
+
+    window.show_update(Release(version="v9.0.0", url="https://example.com/v9"))
+    window.update()
+
+    assert window.update_banner.winfo_manager() == "pack"
+    assert "v9.0.0" in window.update_text.cget("text")
+
+
+def test_title_has_the_version(window: App) -> None:
+    from peao_bilingue import __version__
+
+    assert __version__ in window.title()

@@ -247,7 +247,12 @@ MESSAGES: dict[str, str] = {
     ),
     "The details are on the app's Runs tab.": "Os detalhes ficam na aba Execuções do app.",
     # --- window: shared -----------------------------------------------------------
-    "{app} — job radar": "{app} — radar de vagas",
+    "{app} {version} — job radar": "{app} {version} — radar de vagas",
+    "Version {version} of {app} is available.": (
+        "A versão {version} do {app} está disponível."
+    ),
+    "Download": "Baixar",
+    "Later": "Depois",
     "Jobs": "Vagas",
     "Searches": "Buscas",
     "Profile": "Perfil",
@@ -419,4 +424,11 @@ MESSAGES: dict[str, str] = {
         "vencida. Ligue só os que já estiverem preenchidos."
     ),
     "Settings saved.": "Configurações salvas.",
+    "About and support": "Sobre e suporte",
+    "Version {version}": "Versão {version}",
+    "Check for a new version when the app opens": (
+        "Procurar versão nova ao abrir o app"
+    ),
+    "Open the logs folder": "Abrir pasta de registros",
+    "Project page": "Página do projeto",
 }

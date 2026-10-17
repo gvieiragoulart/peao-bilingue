@@ -13,6 +13,7 @@ from peao_bilingue.domain.jobs import Job, JobSummary
 from peao_bilingue.domain.notifications import Notifier
 from peao_bilingue.domain.profile import Profile, ProfileSource
 from peao_bilingue.domain.schedule import Scheduler, ScheduleStatus
+from peao_bilingue.domain.updates import Release, ReleaseFeed
 
 
 class FakeSource(JobSource):
@@ -162,3 +163,13 @@ class FakeApi:
 
     def client(self) -> httpx.AsyncClient:
         return httpx.AsyncClient(transport=httpx.MockTransport(self))
+
+
+class FakeReleaseFeed(ReleaseFeed):
+    """No new version, unless the test says so: the tests never call GitHub."""
+
+    def __init__(self, release: Release | None = None) -> None:
+        self.release = release
+
+    async def latest(self) -> Release | None:
+        return self.release
