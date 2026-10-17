@@ -17,7 +17,7 @@ from peao_bilingue.domain.jobs import Job, JobStatus
 from peao_bilingue.domain.updates import Release
 from peao_bilingue.ui.app import App, tabs
 from peao_bilingue.ui.onboarding import Onboarding
-from peao_bilingue.ui.tabs import jobs as jobs_tab
+from peao_bilingue.ui.tabs.jobs import tab as jobs_tab
 
 # A real Tk window (hidden): it needs a graphical session.
 pytestmark = pytest.mark.integration
@@ -91,7 +91,7 @@ def test_jobs_show_and_detail_has_analysis(
     assert tab.table.tree.item(new.key)["values"][0] == 82
     tab.table.tree.selection_set(new.key)
     window.update()
-    assert "INTERVIEW QUESTIONS (20)" in tab.detail.get("1.0", "end")
+    assert "INTERVIEW QUESTIONS (20)" in tab.preview.detail.get("1.0", "end")
 
 
 def test_search_text_filters_the_list(
@@ -101,13 +101,13 @@ def test_search_text_filters_the_list(
     repository.save_job(job("2", "Data Engineer"), ["Python"])
     tab = window.panels["jobs"]
 
-    tab.search_text.insert(0, "laravel")
+    tab.filters.search_text.insert(0, "laravel")
     tab.refresh()
 
     assert tab.table.tree.get_children() == ("vanhack:1",)
     # Enter filters. The binding sits on the Tk Entry inside the CTkEntry; the key
     # itself can't be simulated: the test window doesn't get the system's focus.
-    assert tab.search_text._entry.bind("<Return>")
+    assert tab.filters.search_text._entry.bind("<Return>")
 
 
 def test_status_filter_and_column_use_labels(
@@ -117,7 +117,7 @@ def test_status_filter_and_column_use_labels(
     repository.change_status(new.key, JobStatus.applied)
     tab = window.panels["jobs"]
 
-    tab.status.set("Applied")
+    tab.filters.status.set("Applied")
     tab.refresh()
 
     assert tab.table.tree.get_children() == (new.key,)
@@ -126,7 +126,7 @@ def test_status_filter_and_column_use_labels(
 
 def test_invalid_min_fit_warns_without_crashing(window: App) -> None:
     tab = window.panels["jobs"]
-    tab.score.insert(0, "abc")
+    tab.filters.score.insert(0, "abc")
     tab.refresh()
     assert any("0 to 100" in error for error in window.notices["errors"])
 
@@ -180,7 +180,7 @@ def test_saves_llm_settings(window: App) -> None:
     # the key goes to the vault, never to the file
     assert "anthropic_api_key" not in recorded
     # the Jobs tab's picker now shows the new default
-    assert window.panels["jobs"].llm.get() == "Ollama (local, free)"
+    assert window.panels["jobs"].preview.llm.get() == "Ollama (local, free)"
 
 
 def test_invalid_integer_in_settings_is_not_saved(window: App) -> None:
@@ -299,13 +299,13 @@ def test_analyze_uses_chosen_llm_and_profile(
     repository.save_profile(profile("Staff Engineer"))
     repository.save_job(job("1"), ["Python"])
     tab = select(window, "vanhack:1")
-    assert tab.profile.get() == "vanhack"  # by default, the job's source's
+    assert tab.preview.profile.get() == "vanhack"  # by default, the job's source's
 
-    tab.llm.set("Ollama (local, free)")
+    tab.preview.llm.set("Ollama (local, free)")
     tab._analyze()
 
     assert process_until(
-        window, lambda: "INTERVIEW QUESTIONS" in tab.detail.get("1.0", "end")
+        window, lambda: "INTERVIEW QUESTIONS" in tab.preview.detail.get("1.0", "end")
     )
     assert requested_llms == ["ollama"]
     saved = saved_analysis(repository, "vanhack:1")
@@ -314,7 +314,7 @@ def test_analyze_uses_chosen_llm_and_profile(
         "ollama",
         "vanhack",
     )
-    assert tab.analyze_button.cget("state") == "normal"
+    assert tab.preview.analyze_button.cget("state") == "normal"
 
 
 def test_analyze_without_profile_explains_what_to_do(
@@ -339,7 +339,7 @@ def test_analyze_without_selected_job_warns(
 
 
 def test_chosen_llm_becomes_default(window: App) -> None:
-    window.panels["jobs"]._remember_llm("Ollama (local, free)")
+    window.panels["jobs"]._remember_llm("ollama")
     assert settings.analysis_llm == "ollama"
 
 
