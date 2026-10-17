@@ -148,9 +148,9 @@ def test_marking_status_saves_and_keeps_selection(
 
 def test_creates_search_from_screen(window: App, repository: SQLiteRepository) -> None:
     tab = window.panels["searches"]
-    tab.name.insert(0, "Go")
-    tab.keywords.insert(0, "golang, go ")
-    tab.sources["vanhack"].select()
+    tab.form.name.insert(0, "Go")
+    tab.form.keywords.insert(0, "golang, go ")
+    tab.form.sources["vanhack"].select()
     tab._save()
 
     [search] = repository.list_searches()
@@ -163,7 +163,7 @@ def test_search_without_keyword_warns(
     window: App, repository: SQLiteRepository
 ) -> None:
     tab = window.panels["searches"]
-    tab.name.insert(0, "Empty")
+    tab.form.name.insert(0, "Empty")
     tab._save()
     assert repository.list_searches() == []
     assert window.notices["errors"]
@@ -171,7 +171,7 @@ def test_search_without_keyword_warns(
 
 def test_saves_llm_settings(window: App) -> None:
     tab = window.panels["llms"]
-    tab.general._widgets["analysis_llm"].set("ollama")
+    tab.default_llm.form._widgets["analysis_llm"].set("ollama")
     tab._save()
 
     recorded = json.loads(config.CONFIG_PATH.read_text(encoding="utf-8"))
@@ -185,7 +185,7 @@ def test_saves_llm_settings(window: App) -> None:
 
 def test_invalid_integer_in_settings_is_not_saved(window: App) -> None:
     tab = window.panels["settings"]
-    field = tab.limits._widgets["max_details_per_run"]
+    field = tab.limits.form._widgets["max_details_per_run"]
     field.delete(0, "end")
     field.insert(0, "ten")
     tab._save()
@@ -197,7 +197,7 @@ def test_invalid_integer_in_settings_is_not_saved(window: App) -> None:
 def test_messages_from_other_threads_reach_the_log(window: App) -> None:
     window.log("from the worker")
     window._drain_log()
-    assert "from the worker" in window.panels["runs"].log_box.get("1.0", "end")
+    assert "from the worker" in window.panels["runs"].log.box.get("1.0", "end")
 
 
 def test_profile_shows_latest_snapshot(
@@ -238,11 +238,11 @@ def process_until(
 
 def test_scheduling_from_screen_registers_and_saves_time(window: App) -> None:
     tab = window.panels["runs"]
-    tab.time.delete(0, "end")
-    tab.time.insert(0, "07:45")
+    tab.schedule.time.delete(0, "end")
+    tab.schedule.time.insert(0, "07:45")
     tab._schedule()
 
-    assert process_until(window, lambda: "07:45" in tab.schedule_status.cget("text"))
+    assert process_until(window, lambda: "07:45" in tab.schedule.status.cget("text"))
     status = window.scheduler.status()
     assert status is not None and status.time == "07:45"
     assert settings.collection_time == "07:45"
@@ -254,15 +254,15 @@ def test_cancel_from_screen(window: App) -> None:
     tab._cancel_schedule()
 
     assert process_until(
-        window, lambda: "No collection" in tab.schedule_status.cget("text")
+        window, lambda: "No collection" in tab.schedule.status.cget("text")
     )
     assert window.scheduler.status() is None
 
 
 def test_invalid_time_warns(window: App) -> None:
     tab = window.panels["runs"]
-    tab.time.delete(0, "end")
-    tab.time.insert(0, "8h")
+    tab.schedule.time.delete(0, "end")
+    tab.schedule.time.insert(0, "8h")
     tab._schedule()
 
     assert process_until(window, lambda: bool(window.notices["errors"]))
@@ -395,8 +395,8 @@ def test_notes_are_saved_clean(
 ) -> None:
     monkeypatch.setattr(settings, "profile_notes_path", str(tmp_path / "notes.md"))
     tab = window.panels["profile"]
-    tab.notes.delete("1.0", "end")
-    tab.notes.insert("1.0", "Remote only. Reach me at me@mail.com")
+    tab.notes.box.delete("1.0", "end")
+    tab.notes.box.insert("1.0", "Remote only. Reach me at me@mail.com")
 
     tab._save_notes()
 
