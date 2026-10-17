@@ -11,6 +11,7 @@ from peao_bilingue.composition import build_llm, read_profile_notes
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import JobAnalysis
 from peao_bilingue.domain.jobs import JobStatus, ListedJob
+from peao_bilingue.domain.profile import MANUAL_SOURCE
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation
 from peao_bilingue.ui.widgets import Table
@@ -201,9 +202,12 @@ class JobsTab(ctk.CTkFrame):
         item = self._selected()
         if item is None:
             return
-        # By default, a job is analyzed with the profile from its own source.
+        # By default, a job is analyzed with the profile from its own source, or with
+        # the pasted CV when its source has none (the public APIs).
         if item.job.source in self._sources_with_profile:
             self.profile.set(item.job.source)
+        elif MANUAL_SOURCE in self._sources_with_profile:
+            self.profile.set(MANUAL_SOURCE)
         analysis = self.app.repository.current_analysis(item.job.key)
         self._write_detail(presentation.job_detail(item, analysis))
 

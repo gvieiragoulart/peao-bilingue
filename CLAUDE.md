@@ -77,8 +77,10 @@ src/peao_bilingue/
 │   ├── notifications.py  # Notifier
 │   ├── schedule.py    # ScheduleStatus · Scheduler
 │   ├── repository.py  # Repository = the five repository ports together (UI and composition)
+│   ├── privacy.py     # remove_contact_data: emails, links, phones, CPF
 │   └── errors.py      # SessionExpired, HumanChallenge, CollectionError, InvalidAnalysis...
 ├── application/
+│   ├── profile.py     # the pasted CV and the notes, without contact data
 │   ├── collect.py     # run_collection: search → filter → save → notify (no LLM), with a lock
 │   ├── analysis.py    # on-demand analysis: prompt, validation and retries, provider-agnostic
 │   └── filters.py     # a search's keywords / exclude / sources
@@ -164,6 +166,17 @@ one).
 
 **Profile per source:** the profile on VanHack isn't the one on LinkedIn. `Profile.source`; the
 repository saves, deduplicates and keeps the history **per source**.
+
+**The pasted CV** (2026-10-17): the profile of source `manual` (`MANUAL_SOURCE`), the one for
+jobs whose source reads none (the public APIs) and for anyone without a VanHack account.
+`analyze_job` tries the job's source, then `manual`. Pasted on the Profile tab or imported
+(`adapters/documents.py`: `.pdf` through `pypdf`, `.txt`/`.md` in UTF-8 or cp1252); before saving,
+`domain/privacy.remove_contact_data` takes out emails, links (they carry names), CPF and phone
+numbers (≥ 9 digits, so "2019-2023" stays) and the lines left with only separators. A name or an
+address can't be found by a pattern: the screen asks the user to check. The **notes**
+(`profile_notes.md`) are edited on the same tab and cleaned the same way. An unsaved paste
+survives a refresh (`edit_modified`); the tab starts on a source with a saved profile, else on
+the CV, until the user picks one.
 
 ---
 
@@ -518,8 +531,8 @@ commit and push.
 - [x] **Phase 8 — `.exe`** with PyInstaller, one folder, no Chromium (see "Executable").
 - [x] **Code in English** (2026-10-17): identifiers, comments, docs, the database, settings and
       CLI, with automatic migration; the app stays in Brazilian Portuguese through `_()`.
-- [ ] **Launch items requested on 2026-10-17:** manual profile + notes in the app (2), a guided
-      first run (3); done: native Windows notifications (4), version + update check (7), an app
+- [ ] **Launch items requested on 2026-10-17:** a guided first run (3); done: manual profile +
+      notes in the app (2), native Windows notifications (4), version + update check (7), an app
       log + "open the logs folder" (8).
 
 Waiting on Gabriel (costs money or needs him): the first real analysis with the Analyze button

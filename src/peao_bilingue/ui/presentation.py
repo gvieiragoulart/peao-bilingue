@@ -3,6 +3,7 @@
 from peao_bilingue.domain.analysis import JobAnalysis, SavedAnalysis
 from peao_bilingue.domain.collection import Run, RunStatus, Trigger
 from peao_bilingue.domain.jobs import Job, JobStatus, ListedJob, Posting
+from peao_bilingue.domain.privacy import Removed
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
 
@@ -181,3 +182,31 @@ def parse_min_score(text: str) -> int | None:
     if not 0 <= value <= 100:
         raise ValueError(_("The minimum fit must be a number from 0 to 100."))
     return value
+
+
+def removed_summary(removed: Removed) -> str:
+    """ "1 email, 2 phone numbers": what the cleanup took out of a text."""
+    parts = []
+    if removed.email:
+        parts.append(_("{count} email(s)").format(count=removed.email))
+    if removed.phone:
+        parts.append(_("{count} phone number(s)").format(count=removed.phone))
+    if removed.link:
+        parts.append(_("{count} link(s)").format(count=removed.link))
+    if removed.cpf:
+        parts.append(_("{count} CPF number(s)").format(count=removed.cpf))
+    return ", ".join(parts)
+
+
+def saved_without_contact_data(removed: Removed) -> str:
+    """The notice after saving a pasted profile or notes."""
+    check = _("Also check that your name, address and documents aren't in it.")
+    if not removed.any():
+        return _("Saved.") + " " + check
+    return (
+        _("Saved. Removed from the text: {items}.").format(
+            items=removed_summary(removed)
+        )
+        + " "
+        + check
+    )

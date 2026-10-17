@@ -16,7 +16,7 @@ from peao_bilingue.domain.analysis import (
 )
 from peao_bilingue.domain.errors import InvalidAnalysis, MissingProfile
 from peao_bilingue.domain.jobs import Job, JobRepository
-from peao_bilingue.domain.profile import ProfileRepository
+from peao_bilingue.domain.profile import MANUAL_SOURCE, ProfileRepository
 from peao_bilingue.i18n import _, response_language
 
 ATTEMPTS = 3
@@ -134,21 +134,23 @@ async def analyze_job(
 ) -> JobAnalysis:
     """Analyzes a saved job and stores the analysis with the profile it used.
 
-    The profile is the one from the job's own source; `profile_source` picks another
-    source's (the way to analyze jobs from sources without a profile, like the
-    public APIs).
+    The profile is the one from the job's own source or, when that source has none
+    (like the public APIs), the one the user pasted (`manual`). `profile_source` picks
+    a specific source's.
     """
     job = jobs.get_job(key)
     if job is None:
         raise LookupError(_("Job {key} not found.").format(key=key))
-    source = profile_source or job.source
-    saved = profiles.last_profile(source)
+    candidates = [profile_source] if profile_source else [job.source, MANUAL_SOURCE]
+    saved = next(
+        (found for name in candidates if (found := profiles.last_profile(name))), None
+    )
     if saved is None:
         raise MissingProfile(
             _(
-                "No profile has been read from {source} yet. Read it on the Profile "
-                "tab, or pick another source's profile."
-            ).format(source=source)
+                "There's no profile to compare this job with. On the Profile tab, "
+                "paste your CV or read the profile of a source like VanHack."
+            )
         )
     profile_id, profile = saved
     analysis = await analyze(job, profile.text, provider, notes=notes)

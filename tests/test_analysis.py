@@ -215,3 +215,29 @@ async def test_user_notes_go_into_prompt(
     await analyze_job(repository, provider, "vanhack:1", notes="I prefer 100% remote.")
 
     assert "I prefer 100% remote." in prompt_sent(provider)
+
+
+async def test_a_source_without_profile_uses_the_pasted_cv(
+    repository: SQLiteRepository,
+) -> None:
+    repository.save_profile(profile("Data Engineer", source="manual"))
+    repository.save_job(job("1", source="remotive"), ["Python"])
+    provider = FakeProvider()
+
+    await analyze_job(repository, provider, "remotive:1")
+
+    assert "Data Engineer" in prompt_sent(provider)
+    assert saved_analysis(repository, "remotive:1").profile_source == "manual"
+
+
+async def test_the_source_profile_comes_before_the_cv(
+    repository: SQLiteRepository,
+) -> None:
+    repository.save_profile(profile("Data Engineer", source="manual"))
+    repository.save_profile(profile("Staff Engineer", source="vanhack"))
+    repository.save_job(job("1", source="vanhack"), ["Python"])
+    provider = FakeProvider()
+
+    await analyze_job(repository, provider, "vanhack:1")
+
+    assert "Staff Engineer" in prompt_sent(provider)

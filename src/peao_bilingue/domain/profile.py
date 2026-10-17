@@ -7,6 +7,10 @@ from typing import Any
 
 from pydantic import BaseModel
 
+# The profile the user writes or pastes in the app (their CV): used for the jobs of
+# sources that don't have a profile of their own.
+MANUAL_SOURCE = "manual"
+
 
 def profile_hash(data: dict[str, Any]) -> str:
     """A hash of the profile's canonical JSON: it changes only when the content does."""
