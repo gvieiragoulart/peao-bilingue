@@ -14,6 +14,7 @@ import asyncio
 from typing import ClassVar
 from xml.sax.saxutils import escape, quoteattr
 
+from peao_bilingue import APP_NAME
 from peao_bilingue.adapters.notification.formatting import (
     new_jobs_title,
     problem_title,
@@ -30,7 +31,6 @@ from peao_bilingue.factories import notifiers
 from peao_bilingue.i18n import _
 
 APP_ID = "PeaoBilingue.App"
-APP_NAME = "Peão Bilíngue"
 # A toast shows about three lines of text; the rest goes into the "+N" line.
 MAX_LINES = 3
 

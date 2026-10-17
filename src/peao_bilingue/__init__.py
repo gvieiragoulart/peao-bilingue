@@ -2,6 +2,8 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
+APP_NAME = "Peão Bilíngue"
+
 try:
     __version__ = version("peao-bilingue")
 except PackageNotFoundError:  # running from a source tree that was never installed

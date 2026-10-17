@@ -198,6 +198,9 @@ class Settings(BaseSettings):
     # Analysis: notes that complement the profile in every analysis.
     profile_notes_path: str = "profile_notes.md"
 
+    # The first-run guide: shown until finished or skipped (see ui/onboarding.py).
+    onboarding_done: bool = False
+
     # Updates: when the app opens, ask GitHub Releases whether there's a newer version.
     check_for_updates: bool = True
     update_repository: str = "gvieiragoulart/peao-bilingue"

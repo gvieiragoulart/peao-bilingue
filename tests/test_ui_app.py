@@ -16,16 +16,14 @@ from peao_bilingue.config import settings
 from peao_bilingue.domain.jobs import Job, JobStatus
 from peao_bilingue.domain.updates import Release
 from peao_bilingue.ui.app import App, tabs
+from peao_bilingue.ui.onboarding import Onboarding
 from peao_bilingue.ui.tabs import jobs as jobs_tab
 
 # A real Tk window (hidden): it needs a graphical session.
 pytestmark = pytest.mark.integration
 
 
-@pytest.fixture
-def window(
-    repository: SQLiteRepository, monkeypatch: pytest.MonkeyPatch
-) -> Iterator[App]:
+def open_window(repository: SQLiteRepository, monkeypatch: pytest.MonkeyPatch) -> App:
     notices: dict[str, list[str]] = {"errors": [], "infos": []}
     # A messagebox is modal: it would leave the suite waiting for a click.
     monkeypatch.setattr(
@@ -41,6 +39,27 @@ def window(
     app.withdraw()
     app.update()
     app.notices = notices
+    return app
+
+
+@pytest.fixture
+def window(
+    repository: SQLiteRepository, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[App]:
+    # Someone past the first-run guide: the tabs are on screen.
+    monkeypatch.setattr(settings, "onboarding_done", True)
+    app = open_window(repository, monkeypatch)
+    yield app
+    app.close()
+    config.CONFIG_PATH.unlink(missing_ok=True)
+    config.reload()
+
+
+@pytest.fixture
+def new_user_window(
+    repository: SQLiteRepository, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[App]:
+    app = open_window(repository, monkeypatch)
     yield app
     app.close()
     config.CONFIG_PATH.unlink(missing_ok=True)
@@ -384,3 +403,101 @@ def test_notes_are_saved_clean(
     assert (tmp_path / "notes.md").read_text(
         encoding="utf-8"
     ) == "Remote only. Reach me at\n"
+
+
+# --- the first-run guide ----------------------------------------------------------------
+
+
+def the_guide(window: App) -> Onboarding:
+    assert window.onboarding is not None
+    return window.onboarding
+
+
+def test_a_new_user_gets_the_guide_in_place_of_the_tabs(new_user_window: App) -> None:
+    guide = the_guide(new_user_window)
+    assert guide.winfo_manager() == "pack"
+    assert not new_user_window.tabs.winfo_manager()
+
+
+def test_the_guide_saves_everything_at_the_end(
+    new_user_window: App, repository: SQLiteRepository
+) -> None:
+    guide = the_guide(new_user_window)
+    guide.search_keywords.insert(0, "python, django")
+    guide.search_exclude.insert(0, "intern")
+    for name, box in guide.source_boxes.items():
+        box.select() if name in ("remotive", "vanhack") else box.deselect()
+    guide.cv.insert("1.0", "Senior Python Engineer\nme@mail.com")
+    guide.pick_llm("ollama")
+    guide.time.delete(0, "end")
+    guide.time.insert(0, "07:30")
+
+    for _step in guide.steps:  # Next on every step, Finish on the last
+        guide.next()
+
+    assert new_user_window.onboarding is None
+    assert new_user_window.tabs.winfo_manager() == "pack"
+    [search] = repository.list_searches()
+    assert (search.name, search.keywords, search.exclude) == (
+        "python, django",
+        ["python", "django"],
+        ["intern"],
+    )
+    assert set(settings.enabled_sources) == {"remotive", "vanhack"}
+    assert settings.analysis_llm == "ollama"
+    assert settings.onboarding_done
+    saved = repository.last_profile("manual")
+    assert saved is not None and saved[1].text == "Senior Python Engineer"
+    scheduler = new_user_window.scheduler
+    assert isinstance(scheduler, FakeScheduler)
+    assert process_until(new_user_window, lambda: scheduler.current is not None)
+    assert scheduler.current is not None and scheduler.current.time == "07:30"
+    [message] = new_user_window.notices["infos"]
+    assert "Collect now" in message and "log in" in message
+    assert new_user_window.notices["errors"] == []
+
+
+def test_a_step_filled_wrong_stays_on_screen(new_user_window: App) -> None:
+    guide = the_guide(new_user_window)
+    guide.next()  # to the search
+    guide.search_exclude.insert(0, "intern")  # but no keyword
+
+    guide.next()
+
+    assert guide.current == 1
+    assert "at least one keyword" in new_user_window.notices["errors"][0]
+
+
+def test_nothing_is_saved_until_finish(
+    new_user_window: App, repository: SQLiteRepository
+) -> None:
+    guide = the_guide(new_user_window)
+    guide.search_keywords.insert(0, "python")
+    guide.time.delete(0, "end")
+    guide.time.insert(0, "8h")
+    for _step in guide.steps:
+        guide.next()
+
+    assert "Invalid time" in new_user_window.notices["errors"][0]
+    assert new_user_window.onboarding is guide
+    assert repository.list_searches() == []
+    assert not settings.onboarding_done
+
+
+def test_skipping_only_remembers_the_choice(
+    new_user_window: App, repository: SQLiteRepository
+) -> None:
+    before = list(settings.enabled_sources)
+    the_guide(new_user_window).skip()
+
+    assert new_user_window.onboarding is None
+    assert settings.onboarding_done
+    assert settings.enabled_sources == before
+    assert repository.list_searches() == []
+
+
+def test_the_guide_opens_again_from_settings(window: App) -> None:
+    assert window.onboarding is None
+    window.open_onboarding()
+    the_guide(window).skip()
+    assert window.onboarding is None
