@@ -30,13 +30,17 @@ works as an alternative for the command line.
 | Buscas (Searches) | keywords, excluded terms and which sources each search uses |
 | Fontes (Sources) | turn each site on or off; manual login and session check |
 | LLMs | the LLM preselected on the Jobs tab, models and keys |
-| Perfil (Profile) | each source's profile (no personal data) and its history |
+| Perfil (Profile) | your pasted or imported CV, each source's profile (no personal data), their history, and notes about you |
 | Execuções (Runs) | "collect now", the daily automatic collection, history and the live log |
 | Configurações (Settings) | collection limits, notice channels (Windows notification, email, WhatsApp), version and logs |
 
 **Each source has its own profile** (the one on VanHack is not the one on LinkedIn), and a job
-is analyzed, by default, with its source's profile. The collection calls no LLM: nothing is
-spent until you click Analyze.
+is analyzed, by default, with its source's profile. A job from a source with no profile (the
+public APIs) uses **your CV**: paste it, or import a `.pdf`, `.txt` or `.md`, on the Profile tab.
+Emails, phone numbers, links and CPF numbers are removed before it is saved; a name or an address
+can't be found by a pattern, so check the text. The **notes** (what you want, what the profile
+doesn't show) go into every analysis. The collection calls no LLM: nothing is spent until you
+click Analyze.
 
 **Sources:** VanHack (manual login, reads your profile), Remotive and Remote OK (public APIs of
 remote jobs, no account), Arbeitnow (jobs in Germany with visa sponsorship), Himalayas (remote

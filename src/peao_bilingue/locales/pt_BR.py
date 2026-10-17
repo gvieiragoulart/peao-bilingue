@@ -8,10 +8,10 @@ MESSAGES: dict[str, str] = {
         "Resposta inválida após {attempts} tentativas: {error}"
     ),
     "Job {key} not found.": "Vaga {key} não encontrada.",
-    "No profile has been read from {source} yet. Read it on the Profile tab, or pick "
-    "another source's profile.": (
-        "Nenhum perfil da fonte {source} foi lido ainda. Leia na aba Perfil ou escolha "
-        "o perfil de outra fonte."
+    "There's no profile to compare this job with. On the Profile tab, paste your CV or "
+    "read the profile of a source like VanHack.": (
+        "Não há perfil para comparar com esta vaga. Na aba Perfil, cole o seu currículo "
+        "ou leia o perfil de uma fonte como a VanHack."
     ),
     "Interrupted: the process ended before finishing (app closed during the "
     "collection, PC turned off or the scheduled task's time limit).": (
@@ -377,7 +377,44 @@ MESSAGES: dict[str, str] = {
     "Reading…": "Lendo…",
     "Read on": "Lido em",
     "What changed": "O que mudou",
-    "No enabled source reads a profile.": "Nenhuma fonte ligada lê perfil.",
+    "My CV (pasted)": "Meu currículo (colado)",
+    "Save profile": "Salvar perfil",
+    "Import file…": "Importar arquivo…",
+    "Import your CV": "Importar o seu currículo",
+    "CV or profile": "Currículo ou perfil",
+    "Paste your CV or profile (or import a file) and save. It's the profile for jobs "
+    "whose source has none. Emails, phones and links are removed automatically.": (
+        "Cole o seu currículo ou perfil (ou importe um arquivo) e salve. É o perfil das "
+        "vagas de fontes que não têm um. Emails, telefones e links saem sozinhos."
+    ),
+    "Paste your CV or profile first.": "Cole o seu currículo ou perfil primeiro.",
+    "No text found in the file (a scanned PDF is an image). Paste the text instead.": (
+        "Nenhum texto no arquivo (PDF escaneado é imagem). Cole o texto no lugar."
+    ),
+    "Imported. Check the text and click Save profile.": (
+        "Importado. Confira o texto e clique em Salvar perfil."
+    ),
+    "Can't read {name}: use a .txt, .md or .pdf file.": (
+        "Não consigo ler {name}: use um arquivo .txt, .md ou .pdf."
+    ),
+    "Notes about you": "Notas sobre você",
+    "Save notes": "Salvar notas",
+    "They go into every analysis, with any profile: what you want and don't want, and "
+    'what the profile doesn\'t show (e.g. "I want remote jobs only", "I\'ve led a team '
+    'of 5").': (
+        "Entram em toda análise, com qualquer perfil: o que você quer e não quer, e o "
+        'que o perfil não mostra (ex.: "quero só vagas remotas", "já liderei um time '
+        'de 5").'
+    ),
+    "Saved.": "Salvo.",
+    "Saved. Removed from the text: {items}.": "Salvo. Saíram do texto: {items}.",
+    "Also check that your name, address and documents aren't in it.": (
+        "Confira também se não ficaram o seu nome, endereço ou documentos."
+    ),
+    "{count} email(s)": "{count} email(s)",
+    "{count} phone number(s)": "{count} telefone(s)",
+    "{count} link(s)": "{count} link(s)",
+    "{count} CPF number(s)": "{count} CPF(s)",
     "No {source} profile read yet.": "Nenhum perfil da fonte {source} lido ainda.",
     "Click Read profile now.": "Clique em Ler perfil agora.",
     "The {source} profile, used to analyze its jobs (no personal data):": (

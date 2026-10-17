@@ -3,6 +3,7 @@
 import json
 import time
 from collections.abc import Callable, Iterator
+from pathlib import Path
 
 import pytest
 from builders import analysis, job, profile
@@ -194,12 +195,10 @@ def test_profile_is_shown_per_source(window: App, repository: SQLiteRepository) 
     repository.save_profile(profile("Tech Lead", source="linkedin"))
     tab = window.panels["profile"]
 
-    tab.source.set("linkedin")
-    tab.refresh()
+    tab._on_pick("linkedin")  # as a click on the picker
     assert "Tech Lead" in tab.text.get("1.0", "end")
 
-    tab.source.set("vanhack")
-    tab.refresh()
+    tab._on_pick("vanhack")  # as a click on the picker
     assert "Staff Engineer" in tab.text.get("1.0", "end")
     assert "Tech Lead" not in tab.text.get("1.0", "end")
 
@@ -342,3 +341,46 @@ def test_title_has_the_version(window: App) -> None:
     from peao_bilingue import __version__
 
     assert __version__ in window.title()
+
+
+# --- the pasted CV and the notes ----------------------------------------------------
+
+
+def test_pasted_cv_is_saved_without_contact_data(
+    window: App, repository: SQLiteRepository
+) -> None:
+    tab = window.panels["profile"]
+    tab._on_pick("My CV (pasted)")  # as a click on the picker
+
+    tab.text.insert("1.0", "Senior Python Engineer\nme@mail.com | (11) 98765-4321")
+    tab._save_manual()
+
+    saved = repository.last_profile("manual")
+    assert saved is not None
+    assert saved[1].text == "Senior Python Engineer"
+    assert "1 email(s), 1 phone number(s)" in window.notices["infos"][0]
+
+
+def test_an_unsaved_paste_survives_a_refresh(window: App) -> None:
+    tab = window.panels["profile"]
+    tab._on_pick("My CV (pasted)")  # as a click on the picker
+    tab.text.insert("1.0", "half written")
+
+    window.on_change()  # e.g. a collection ended
+
+    assert "half written" in tab.text.get("1.0", "end")
+
+
+def test_notes_are_saved_clean(
+    window: App, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "profile_notes_path", str(tmp_path / "notes.md"))
+    tab = window.panels["profile"]
+    tab.notes.delete("1.0", "end")
+    tab.notes.insert("1.0", "Remote only. Reach me at me@mail.com")
+
+    tab._save_notes()
+
+    assert (tmp_path / "notes.md").read_text(
+        encoding="utf-8"
+    ) == "Remote only. Reach me at\n"

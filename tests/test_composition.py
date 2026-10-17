@@ -3,7 +3,11 @@ from pathlib import Path
 import pytest
 
 from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
-from peao_bilingue.composition import build_services, read_profile_notes
+from peao_bilingue.composition import (
+    build_services,
+    read_profile_notes,
+    save_profile_notes,
+)
 from peao_bilingue.config import settings
 
 
@@ -24,3 +28,11 @@ def test_detail_limit_comes_from_config(
 ) -> None:
     monkeypatch.setattr(settings, "max_details_per_run", 4)
     assert build_services(sources=[], repository=repository).max_details == 4
+
+
+def test_notes_saved_from_the_app_are_read_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "profile_notes_path", str(tmp_path / "sub" / "n.md"))
+    save_profile_notes("Remote only.\n")
+    assert read_profile_notes() == "Remote only.\n"

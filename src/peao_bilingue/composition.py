@@ -52,12 +52,22 @@ def build_llm(name: str | None = None) -> LLMProvider:
     return factories.llms.create(name or settings.analysis_llm)
 
 
-def read_profile_notes() -> str:
-    """What the user writes about themselves (`profile_notes.md`), if anything."""
+def profile_notes_path() -> Path:
     path = Path(settings.profile_notes_path)
     # Relative to the base folder: the project's, or the user's in the .exe.
-    path = path if path.is_absolute() else BASE_DIR / path
+    return path if path.is_absolute() else BASE_DIR / path
+
+
+def read_profile_notes() -> str:
+    """What the user writes about themselves (`profile_notes.md`), if anything."""
+    path = profile_notes_path()
     return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def save_profile_notes(text: str) -> None:
+    path = profile_notes_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
 
 
 def build_scheduler() -> Scheduler:
