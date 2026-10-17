@@ -9,12 +9,12 @@ from typing import Any
 
 import pytest
 
+from peao_bilingue.adapters.powershell import run_powershell
 from peao_bilingue.adapters.scheduling.windows import (
     LEGACY_TASK_NAMES,
     TASK_NAME,
     WindowsScheduler,
     collection_command,
-    run_powershell,
 )
 from peao_bilingue.domain.errors import SchedulingError
 

@@ -157,9 +157,10 @@ class Settings(BaseSettings):
     enabled_sources: list[str] = ["vanhack"]
     # The LLM preselected on the jobs screen; analysis is requested job by job.
     analysis_llm: str = "anthropic"
-    # Notices after the scheduled collection. They start off: a channel turned on
-    # before it is filled in would record a failed notice on every collection.
-    notifiers: list[str] = []
+    # Notices after the scheduled collection. The Windows notification needs no setup,
+    # so it starts on; email and WhatsApp start off: turned on before being filled in,
+    # they would record a failed notice on every collection.
+    notifiers: list[str] = ["windows"]
 
     # VanHack
     # Login is passwordless (magic link / Google / LinkedIn) and guarded by

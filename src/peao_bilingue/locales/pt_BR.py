@@ -234,6 +234,9 @@ MESSAGES: dict[str, str] = {
         "WhatsApp via Twilio (vagas novas e problemas)"
     ),
     "Sender number": "Número de origem",
+    "Windows notification (new jobs and problems)": (
+        "Notificação do Windows (vagas novas e problemas)"
+    ),
     "Peão Bilíngue — {count} new job(s)": "Peão Bilíngue — {count} vaga(s) nova(s)",
     "Open the app to analyze the ones you're interested in.": (
         "Abra o app para analisar as que interessarem."
