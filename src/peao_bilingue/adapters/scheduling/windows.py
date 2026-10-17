@@ -6,14 +6,17 @@ PC turns on if the scheduled time went by while it was off.
 
 import json
 import re
-import subprocess
 import sys
-from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
+from peao_bilingue.adapters.powershell import (
+    PowerShellRunner,
+    run_powershell,
+    script,
+)
+from peao_bilingue.adapters.powershell import quote as _ps
 from peao_bilingue.config import is_frozen
-from peao_bilingue.domain.errors import SchedulingError
 from peao_bilingue.domain.schedule import Scheduler, ScheduleStatus
 from peao_bilingue.i18n import _
 
@@ -27,56 +30,6 @@ ARGUMENTS_EXE = "run --scheduled"
 DESCRIPTION = "Peao Bilingue daily job collection."
 TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 RUN_LIMIT_HOURS = 2
-POWERSHELL_TIMEOUT_S = 60
-
-PowerShellRunner = Callable[[str], str]
-
-
-def _ps(text: str) -> str:
-    """A single-quoted PowerShell literal (nothing is interpolated)."""
-    return "'" + text.replace("'", "''") + "'"
-
-
-def run_powershell(script: str) -> str:
-    try:
-        result = subprocess.run(
-            [
-                "powershell",
-                "-NoProfile",
-                "-NonInteractive",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-Command",
-                script,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=POWERSHELL_TIMEOUT_S,
-            check=False,  # the exit code is handled below, with a readable message
-            # Called from the window (pythonw): without this a console window flashes.
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        )
-    except subprocess.TimeoutExpired as failure:
-        # The original message has the whole script, which the window would show.
-        raise SchedulingError(
-            _("PowerShell didn't answer within {seconds} s. Try again.").format(
-                seconds=POWERSHELL_TIMEOUT_S
-            )
-        ) from failure
-    if result.returncode != 0:
-        raise SchedulingError(
-            result.stderr.strip()
-            or result.stdout.strip()
-            or _("PowerShell ended with code {code}.").format(code=result.returncode)
-        )
-    return result.stdout
-
-
-def _script(*lines: str) -> str:
-    """A real error exits with code 1 and a message ('Stop'); the final `exit 0` keeps
-    an error already handled (a missing task) from becoming a failure with no
-    message."""
-    return "\n".join(["$ErrorActionPreference = 'Stop'", *lines, "exit 0"])
 
 
 def collection_command() -> tuple[Path, str, Path]:
@@ -136,7 +89,7 @@ class WindowsScheduler(Scheduler):
                 _("Invalid time: {time!r}. Use HH:MM, e.g. 08:00.").format(time=time)
             )
         self._run(
-            _script(
+            script(
                 (
                     f"$action = New-ScheduledTaskAction -Execute "
                     f"{_ps(str(self.interpreter))} -Argument {_ps(self.arguments)} "
@@ -161,7 +114,7 @@ class WindowsScheduler(Scheduler):
 
     def cancel(self) -> None:
         self._run(
-            _script(
+            script(
                 *(
                     self._unregister(name)
                     for name in (self.task_name, *self.legacy_names)
@@ -191,7 +144,7 @@ class WindowsScheduler(Scheduler):
     def _status(self, name: str) -> ScheduleStatus | None:
         # Dates are formatted here: PowerShell 5.1's ConvertTo-Json uses \/Date(...)\/.
         output = self._run(
-            _script(
+            script(
                 f"$t = {self._task(name)}",
                 "if (-not $t) { exit 0 }",
                 "$i = $t | Get-ScheduledTaskInfo",

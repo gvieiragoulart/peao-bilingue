@@ -31,7 +31,8 @@ def test_defaults() -> None:
     default = Settings(_env_file=None)
     assert default.vanhack_login_url == "https://auth.vanhack.com"
     assert default.timezone == "America/Sao_Paulo"
-    assert default.notifiers == []  # each channel is turned on by hand, filled in
+    # Windows needs no setup; email and WhatsApp are turned on by hand, filled in
+    assert default.notifiers == ["windows"]
 
 
 def test_save_puts_public_in_json_and_secrets_in_vault() -> None:

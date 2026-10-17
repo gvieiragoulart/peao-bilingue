@@ -154,8 +154,8 @@ implements `ProfileSource` reads and saves **its own profile** on every collecti
 fails, its last saved one stays. **Notices** (a digest of the new jobs: title, source, link) only
 with `notify=True`: the scheduled collection and `peao run --notify`; the button's doesn't
 notify, because whoever asked is watching. A failed notice also becomes "Partial failures" (the
-jobs stay saved). The channels start off (`NOTIFIERS=[]`): turned on before being filled in,
-every notice would fail. **Problem notices** (`Notifier.notify_problem`, 2026-10-13): with
+jobs stay saved). The Windows notification (`windows`) is on by default, with nothing to set
+up; email and WhatsApp start off: turned on before being filled in, every notice would fail. **Problem notices** (`Notifier.notify_problem`, 2026-10-13): with
 `notify=True`, a failing source (or the whole run, when it wasn't a source) is reported too:
 "VanHack: The VanHack session expired…". Without it an expired session made the scheduled
 collection fail every day in silence. It repeats on every collection until fixed, on purpose:
@@ -213,6 +213,23 @@ columns, the settings and the CLI commands were in Portuguese. The update migrat
   re-registers it under the new name and command at the same time.
 - **Files:** `coleta.log` → `logs/collection.log`, `execucao.lock` → `run.lock`; the old ones are
   just left behind.
+
+---
+
+## Windows notifications (2026-10-17)
+
+- `adapters/notification/windows_toast.py`, notifier `windows`, on by default. A toast needs an
+  AppUserModelID; the app isn't packaged, so it registers `PeaoBilingue.App` under
+  `HKCU\Software\Classes\AppUserModelId` (DisplayName "Peão Bilíngue", per user, no admin,
+  idempotent) and shows the toast through the WinRT API that PowerShell 5.1 exposes: no new
+  dependency, and it works from the window, the CLI and the scheduled task (it runs in the user's
+  session). PowerShell helpers live in `adapters/powershell.py`, shared with the scheduler.
+- The XML is built with `xml.sax.saxutils` (escaped) and passed as a single-quoted PowerShell
+  literal. A single job opens on click (`activationType="protocol"` with the job's URL); several
+  are listed (3 lines, the last one "+N").
+- Verified on 2026-10-17 through a temporary scheduled task (outside the Claude container):
+  `ToastNotificationManager.History.GetHistory('PeaoBilingue.App')` had the toast, accents
+  intact. A toast from a process inside the Claude container might not count as the user's.
 
 ---
 
@@ -502,7 +519,7 @@ commit and push.
 - [x] **Code in English** (2026-10-17): identifiers, comments, docs, the database, settings and
       CLI, with automatic migration; the app stays in Brazilian Portuguese through `_()`.
 - [ ] **Launch items requested on 2026-10-17:** manual profile + notes in the app (2), a guided
-      first run (3), native Windows notifications (4); done: version + update check (7), an app
+      first run (3); done: native Windows notifications (4), version + update check (7), an app
       log + "open the logs folder" (8).
 
 Waiting on Gabriel (costs money or needs him): the first real analysis with the Analyze button

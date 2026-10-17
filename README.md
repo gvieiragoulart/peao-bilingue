@@ -32,7 +32,7 @@ works as an alternative for the command line.
 | LLMs | the LLM preselected on the Jobs tab, models and keys |
 | Perfil (Profile) | each source's profile (no personal data) and its history |
 | Execuções (Runs) | "collect now", the daily automatic collection, history and the live log |
-| Configurações (Settings) | collection limits and notice channels (email, WhatsApp) |
+| Configurações (Settings) | collection limits, notice channels (Windows notification, email, WhatsApp), version and logs |
 
 **Each source has its own profile** (the one on VanHack is not the one on LinkedIn), and a job
 is analyzed, by default, with its source's profile. The collection calls no LLM: nothing is
@@ -101,8 +101,9 @@ uv run peao schedule disable
 
 The task lives in Windows Task Scheduler ("Peao Bilingue - daily collection") and runs with the
 app closed; if the PC was off at that time, it runs as soon as it turns on. It collects like
-`uv run peao run` and **reports the new jobs** (title, source and link) on the channels enabled
-in Settings; they start off, so turn on the ones you have filled in. If something fails (the
+`uv run peao run` and **reports the new jobs** (title, source and link) as a **Windows
+notification**, on by default with nothing to set up, and on the other channels enabled in
+Settings (email, WhatsApp), which start off: turn on the ones you have filled in. If something fails (the
 VanHack session expired, a site went down), a notice says what, on every collection, until it is
 fixed. Since it runs with no window, the log goes to `data/logs/collection.log`. One collection runs
 at a time: if the task starts while you collect from the app (or the other way around), the

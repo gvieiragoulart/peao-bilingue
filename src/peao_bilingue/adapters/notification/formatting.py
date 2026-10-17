@@ -13,7 +13,7 @@ def _where(job: Job, *extra_parts: str | None) -> str:
     return " | ".join(part for part in parts if part)
 
 
-def _new_jobs_title(count: int) -> str:
+def new_jobs_title(count: int) -> str:
     return _("Peão Bilíngue — {count} new job(s)").format(count=count)
 
 
@@ -33,12 +33,12 @@ def build_email(jobs: list[Job]) -> tuple[str, str]:
         lines.append(job.url)
         blocks.append("\n".join(lines))
     blocks.append(_("Open the app to analyze the ones you're interested in."))
-    return _new_jobs_title(len(jobs)), "\n\n".join(blocks)
+    return new_jobs_title(len(jobs)), "\n\n".join(blocks)
 
 
 def build_digest(jobs: list[Job]) -> str:
     """A short digest for WhatsApp, cut at the message limit."""
-    text = _new_jobs_title(len(jobs))
+    text = new_jobs_title(len(jobs))
     for index, job in enumerate(jobs):
         where = _where(job).replace(" | ", " — ")
         where = f" — {where}" if where else ""
@@ -56,7 +56,7 @@ def _bullets(problems: list[str]) -> str:
     return "\n".join(f"- {problem}" for problem in problems)
 
 
-def _problem_title() -> str:
+def problem_title() -> str:
     return _("Peão Bilíngue — the collection needs attention")
 
 
@@ -67,12 +67,12 @@ def build_problem_email(problems: list[str]) -> tuple[str, str]:
         + f"\n\n{_bullets(problems)}\n\n"
         + _("The details are on the app's Runs tab.")
     )
-    return _problem_title(), body
+    return problem_title(), body
 
 
 def build_problem_digest(problems: list[str]) -> str:
     """The same notice, short, for WhatsApp."""
-    text = f"{_problem_title()}\n\n{_bullets(problems)}"
+    text = f"{problem_title()}\n\n{_bullets(problems)}"
     if len(text) <= WHATSAPP_LIMIT:
         return text
     return text[: WHATSAPP_LIMIT - 1] + "…"
