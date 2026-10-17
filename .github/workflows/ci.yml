@@ -1,6 +1,6 @@
-# Verificação de todo PR (e de cada push na main): lint e tipagem, testes de
-# unidade e testes de integração. Todos offline: nenhum teste acessa site,
-# LLM, SMTP ou o Agendador do Windows de verdade.
+# Checks every PR (and every push to main): lint and typing, unit tests and integration
+# tests. All offline: no test reaches a real site, LLM, SMTP server or Windows Task
+# Scheduler.
 name: CI
 
 on:
@@ -11,7 +11,7 @@ on:
 permissions:
   contents: read
 
-# Um push novo no mesmo PR cancela a rodada anterior, que ficou velha.
+# A new push to the same PR cancels the previous, now stale, run.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -21,64 +21,64 @@ env:
 
 jobs:
   lint:
-    name: Lint e tipagem (ruff, mypy)
-    # Nada aqui depende do SO; o mypy já é fixado em win32 no pyproject.
+    name: Lint and typing (ruff, mypy)
+    # Nothing here depends on the OS; mypy is pinned to win32 in pyproject.
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.2.0  # sem tag móvel de major: versão exata
+      - uses: astral-sh/setup-uv@v10.2.0  # no moving major tag: an exact version
         with:
           version: "0.12.5"
           python-version: "3.12"
           enable-cache: true
-      - name: Instalar dependências (exatamente as do uv.lock)
+      - name: Install dependencies (exactly the ones in uv.lock)
         run: uv sync --locked
-      - name: ruff — regras
+      - name: ruff — rules
         run: uv run ruff check . --output-format=github
-      - name: ruff — formatação
+      - name: ruff — formatting
         run: uv run ruff format --check .
-      - name: mypy (estrito)
+      - name: mypy (strict)
         run: uv run mypy
 
-  unidade:
-    name: Testes de unidade
-    # O app é para Windows: os testes rodam no mesmo SO.
+  unit:
+    name: Unit tests
+    # The app is for Windows: the tests run on the same OS.
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.2.0  # sem tag móvel de major: versão exata
+      - uses: astral-sh/setup-uv@v10.2.0  # no moving major tag: an exact version
         with:
           version: "0.12.5"
           python-version: "3.12"
           enable-cache: true
-      - name: Instalar dependências (exatamente as do uv.lock)
+      - name: Install dependencies (exactly the ones in uv.lock)
         run: uv sync --locked
-      - name: pytest — unidade
-        run: uv run pytest -m "not integracao"
+      - name: pytest — unit
+        run: uv run pytest -m "not integration"
 
-  integracao:
-    name: Testes de integração
-    # Chromium do Playwright, janela Tk, PowerShell e outro processo: Windows.
+  integration:
+    name: Integration tests
+    # Playwright's Chromium, a Tk window, PowerShell and another process: Windows.
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.2.0  # sem tag móvel de major: versão exata
+      - uses: astral-sh/setup-uv@v10.2.0  # no moving major tag: an exact version
         with:
           version: "0.12.5"
           python-version: "3.12"
           enable-cache: true
-      - name: Instalar dependências (exatamente as do uv.lock)
+      - name: Install dependencies (exactly the ones in uv.lock)
         run: uv sync --locked
-      # O Chromium do Playwright muda junto com a versão do pacote, que está no uv.lock.
-      - name: Cache do Chromium do Playwright
+      # Playwright's Chromium changes with the package version, which is in uv.lock.
+      - name: Cache Playwright's Chromium
         uses: actions/cache@v6
         with:
           path: ~\AppData\Local\ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('uv.lock') }}
-      - name: Instalar o Chromium do Playwright
+      - name: Install Playwright's Chromium
         run: uv run playwright install chromium
-      - name: pytest — integração
-        run: uv run pytest -m integracao
+      - name: pytest — integration
+        run: uv run pytest -m integration

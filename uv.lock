@@ -1089,7 +1089,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "ruff" },
 ]
-empacotar = [
+packaging = [
     { name = "pyinstaller" },
 ]
 
@@ -1117,7 +1117,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
     { name = "ruff", specifier = ">=0.16.10" },
 ]
-empacotar = [{ name = "pyinstaller", specifier = ">=6.22.3" }]
+packaging = [{ name = "pyinstaller", specifier = ">=6.22.3" }]
 
 [[package]]
 name = "pefile"

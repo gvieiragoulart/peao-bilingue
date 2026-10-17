@@ -1,109 +1,104 @@
-"""Adapter do Remote OK sobre a resposta real salva em fixtures, sem rede.
+"""The Remote OK adapter over the real response saved in fixtures, with no network.
 
-Na fixture, o token anti-spam (o IP de quem chamou, em base64) foi trocado pelo de
-2001:db8::1, endereço reservado para documentação.
+In the fixture, the anti-spam token (the caller's IP address in base64) was swapped for
+the one of 2001:db8::1, an address reserved for documentation.
 """
 
 from pathlib import Path
 
 import pytest
-from dubles import ApiFalsa
+from fakes import FakeApi
 
-from peao_bilingue.adaptadores.fontes.api import consertar_codificacao
-from peao_bilingue.adaptadores.fontes.remoteok import (
+from peao_bilingue.adapters.sources.api import fix_encoding
+from peao_bilingue.adapters.sources.remoteok import (
     URL,
     RemoteOK,
-    limpar_descricao,
+    clean_description,
 )
-from peao_bilingue.dominio.vagas import Vaga
+from peao_bilingue.domain.jobs import Job
 
 FIXTURE = Path(__file__).parent / "fixtures" / "remoteok" / "api.json"
-TOKEN_FALSO = "RMjAwMTpkYjg6OjE="
+FAKE_TOKEN = "RMjAwMTpkYjg6OjE="
 
 
 @pytest.fixture
-def api() -> ApiFalsa:
-    return ApiFalsa(FIXTURE)
+def api() -> FakeApi:
+    return FakeApi(FIXTURE)
 
 
-def remoteok(api: ApiFalsa, cache: Path) -> RemoteOK:
-    return RemoteOK(cliente=api.cliente(), cache=cache)
+def remoteok(api: FakeApi, cache: Path) -> RemoteOK:
+    return RemoteOK(client=api.client(), cache=cache)
 
 
-async def todas(api: ApiFalsa, tmp_path: Path) -> list[Vaga]:
-    async with remoteok(api, tmp_path / "cache.json") as fonte:
-        # termo vazio casa com todas
-        return [await fonte.detalhar(r) for r in await fonte.buscar("")]
+async def all_items(api: FakeApi, tmp_path: Path) -> list[Job]:
+    async with remoteok(api, tmp_path / "cache.json") as source:
+        # an empty term matches every job
+        return [await source.detail(found) for found in await source.search("")]
 
 
-async def test_ignora_o_aviso_legal_e_faz_uma_chamada_so(
-    api: ApiFalsa, tmp_path: Path
+async def test_skips_legal_notice_and_makes_one_call(
+    api: FakeApi, tmp_path: Path
 ) -> None:
-    async with remoteok(api, tmp_path / "cache.json") as fonte:
-        await fonte.buscar("react")
-        await fonte.buscar("golang")
-        vagas = await fonte.buscar("")
+    async with remoteok(api, tmp_path / "cache.json") as source:
+        await source.search("react")
+        await source.search("golang")
+        jobs = await source.search("")
 
-    assert len(vagas) == 3
-    assert len(api.chamadas) == 1
-    assert str(api.chamadas[0].url) == URL
+    assert len(jobs) == 3
+    assert len(api.calls) == 1
+    assert str(api.calls[0].url) == URL
 
 
-async def test_token_de_rastreio_nunca_fica_na_vaga(
-    api: ApiFalsa, tmp_path: Path
+async def test_tracking_token_never_stays_in_job(api: FakeApi, tmp_path: Path) -> None:
+    jobs = await all_items(api, tmp_path)
+    assert FAKE_TOKEN in FIXTURE.read_text(encoding="utf-8")  # the fixture has it
+    for job in jobs:
+        assert FAKE_TOKEN not in job.description
+        assert "Please mention the word" not in job.description
+
+
+async def test_converts_with_link_and_remote_ok_attribution(
+    api: FakeApi, tmp_path: Path
 ) -> None:
-    vagas = await todas(api, tmp_path)
-    assert TOKEN_FALSO in FIXTURE.read_text(encoding="utf-8")  # a fixture tem
-    for vaga in vagas:
-        assert TOKEN_FALSO not in vaga.descricao
-        assert "Please mention the word" not in vaga.descricao
+    jobs = {found.external_id: found for found in await all_items(api, tmp_path)}
+    job = jobs["1137399"]
+
+    assert job.key == "remoteok:1137399"
+    assert job.title == "AI agent engineer"
+    assert job.url.lower().startswith("https://remoteok.com/remote-jobs/")
+    assert job.extras["via"] == "Remote OK"
+    assert job.salary == "$150,000 - $250,000 /year"
+    assert job.location is None  # "" when the job doesn't say
+    assert "typescript" in job.skills
+    assert jobs["1137420"].location == "Singapore"
+    assert jobs["1137420"].salary is None  # 0 and 0 = not given
 
 
-async def test_converte_com_link_e_atribuicao_ao_remote_ok(
-    api: ApiFalsa, tmp_path: Path
-) -> None:
-    vagas = {v.id_externo: v for v in await todas(api, tmp_path)}
-    vaga = vagas["1137399"]
-
-    assert vaga.chave == "remoteok:1137399"
-    assert vaga.titulo == "AI agent engineer"
-    assert vaga.url.lower().startswith("https://remoteok.com/remote-jobs/")
-    assert vaga.extras["via"] == "Remote OK"
-    assert vaga.salario == "$150,000 - $250,000 /ano"
-    assert vaga.local is None  # vem "" quando a vaga não diz
-    assert "typescript" in vaga.skills
-    assert vagas["1137420"].local == "Singapore"
-    assert vagas["1137420"].salario is None  # 0 e 0 = não informado
+async def test_fixes_double_encoded_text(api: FakeApi, tmp_path: Path) -> None:
+    for job in await all_items(api, tmp_path):
+        assert "â€" not in job.description and "â\u0080" not in job.description
 
 
-async def test_conserta_texto_codificado_duas_vezes(
-    api: ApiFalsa, tmp_path: Path
-) -> None:
-    for vaga in await todas(api, tmp_path):
-        assert "â€" not in vaga.descricao and "â\u0080" not in vaga.descricao
+def test_fix_encoding_leaves_correct_text_alone() -> None:
+    assert fix_encoding("EUR 53,000 â\u0080\u0093 59,000") == ("EUR 53,000 – 59,000")
+    assert fix_encoding("Café – fine") == "Café – fine"
+    assert fix_encoding("São Paulo") == "São Paulo"
 
 
-def test_consertar_codificacao_nao_mexe_em_texto_certo() -> None:
-    assert consertar_codificacao("EUR 53,000 â\u0080\u0093 59,000") == (
-        "EUR 53,000 – 59,000"
-    )
-    assert consertar_codificacao("Já está certo – ok") == "Já está certo – ok"
-    assert consertar_codificacao("São Paulo") == "São Paulo"
-
-
-def test_limpar_descricao_tira_a_frase_mesmo_se_o_texto_mudar() -> None:
+def test_clean_description_removes_sentence_even_if_text_changes() -> None:
     original = (
-        "Vaga boa.<br/><br/>Please mention the word **SUNNY** and tag RMjAwMTpkYjg6OjE= "
-        "when applying to show you read the job post completely (#RMjAwMTpkYjg6OjE=). "
-        "This is a beta feature to avoid spam applicants. Companies can search these "
-        "words to find applicants that read this and see they're human."
+        "Good job.<br/><br/>Please mention the word **SUNNY** and tag "
+        "RMjAwMTpkYjg6OjE= when applying to show you read the job post completely "
+        "(#RMjAwMTpkYjg6OjE=). This is a beta feature to avoid spam applicants. "
+        "Companies can search these words to find applicants that read this and see "
+        "they're human."
     )
-    assert limpar_descricao(original) == "Vaga boa."
-    # frase com outro texto: o token sai mesmo assim
-    assert TOKEN_FALSO not in limpar_descricao(f"Use tag {TOKEN_FALSO} ao aplicar")
+    assert clean_description(original) == "Good job."
+    # a sentence with other words: the token goes anyway
+    assert FAKE_TOKEN not in clean_description(f"Use tag {FAKE_TOKEN} when applying")
 
 
-def test_limpar_descricao_tira_imagem_escapada_em_base64() -> None:
-    # como veio numa vaga real: o <img> chega escapado e cortado pelo resumo
-    original = "Sobre nós &lt;img src=&quot;data:image/png;base64,iVBORw0KGgoAAAANSU..."
-    assert limpar_descricao(original) == "Sobre nós"
+def test_clean_description_removes_escaped_base64_image() -> None:
+    # as it came in a real job: the <img> arrives escaped and cut by the summary
+    original = "About us &lt;img src=&quot;data:image/png;base64,iVBORw0KGgoAAAANSU..."
+    assert clean_description(original) == "About us"

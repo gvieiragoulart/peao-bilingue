@@ -1,33 +1,34 @@
 # Fixtures
 
-HTML real do site, capturado com a sessão do usuário e **anonimizado** antes de entrar no repo.
+Real HTML from the site, captured with the user's session and **anonymized** before it entered the
+repository.
 
 ## `profile.html`
 
-Capturado de `https://app.vanhack.com/profile` em 2026-10-05. É o subtree `.pf-main`, com:
+Captured from `https://app.vanhack.com/profile` on 2026-10-05. It is the `.pf-main` subtree, with:
 
-- **removidos:** `.dropdown-menu` (listas de opções, enormes e nunca lidas), `script`, `style`,
-  `svg`, `img`, e o card do Intro Video (`.iv-player-card`, `.iv-transcript-card`, `video`) —
-  o vídeo tem URL assinada com token SAS e a transcrição traz nome e história pessoal;
-- **anonimizados:** nome ("Fulano De Tal"), email, telefone, código do país, validade de passaporte,
-  status de visto e os links do LinkedIn/GitHub;
-- **preservado:** todo o resto da estrutura e os dados profissionais (cargo, skills, experiências),
-  que são o que os testes verificam.
+- **removed:** `.dropdown-menu` (option lists, huge and never read), `script`, `style`, `svg`,
+  `img`, and the Intro Video card (`.iv-player-card`, `.iv-transcript-card`, `video`): the video
+  has a URL signed with a SAS token and the transcript carries a name and a personal story;
+- **anonymized:** the name ("Fulano De Tal"), email, phone, country code, passport expiration,
+  visa status and the LinkedIn/GitHub links;
+- **kept:** the rest of the structure and the professional data (role, skills, experience), which
+  is what the tests check.
 
-Os valores de `input` vivem na propriedade DOM, não no atributo, então a captura copia
-`value`/`checked` para atributos — sem isso a fixture abriria com todos os campos vazios.
+`input` values live in the DOM property, not the attribute, so the capture copies
+`value`/`checked` into attributes; without that the fixture would open with every field empty.
 
-Para recapturar depois de uma mudança no site: abra `/profile` com a sessão válida, repita esse
-tratamento e **audite o arquivo** (`sig=`, `skoid`, `blob.core`, email, nome) antes de commitar.
+To capture again after the site changes: open `/profile` with a valid session, repeat this
+treatment and **audit the file** (`sig=`, `skoid`, `blob.core`, email, name) before committing.
 
 ## `listing.html`, `detail_12030.html`, `detail_12018.html`
 
-Capturados em 2026-10-05 de `/jobs/python-jobs` (container `div.vh-cards`, depois de rolar) e de
-`/job/<id>` (raiz `div.vh-jd`). Removidos `script`, `style`, `svg`, `img` e `.dropdown-menu`.
-São anúncios de vaga, sem dados do usuário.
+Captured on 2026-10-05 from `/jobs/python-jobs` (the `div.vh-cards` container, after scrolling)
+and from `/job/<id>` (the `div.vh-jd` root). `script`, `style`, `svg`, `img` and `.dropdown-menu`
+were removed. They are job postings, with no user data.
 
-`detail_12018.html` mantém de propósito a seção `.vh-jd-recommended`, com minicards de **outras**
-vagas: é o que prova que o extrator não mistura vaga recomendada com a vaga aberta.
+`detail_12018.html` keeps the `.vh-jd-recommended` section on purpose, with minicards of **other**
+jobs: it proves the extractor doesn't mix a recommended job into the open one.
 
-Atenção ao escrever testes: a fixture roda sem CSS, e `inner_text()` não insere o espaço que
-elementos inline teriam na página real ("CAD $160k /yr" vira "CAD$160k/yr").
+When writing tests: the fixture runs without CSS, and `inner_text()` doesn't add the space inline
+elements would have on the real page ("CAD $160k /yr" becomes "CAD$160k/yr").

@@ -1,312 +1,320 @@
-"""A janela de verdade, escondida, sobre um repositório em memória."""
+"""The real window, hidden, over an in-memory repository."""
 
 import json
 import time
 from collections.abc import Callable, Iterator
 
 import pytest
-from construtores import analise, perfil, vaga
-from consultas import analise_salva
-from dubles import AgendadorFake, ProvedorFake
+from builders import analysis, job, profile
+from fakes import FakeProvider, FakeScheduler
+from queries import saved_analysis
 
-from peao_bilingue import configuracao
-from peao_bilingue.adaptadores.persistencia.sqlite import RepositorioSQLite
-from peao_bilingue.configuracao import settings
-from peao_bilingue.dominio.vagas import StatusVaga, Vaga
-from peao_bilingue.ui.abas import vagas as aba_vagas
-from peao_bilingue.ui.app import ABAS, Aplicativo
+from peao_bilingue import config
+from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
+from peao_bilingue.config import settings
+from peao_bilingue.domain.jobs import Job, JobStatus
+from peao_bilingue.ui.app import App, tabs
+from peao_bilingue.ui.tabs import jobs as jobs_tab
 
-# Janela Tk de verdade (escondida): precisa de sessão gráfica.
-pytestmark = pytest.mark.integracao
+# A real Tk window (hidden): it needs a graphical session.
+pytestmark = pytest.mark.integration
 
 
 @pytest.fixture
-def janela(
-    repositorio: RepositorioSQLite, monkeypatch: pytest.MonkeyPatch
-) -> Iterator[Aplicativo]:
-    avisos: dict[str, list[str]] = {"erros": [], "infos": []}
-    # Um messagebox é modal: deixaria a suíte esperando um clique.
+def window(
+    repository: SQLiteRepository, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[App]:
+    notices: dict[str, list[str]] = {"errors": [], "infos": []}
+    # A messagebox is modal: it would leave the suite waiting for a click.
     monkeypatch.setattr(
-        Aplicativo, "mostrar_erro", lambda self, f: avisos["erros"].append(str(f))
+        App, "show_error", lambda self, f: notices["errors"].append(str(f))
     )
-    monkeypatch.setattr(
-        Aplicativo, "informar", lambda self, m: avisos["infos"].append(m)
-    )
-    # Agendador falso: os testes nunca consultam nem mexem no Agendador do Windows.
-    app = Aplicativo(repositorio=repositorio, agendador=AgendadorFake())
+    monkeypatch.setattr(App, "inform", lambda self, m: notices["infos"].append(m))
+    # A fake scheduler: the tests never read or touch Windows Task Scheduler.
+    app = App(repository=repository, scheduler=FakeScheduler())
     app.withdraw()
     app.update()
-    app.avisos = avisos
+    app.notices = notices
     yield app
-    app.fechar()
-    configuracao.CONFIG_PATH.unlink(missing_ok=True)
-    configuracao.recarregar()
+    app.close()
+    config.CONFIG_PATH.unlink(missing_ok=True)
+    config.reload()
 
 
-def com_vaga_analisada(
-    repositorio: RepositorioSQLite, id_externo: str = "1", fit: int = 82
-) -> Vaga:
-    nova = vaga(id_externo)
-    repositorio.salvar_vaga(nova, ["Python"])
-    repositorio.salvar_analise(
-        nova.chave, analise(fit), provedor="anthropic", modelo="m", perfil_id=None
+def with_analyzed_job(
+    repository: SQLiteRepository, external_id: str = "1", fit: int = 82
+) -> Job:
+    new = job(external_id)
+    repository.save_job(new, ["Python"])
+    repository.save_analysis(
+        new.key, analysis(fit), provider="anthropic", model="m", profile_id=None
     )
-    return nova
+    return new
 
 
-def test_abre_com_todas_as_abas(janela: Aplicativo) -> None:
-    assert list(janela.paineis) == [titulo for titulo, _ in ABAS]
+def test_opens_with_all_tabs(window: App) -> None:
+    assert list(window.panels) == [identifier for identifier, _, _ in tabs()]
 
 
-def test_vagas_aparecem_e_o_detalhe_mostra_a_analise(
-    janela: Aplicativo, repositorio: RepositorioSQLite
+def test_jobs_show_and_detail_has_analysis(
+    window: App, repository: SQLiteRepository
 ) -> None:
-    nova = com_vaga_analisada(repositorio)
-    aba = janela.paineis["Vagas"]
-    aba.atualizar()
+    new = with_analyzed_job(repository)
+    tab = window.panels["jobs"]
+    tab.refresh()
 
-    assert aba.tabela.arvore.item(nova.chave)["values"][0] == 82
-    aba.tabela.arvore.selection_set(nova.chave)
-    janela.update()
-    assert "PERGUNTAS DE ENTREVISTA (20)" in aba.detalhe.get("1.0", "end")
+    assert tab.table.tree.item(new.key)["values"][0] == 82
+    tab.table.tree.selection_set(new.key)
+    window.update()
+    assert "INTERVIEW QUESTIONS (20)" in tab.detail.get("1.0", "end")
 
 
-def test_pesquisa_filtra_a_lista(
-    janela: Aplicativo, repositorio: RepositorioSQLite
+def test_search_text_filters_the_list(
+    window: App, repository: SQLiteRepository
 ) -> None:
-    repositorio.salvar_vaga(vaga("1", "Backend Laravel"), ["PHP"])
-    repositorio.salvar_vaga(vaga("2", "Data Engineer"), ["Python"])
-    aba = janela.paineis["Vagas"]
+    repository.save_job(job("1", "Backend Laravel"), ["PHP"])
+    repository.save_job(job("2", "Data Engineer"), ["Python"])
+    tab = window.panels["jobs"]
 
-    aba.pesquisa.insert(0, "laravel")
-    aba.atualizar()
+    tab.search_text.insert(0, "laravel")
+    tab.refresh()
 
-    assert aba.tabela.arvore.get_children() == ("vanhack:1",)
-    # Enter filtra. O bind fica no Entry do Tk dentro do CTkEntry; a tecla em si não
-    # dá para simular: a janela de teste não recebe o foco do sistema.
-    assert aba.pesquisa._entry.bind("<Return>")
-
-
-def test_fit_minimo_invalido_avisa_sem_quebrar(janela: Aplicativo) -> None:
-    aba = janela.paineis["Vagas"]
-    aba.score.insert(0, "abc")
-    aba.atualizar()
-    assert any("0 a 100" in erro for erro in janela.avisos["erros"])
+    assert tab.table.tree.get_children() == ("vanhack:1",)
+    # Enter filters. The binding sits on the Tk Entry inside the CTkEntry; the key
+    # itself can't be simulated: the test window doesn't get the system's focus.
+    assert tab.search_text._entry.bind("<Return>")
 
 
-def test_marcar_status_grava_e_mantem_a_selecao(
-    janela: Aplicativo, repositorio: RepositorioSQLite
+def test_status_filter_and_column_use_labels(
+    window: App, repository: SQLiteRepository
 ) -> None:
-    nova = com_vaga_analisada(repositorio)
-    aba = janela.paineis["Vagas"]
-    aba.atualizar()
-    aba.tabela.arvore.selection_set(nova.chave)
-    janela.update()
+    new = with_analyzed_job(repository)
+    repository.change_status(new.key, JobStatus.applied)
+    tab = window.panels["jobs"]
 
-    aba._mudar_status(StatusVaga.aplicada)
+    tab.status.set("Applied")
+    tab.refresh()
 
-    assert (
-        repositorio.listar_vagas(status=StatusVaga.aplicada)[0].vaga.chave == nova.chave
-    )
-    assert aba.tabela.selecionado() == nova.chave
+    assert tab.table.tree.get_children() == (new.key,)
+    assert tab.table.tree.item(new.key)["values"][4] == "Applied"
 
 
-def test_cadastra_busca_pela_tela(
-    janela: Aplicativo, repositorio: RepositorioSQLite
+def test_invalid_min_fit_warns_without_crashing(window: App) -> None:
+    tab = window.panels["jobs"]
+    tab.score.insert(0, "abc")
+    tab.refresh()
+    assert any("0 to 100" in error for error in window.notices["errors"])
+
+
+def test_marking_status_saves_and_keeps_selection(
+    window: App, repository: SQLiteRepository
 ) -> None:
-    aba = janela.paineis["Buscas"]
-    aba.nome.insert(0, "Go")
-    aba.keywords.insert(0, "golang, go ")
-    aba.fontes["vanhack"].select()
-    aba._salvar()
+    new = with_analyzed_job(repository)
+    tab = window.panels["jobs"]
+    tab.refresh()
+    tab.table.tree.selection_set(new.key)
+    window.update()
 
-    [busca] = repositorio.listar_buscas()
-    assert busca.nome == "Go"
-    assert busca.keywords == ["golang", "go"]
-    assert busca.fontes == ["vanhack"]
+    tab._change_status(JobStatus.applied)
+
+    assert repository.list_jobs(status=JobStatus.applied)[0].job.key == new.key
+    assert tab.table.selected() == new.key
 
 
-def test_busca_sem_palavra_chave_avisa(
-    janela: Aplicativo, repositorio: RepositorioSQLite
+def test_creates_search_from_screen(window: App, repository: SQLiteRepository) -> None:
+    tab = window.panels["searches"]
+    tab.name.insert(0, "Go")
+    tab.keywords.insert(0, "golang, go ")
+    tab.sources["vanhack"].select()
+    tab._save()
+
+    [search] = repository.list_searches()
+    assert search.name == "Go"
+    assert search.keywords == ["golang", "go"]
+    assert search.sources == ["vanhack"]
+
+
+def test_search_without_keyword_warns(
+    window: App, repository: SQLiteRepository
 ) -> None:
-    aba = janela.paineis["Buscas"]
-    aba.nome.insert(0, "Vazia")
-    aba._salvar()
-    assert repositorio.listar_buscas() == []
-    assert janela.avisos["erros"]
+    tab = window.panels["searches"]
+    tab.name.insert(0, "Empty")
+    tab._save()
+    assert repository.list_searches() == []
+    assert window.notices["errors"]
 
 
-def test_salva_configuracao_dos_llms(janela: Aplicativo) -> None:
-    aba = janela.paineis["LLMs"]
-    aba.geral._widgets["llm_analise"].set("ollama")
-    aba._salvar()
+def test_saves_llm_settings(window: App) -> None:
+    tab = window.panels["llms"]
+    tab.general._widgets["analysis_llm"].set("ollama")
+    tab._save()
 
-    gravado = json.loads(configuracao.CONFIG_PATH.read_text(encoding="utf-8"))
-    assert gravado["llm_analise"] == "ollama"
-    assert settings.llm_analise == "ollama"
-    assert (
-        "anthropic_api_key" not in gravado
-    )  # chave vai para o cofre, nunca para o arquivo
-    # o seletor da aba Vagas passa a mostrar o novo padrão
-    assert janela.paineis["Vagas"].llm.get() == "Ollama (local, grátis)"
-
-
-def test_inteiro_invalido_nas_configuracoes_nao_salva(janela: Aplicativo) -> None:
-    aba = janela.paineis["Configurações"]
-    campo = aba.limites._widgets["max_details_per_run"]
-    campo.delete(0, "end")
-    campo.insert(0, "dez")
-    aba._salvar()
-
-    assert not configuracao.CONFIG_PATH.exists()
-    assert any("número inteiro" in erro for erro in janela.avisos["erros"])
+    recorded = json.loads(config.CONFIG_PATH.read_text(encoding="utf-8"))
+    assert recorded["analysis_llm"] == "ollama"
+    assert settings.analysis_llm == "ollama"
+    # the key goes to the vault, never to the file
+    assert "anthropic_api_key" not in recorded
+    # the Jobs tab's picker now shows the new default
+    assert window.panels["jobs"].llm.get() == "Ollama (local, free)"
 
 
-def test_mensagens_de_outras_threads_chegam_ao_registro(janela: Aplicativo) -> None:
-    janela.registrar("vindo do worker")
-    janela._drenar_log()
-    assert "vindo do worker" in janela.paineis["Execuções"].log.get("1.0", "end")
+def test_invalid_integer_in_settings_is_not_saved(window: App) -> None:
+    tab = window.panels["settings"]
+    field = tab.limits._widgets["max_details_per_run"]
+    field.delete(0, "end")
+    field.insert(0, "ten")
+    tab._save()
+
+    assert not config.CONFIG_PATH.exists()
+    assert any("whole number" in error for error in window.notices["errors"])
 
 
-def test_perfil_mostra_o_ultimo_snapshot(
-    janela: Aplicativo, repositorio: RepositorioSQLite
+def test_messages_from_other_threads_reach_the_log(window: App) -> None:
+    window.log("from the worker")
+    window._drain_log()
+    assert "from the worker" in window.panels["runs"].log_box.get("1.0", "end")
+
+
+def test_profile_shows_latest_snapshot(
+    window: App, repository: SQLiteRepository
 ) -> None:
-    repositorio.salvar_perfil(perfil("Staff Engineer"))
-    aba = janela.paineis["Perfil"]
-    aba.atualizar()
-    assert "Staff Engineer" in aba.texto.get("1.0", "end")
+    repository.save_profile(profile("Staff Engineer"))
+    tab = window.panels["profile"]
+    tab.refresh()
+    assert "Staff Engineer" in tab.text.get("1.0", "end")
 
 
-def test_perfil_e_mostrado_por_fonte(
-    janela: Aplicativo, repositorio: RepositorioSQLite
-) -> None:
-    repositorio.salvar_perfil(perfil("Staff Engineer", fonte="vanhack"))
-    repositorio.salvar_perfil(perfil("Tech Lead", fonte="linkedin"))
-    aba = janela.paineis["Perfil"]
+def test_profile_is_shown_per_source(window: App, repository: SQLiteRepository) -> None:
+    repository.save_profile(profile("Staff Engineer", source="vanhack"))
+    repository.save_profile(profile("Tech Lead", source="linkedin"))
+    tab = window.panels["profile"]
 
-    aba.fonte.set("linkedin")
-    aba.atualizar()
-    assert "Tech Lead" in aba.texto.get("1.0", "end")
+    tab.source.set("linkedin")
+    tab.refresh()
+    assert "Tech Lead" in tab.text.get("1.0", "end")
 
-    aba.fonte.set("vanhack")
-    aba.atualizar()
-    assert "Staff Engineer" in aba.texto.get("1.0", "end")
-    assert "Tech Lead" not in aba.texto.get("1.0", "end")
+    tab.source.set("vanhack")
+    tab.refresh()
+    assert "Staff Engineer" in tab.text.get("1.0", "end")
+    assert "Tech Lead" not in tab.text.get("1.0", "end")
 
 
-def processar_ate(
-    janela: Aplicativo, condicao: Callable[[], bool], limite: float = 5.0
+def process_until(
+    window: App, condition: Callable[[], bool], limit: float = 5.0
 ) -> bool:
-    """Roda o mainloop do Tk até a condição valer (o trabalho vai e volta pelo executor)."""
-    fim = time.time() + limite
-    while time.time() < fim:
-        janela.update()
-        if condicao():
+    """Runs Tk's mainloop until the condition holds (the work goes through the
+    executor and back)."""
+    deadline = time.time() + limit
+    while time.time() < deadline:
+        window.update()
+        if condition():
             return True
         time.sleep(0.02)
     return False
 
 
-def test_agendar_pela_tela_registra_e_guarda_o_horario(janela: Aplicativo) -> None:
-    aba = janela.paineis["Execuções"]
-    aba.horario.delete(0, "end")
-    aba.horario.insert(0, "07:45")
-    aba._agendar()
+def test_scheduling_from_screen_registers_and_saves_time(window: App) -> None:
+    tab = window.panels["runs"]
+    tab.time.delete(0, "end")
+    tab.time.insert(0, "07:45")
+    tab._schedule()
 
-    assert processar_ate(janela, lambda: "07:45" in aba.situacao_agenda.cget("text"))
-    situacao = janela.agendador.situacao()
-    assert situacao is not None and situacao.horario == "07:45"
-    assert settings.horario_coleta == "07:45"
-
-
-def test_cancelar_pela_tela(janela: Aplicativo) -> None:
-    janela.agendador.agendar("08:00")
-    aba = janela.paineis["Execuções"]
-    aba._cancelar_agenda()
-
-    assert processar_ate(janela, lambda: "Nenhuma" in aba.situacao_agenda.cget("text"))
-    assert janela.agendador.situacao() is None
+    assert process_until(window, lambda: "07:45" in tab.schedule_status.cget("text"))
+    status = window.scheduler.status()
+    assert status is not None and status.time == "07:45"
+    assert settings.collection_time == "07:45"
 
 
-def test_horario_invalido_avisa(janela: Aplicativo) -> None:
-    aba = janela.paineis["Execuções"]
-    aba.horario.delete(0, "end")
-    aba.horario.insert(0, "8h")
-    aba._agendar()
+def test_cancel_from_screen(window: App) -> None:
+    window.scheduler.schedule("08:00")
+    tab = window.panels["runs"]
+    tab._cancel_schedule()
 
-    assert processar_ate(janela, lambda: bool(janela.avisos["erros"]))
-    assert janela.agendador.situacao() is None
+    assert process_until(
+        window, lambda: "No collection" in tab.schedule_status.cget("text")
+    )
+    assert window.scheduler.status() is None
 
 
-# --- análise pedida na tela -------------------------------------------------
+def test_invalid_time_warns(window: App) -> None:
+    tab = window.panels["runs"]
+    tab.time.delete(0, "end")
+    tab.time.insert(0, "8h")
+    tab._schedule()
+
+    assert process_until(window, lambda: bool(window.notices["errors"]))
+    assert window.scheduler.status() is None
+
+
+# --- analysis requested on screen ---------------------------------------------------
 
 
 @pytest.fixture
-def llms_pedidos(monkeypatch: pytest.MonkeyPatch) -> list[str]:
-    """Nenhum LLM de verdade: a tela recebe um dublê com o nome escolhido."""
-    pedidos: list[str] = []
+def requested_llms(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """No real LLM: the screen gets a fake with the chosen name."""
+    requests: list[str] = []
 
-    def montar(nome: str) -> ProvedorFake:
-        pedidos.append(nome)
-        return ProvedorFake(fit=74, nome=nome)
+    def build(name: str) -> FakeProvider:
+        requests.append(name)
+        return FakeProvider(fit=74, name=name)
 
-    monkeypatch.setattr(aba_vagas, "montar_llm", montar)
-    return pedidos
-
-
-def selecionar(janela: Aplicativo, chave: str) -> aba_vagas.AbaVagas:
-    aba: aba_vagas.AbaVagas = janela.paineis["Vagas"]
-    aba.atualizar()
-    aba.tabela.arvore.selection_set(chave)
-    janela.update()
-    return aba
+    monkeypatch.setattr(jobs_tab, "build_llm", build)
+    return requests
 
 
-def test_analisar_usa_o_llm_e_o_perfil_escolhidos(
-    janela: Aplicativo, repositorio: RepositorioSQLite, llms_pedidos: list[str]
+def select(window: App, key: str) -> jobs_tab.JobsTab:
+    tab: jobs_tab.JobsTab = window.panels["jobs"]
+    tab.refresh()
+    tab.table.tree.selection_set(key)
+    window.update()
+    return tab
+
+
+def test_analyze_uses_chosen_llm_and_profile(
+    window: App, repository: SQLiteRepository, requested_llms: list[str]
 ) -> None:
-    repositorio.salvar_perfil(perfil("Staff Engineer"))
-    repositorio.salvar_vaga(vaga("1"), ["Python"])
-    aba = selecionar(janela, "vanhack:1")
-    assert aba.perfil.get() == "vanhack"  # por padrão, o da fonte da vaga
+    repository.save_profile(profile("Staff Engineer"))
+    repository.save_job(job("1"), ["Python"])
+    tab = select(window, "vanhack:1")
+    assert tab.profile.get() == "vanhack"  # by default, the job's source's
 
-    aba.llm.set("Ollama (local, grátis)")
-    aba._analisar()
+    tab.llm.set("Ollama (local, free)")
+    tab._analyze()
 
-    assert processar_ate(
-        janela, lambda: "PERGUNTAS DE ENTREVISTA" in aba.detalhe.get("1.0", "end")
+    assert process_until(
+        window, lambda: "INTERVIEW QUESTIONS" in tab.detail.get("1.0", "end")
     )
-    assert llms_pedidos == ["ollama"]
-    salva = analise_salva(repositorio, "vanhack:1")
-    assert (salva.analise.fit_score, salva.provedor, salva.perfil_fonte) == (
+    assert requested_llms == ["ollama"]
+    saved = saved_analysis(repository, "vanhack:1")
+    assert (saved.analysis.fit_score, saved.provider, saved.profile_source) == (
         74,
         "ollama",
         "vanhack",
     )
-    assert aba.botao_analisar.cget("state") == "normal"
+    assert tab.analyze_button.cget("state") == "normal"
 
 
-def test_analisar_sem_perfil_lido_explica_o_que_fazer(
-    janela: Aplicativo, repositorio: RepositorioSQLite, llms_pedidos: list[str]
+def test_analyze_without_profile_explains_what_to_do(
+    window: App, repository: SQLiteRepository, requested_llms: list[str]
 ) -> None:
-    repositorio.salvar_vaga(vaga("1"), ["Python"])
-    aba = selecionar(janela, "vanhack:1")
+    repository.save_job(job("1"), ["Python"])
+    tab = select(window, "vanhack:1")
 
-    aba._analisar()
+    tab._analyze()
 
-    assert processar_ate(janela, lambda: bool(janela.avisos["erros"]))
-    assert "aba Perfil" in janela.avisos["erros"][0]
-    assert repositorio.analise_vigente("vanhack:1") is None
+    assert process_until(window, lambda: bool(window.notices["errors"]))
+    assert "Profile tab" in window.notices["errors"][0]
+    assert repository.current_analysis("vanhack:1") is None
 
 
-def test_analisar_sem_vaga_selecionada_avisa(
-    janela: Aplicativo, llms_pedidos: list[str]
+def test_analyze_without_selected_job_warns(
+    window: App, requested_llms: list[str]
 ) -> None:
-    janela.paineis["Vagas"]._analisar()
-    assert janela.avisos["erros"] == ["Selecione uma vaga para analisar."]
-    assert llms_pedidos == []
+    window.panels["jobs"]._analyze()
+    assert window.notices["errors"] == ["Pick a job to analyze."]
+    assert requested_llms == []
 
 
-def test_llm_escolhido_vira_o_padrao(janela: Aplicativo) -> None:
-    janela.paineis["Vagas"]._lembrar_llm("Ollama (local, grátis)")
-    assert settings.llm_analise == "ollama"
+def test_chosen_llm_becomes_default(window: App) -> None:
+    window.panels["jobs"]._remember_llm("Ollama (local, free)")
+    assert settings.analysis_llm == "ollama"
