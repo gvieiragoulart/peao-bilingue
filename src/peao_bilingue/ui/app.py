@@ -33,6 +33,7 @@ from peao_bilingue.ui.tabs.runs import RunsTab
 from peao_bilingue.ui.tabs.searches import SearchesTab
 from peao_bilingue.ui.tabs.settings import SettingsTab
 from peao_bilingue.ui.tabs.sources import SourcesTab
+from peao_bilingue.ui.widgets import OutlineButton
 
 LOG_INTERVAL_MS = 200
 logger = logging.getLogger(__name__)
@@ -83,12 +84,10 @@ class App(ctk.CTk):
             self.update_banner, text=_("Download"), width=110
         )
         self.update_button.pack(side="right", padx=(0, 12))
-        ctk.CTkButton(
+        OutlineButton(
             self.update_banner,
             text=_("Later"),
             width=80,
-            fg_color="transparent",
-            border_width=1,
             command=self.update_banner.pack_forget,
         ).pack(side="right", padx=6)
 

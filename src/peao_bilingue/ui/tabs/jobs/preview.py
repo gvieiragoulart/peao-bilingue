@@ -12,6 +12,7 @@ from peao_bilingue.domain.profile import MANUAL_SOURCE
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation
 from peao_bilingue.ui.tabs.jobs.job_status import JobStatusButtons
+from peao_bilingue.ui.widgets import OutlineButton
 
 
 def no_profile_label() -> str:
@@ -61,12 +62,10 @@ class JobPreview(ctk.CTkFrame):
             actions, text=_("Analyze"), width=110, command=on_analyze
         )
         self.analyze_button.pack(side="left")
-        ctk.CTkButton(
+        OutlineButton(
             actions,
             text=_("Open job"),
             width=110,
-            fg_color="transparent",
-            border_width=1,
             command=on_open,
         ).pack(side="left", padx=6)
 
