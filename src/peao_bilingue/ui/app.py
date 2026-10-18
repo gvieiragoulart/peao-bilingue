@@ -220,6 +220,9 @@ class App(ctk.CTk):
     def inform(self, message: str) -> None:
         messagebox.showinfo(APP_NAME, message, parent=self)
 
+    def confirm(self, question: str) -> bool:
+        return bool(messagebox.askyesno(APP_NAME, question, parent=self))
+
     def close(self) -> None:
         logging.getLogger().removeHandler(self._log)
         self.executor.close()

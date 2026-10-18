@@ -342,9 +342,15 @@ MESSAGES: dict[str, str] = {
     "Analyze": "Analisar",
     "Open job": "Abrir vaga",
     "Mark as:": "Marcar como:",
-    "{count} job(s). Click one to see it or analyze it.": (
-        "{count} vaga(s). Clique em uma para ver ou analisar."
+    "{count} job(s). Click one to see it or analyze it; tick the boxes to discard "
+    "several at once.": (
+        "{count} vaga(s). Clique em uma para ver ou analisar; marque as caixas para "
+        "descartar várias de uma vez."
     ),
+    "Discard selected": "Descartar selecionadas",
+    "Clear selection": "Limpar seleção",
+    "{count} selected": "{count} selecionada(s)",
+    "Discard {count} job(s)?": "Descartar {count} vaga(s)?",
     "No keyword from the searches shows up in this job anymore.": (
         "Nenhuma palavra-chave das buscas aparece mais nesta vaga."
     ),

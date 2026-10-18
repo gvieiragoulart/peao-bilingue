@@ -113,6 +113,16 @@ class JobsSQLite(BaseSQLite, JobRepository):
             session.add(row)
             session.commit()
 
+    def change_statuses(self, keys: list[str], status: JobStatus) -> None:
+        with self._session() as session:
+            for key in keys:
+                row = session.get(JobTable, key)
+                if row is None:
+                    raise LookupError(_("Job {key} not found.").format(key=key))
+                row.status = status
+                session.add(row)
+            session.commit()
+
 
 def _duplicates(session: Session, key: str) -> list[Posting]:
     rows = session.exec(

@@ -182,7 +182,10 @@ def search_colors(names: list[str]) -> dict[str, tuple[str, str]]:
 
 
 def job_count(count: int) -> str:
-    return _("{count} job(s). Click one to see it or analyze it.").format(count=count)
+    return _(
+        "{count} job(s). Click one to see it or analyze it; tick the boxes to discard "
+        "several at once."
+    ).format(count=count)
 
 
 def _also_on(postings: list[Posting]) -> list[str]:
