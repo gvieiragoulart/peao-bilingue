@@ -24,7 +24,7 @@ from peao_bilingue.domain.schedule import Scheduler
 from peao_bilingue.domain.updates import Release, ReleaseFeed
 from peao_bilingue.i18n import _
 from peao_bilingue.logs import log_to_file, record_uncaught_exceptions
-from peao_bilingue.ui import theme
+from peao_bilingue.ui import chrome, theme
 from peao_bilingue.ui.executor import AsyncExecutor, LogQueue, track
 from peao_bilingue.ui.onboarding import Onboarding, needs_onboarding
 from peao_bilingue.ui.tabs.jobs import JobsTab
@@ -112,6 +112,7 @@ class App(ctk.CTk):
         if needs_onboarding(self.repository):
             self.open_onboarding()
         self.protocol("WM_DELETE_WINDOW", self.close)
+        self.after(100, lambda: chrome.paint_title_bar(self))
         self.after(LOG_INTERVAL_MS, self._drain_log)
         self._upgrade_legacy_task()
         if settings.check_for_updates:
@@ -201,6 +202,11 @@ class App(ctk.CTk):
         self.tabs.set(_("Runs"))
         self.on_change()
 
+    def _set_appearance_mode(self, mode_string: str) -> None:
+        # CustomTkinter calls it on every light/dark switch: the title bar follows.
+        super()._set_appearance_mode(mode_string)
+        chrome.paint_title_bar(self)
+
     def on_change(self) -> None:
         for panel in self.panels.values():
             panel.refresh()
@@ -244,5 +250,5 @@ def main() -> None:
     # No console in a GUI app: the log goes to data/logs/app.log.
     log_to_file("app")
     record_uncaught_exceptions()
-    ctk.set_appearance_mode("system")
+    ctk.set_appearance_mode(settings.appearance)
     App().mainloop()
