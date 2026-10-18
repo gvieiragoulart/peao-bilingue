@@ -537,6 +537,26 @@ was missing 38 of the 57 programming jobs), so it's the back-end, full-stack and
 User-Agent) gets a 200: no disguise. XML through the stdlib's `ElementTree` (Python's expat
 already guards against entity expansion).
 
+**Strider** (`adapters/sources/strider.py`, added 2026-10-18; the public page
+`https://www.onstrider.com/jobs`). The logged-in area (`app.onstrider.com`) has **no job list**:
+Strider matches candidates itself, and its invitations only come through its internal API, so
+there's no login and no Playwright. The public page has no API or feed, so it is read as HTML
+with honest access (our User-Agent gets a 200), over `ApiSource` (`decode` parses the cards; a
+listing with no card is an error, not a silent zero): **one listing call per collection** with
+the 6 h cache (14 jobs on 2026-10-18, all in one page, all "LATAM (100% Remote)"), each term
+filtered locally against the card's title and skill tags, then **one page per new job** with a
+random **2-5 s pause** before each (`detail` overrides the base's, through `_get`). The job page
+carries a schema.org `JobPosting` (JSON-LD: `datePosted`, the countries, contract types) and
+the sections that become the description ("What you will work on", "Must-haves", "What makes you
+stand out", "Nice-to-haves") plus the header's facts (Seniority, Commitment, Industry, English
+level); without the sections, the JSON-LD's description is the fallback. The **company is never
+named** (`company` is None, like VanHack). `robots.txt` allows `/jobs`. **Terms:** the Terms of
+Use (On Strider, Inc., 2022-08-26) aren't public: they are accepted inside the app. Their start
+forbids access by competitors and "for purposes of monitoring their availability, performance or
+functionality"; **Gabriel read the full text and approved this source** (2026-10-18). Each job
+keeps its Strider link. The fixtures are the real pages trimmed to the JSON-LD and `<main>`
+(`tests/fixtures/strider/README.md`).
+
 ---
 
 ## Brazilian sites (Phase 6): what the terms allow

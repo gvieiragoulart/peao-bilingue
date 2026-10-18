@@ -158,6 +158,15 @@ MESSAGES: dict[str, str] = {
     "Remote back-end, full-stack and front-end jobs, from the site's RSS feeds.": (
         "Vagas remotas de back-end, full-stack e front-end, dos feeds RSS do site."
     ),
+    "Strider (public jobs page, remote in LATAM)": (
+        "Strider (página pública de vagas, remotas na América Latina)"
+    ),
+    "Long-term remote jobs at US companies, open to Latin America. Reads the "
+    "public jobs page; no account needed.": (
+        "Vagas remotas de longo prazo em empresas dos EUA, abertas à América Latina. "
+        "Lê a página pública de vagas; não precisa de conta."
+    ),
+    "the job's requirements": "os requisitos da vaga",
     # --- VanHack ------------------------------------------------------------------
     "Jobs abroad with relocation support. Uses your account: log in once by hand and "
     "the robot reuses the saved session.": (
