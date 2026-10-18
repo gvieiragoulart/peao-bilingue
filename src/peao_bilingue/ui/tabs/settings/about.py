@@ -11,6 +11,10 @@ from peao_bilingue.i18n import _
 from peao_bilingue.ui.widgets import Field, Form, Heading, OutlineButton
 
 
+def appearance_labels() -> dict[str, str]:
+    return {"system": _("Same as Windows"), "light": _("Light"), "dark": _("Dark")}
+
+
 class AboutSection(ctk.CTkFrame):
     def __init__(
         self,
@@ -37,6 +41,14 @@ class AboutSection(ctk.CTkFrame):
         )
         self.form.pack(fill="x", pady=(6, 4))
 
+        appearance = ctk.CTkFrame(self, fg_color="transparent")
+        appearance.pack(fill="x", pady=(0, 10))
+        ctk.CTkLabel(appearance, text=_("Appearance")).pack(side="left", padx=(8, 12))
+        self.appearance = ctk.CTkSegmentedButton(
+            appearance, values=list(appearance_labels().values())
+        )
+        self.appearance.pack(side="left")
+
         support = ctk.CTkFrame(self, fg_color="transparent")
         support.pack(fill="x")
         for text, width, command, padx in (
@@ -53,6 +65,11 @@ class AboutSection(ctk.CTkFrame):
 
     def load(self, current: Settings) -> None:
         self.form.load(current)
+        self.appearance.set(appearance_labels()[current.appearance])
 
     def values(self) -> dict[str, Any]:
-        return self.form.values()
+        by_label = {label: mode for mode, label in appearance_labels().items()}
+        return {
+            **self.form.values(),
+            "appearance": by_label.get(self.appearance.get(), "system"),
+        }

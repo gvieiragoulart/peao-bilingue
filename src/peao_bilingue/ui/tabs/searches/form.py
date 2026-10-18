@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from peao_bilingue import factories
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
-from peao_bilingue.ui import presentation
+from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.widgets import Hint, OutlineButton
 
 
@@ -21,36 +21,42 @@ class SearchForm(ctk.CTkFrame):
         on_save: Callable[[], None],
         on_remove: Callable[[], None],
     ) -> None:
-        super().__init__(master)
+        super().__init__(
+            master, corner_radius=12, border_width=1, border_color=theme.BORDER
+        )
         # The id of the search on screen; None for a new one.
         self.editing: int | None = None
 
-        self.heading = ctk.CTkLabel(
-            self, text=_("New search"), font=ctk.CTkFont(weight="bold")
-        )
+        self.heading = ctk.CTkLabel(self, text=_("New search"), font=theme.strong())
         self.heading.pack(anchor="w", padx=12, pady=(12, 8))
 
         self.name = self._entry(_("Name"))
         self.keywords = self._entry(_("Keywords (comma separated)"))
         self.exclude = self._entry(_("Exclude when present (optional)"))
-        Hint(self, _('Careful: "junior" also matches "mentor junior engineers".')).pack(
-            anchor="w", padx=12
-        )
+        Hint(
+            self,
+            _('Careful: "junior" also matches "mentor junior engineers".'),
+            justify="left",
+            wraplength=320,
+        ).pack(anchor="w", padx=12)
 
         ctk.CTkLabel(self, text=_("Sources (none checked = all)")).pack(
             anchor="w", padx=12, pady=(12, 4)
         )
+        # The buttons and the switch from the bottom, so they never get cut off; the
+        # list of sources scrolls in what is left.
+        buttons = ctk.CTkFrame(self, fg_color="transparent")
+        buttons.pack(side="bottom", fill="x", padx=12, pady=12)
+        self.active = ctk.CTkSwitch(self, text=_("Active"))
+        self.active.pack(side="bottom", anchor="w", padx=12, pady=(8, 0))
+        sources = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        sources.pack(fill="both", expand=True, padx=(4, 4))
         self.sources: dict[str, ctk.CTkCheckBox] = {}
         for name in factories.sources.available():
-            box = ctk.CTkCheckBox(self, text=factories.sources.class_of(name).label)
-            box.pack(anchor="w", padx=16, pady=2)
+            box = ctk.CTkCheckBox(sources, text=factories.sources.class_of(name).label)
+            box.pack(anchor="w", padx=8, pady=2)
             self.sources[name] = box
 
-        self.active = ctk.CTkSwitch(self, text=_("Active"))
-        self.active.pack(anchor="w", padx=12, pady=(12, 0))
-
-        buttons = ctk.CTkFrame(self, fg_color="transparent")
-        buttons.pack(fill="x", padx=12, pady=12)
         ctk.CTkButton(buttons, text=_("Save"), width=90, command=on_save).pack(
             side="left"
         )
@@ -64,7 +70,9 @@ class SearchForm(ctk.CTkFrame):
             buttons,
             text=_("Remove"),
             width=90,
-            fg_color="#B33A3A",
+            fg_color=theme.DANGER_SOFT,
+            hover_color=theme.DANGER_SOFT_HOVER,
+            text_color=theme.DANGER_TEXT,
             command=on_remove,
         ).pack(side="right")
         self.clear()

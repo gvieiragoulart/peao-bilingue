@@ -19,6 +19,7 @@ from peao_bilingue.domain.errors import UnknownName
 from peao_bilingue.domain.jobs import NEW_AT_SOURCE, Job, JobStatus, ListedJob, Posting
 from peao_bilingue.domain.privacy import Removed
 from peao_bilingue.domain.profile import ProfileSource
+from peao_bilingue.domain.schedule import ScheduleStatus
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
 
@@ -128,6 +129,12 @@ def source_label(name: str) -> str:
         return name
 
 
+def short_source_label(name: str) -> str:
+    """The display name without what follows it: "Remotive (public API, remote
+    jobs)" -> "Remotive", "Hacker News: Who is hiring? (...)" -> "Hacker News"."""
+    return source_label(name).split(" (")[0].split(":")[0]
+
+
 def source_features(cls: type[JobSource]) -> list[str]:
     """What a source needs and does, as short tags: the Sources tab's chips and the
     guide's hint."""
@@ -159,17 +166,63 @@ def status_from_label(label: str) -> JobStatus | None:
     return None
 
 
+def job_meta(item: ListedJob, now: datetime) -> str:
+    """The line under the job's title: where it is, where it came from, when."""
+    parts = [
+        item.job.company,
+        item.job.location,
+        short_source_label(item.job.source),
+        _("found {when}").format(when=ago(item.seen_at, now)),
+    ]
+    return " · ".join(part for part in parts if part)
+
+
 def job_row(item: ListedJob, now: datetime | None = None) -> tuple[str, ...]:
+    """(fit, title, the line under it, published, status)."""
     now = now or _now()
     return (
         "" if item.fit_score is None else str(item.fit_score),
         item.job.title,
-        ago(item.seen_at, now),
+        job_meta(item, now),
         published_label(item, now),
-        item.job.location or "",
-        item.job.source,
         job_status_labels()[item.status],
     )
+
+
+# The fit's color by range: good, worth a look, weak.
+FIT_COLORS: tuple[tuple[int, tuple[str, str]], ...] = (
+    (75, ("#2e7d32", "#3fae6a")),
+    (50, ("#b26a00", "#e0a43a")),
+    (0, ("#c62828", "#e05a6a")),
+)
+
+
+def fit_color(score: int) -> tuple[str, str]:
+    return next(color for floor, color in FIT_COLORS if score >= floor)
+
+
+def blend(color: str, ground: str, amount: float) -> str:
+    """`amount` of `color` over `ground`: what an alpha would show, which Tk lacks."""
+    mixed = (
+        round(
+            int(color[i : i + 2], 16) * amount
+            + int(ground[i : i + 2], 16) * (1 - amount)
+        )
+        for i in (1, 3, 5)
+    )
+    return "#" + "".join(f"{channel:02x}" for channel in mixed)
+
+
+def soft(
+    color: tuple[str, str], ground: tuple[str, str]
+) -> tuple[tuple[str, str], tuple[str, str]]:
+    """A chip's soft look from its base color: a tinted background over `ground` and
+    the text in a deeper (light mode) or lighter (dark mode) shade of the same color.
+    Returns (background, text), each a (light, dark) pair."""
+    light, dark = color
+    background = (blend(light, ground[0], 0.16), blend(dark, ground[1], 0.3))
+    text = (blend(light, "#000000", 0.78), blend(dark, "#ffffff", 0.55))
+    return background, text
 
 
 @dataclass(frozen=True)
@@ -205,8 +258,7 @@ def search_colors(names: list[str]) -> dict[str, tuple[str, str]]:
 
 def job_count(count: int) -> str:
     return _(
-        "{count} job(s). Click one to see it or analyze it; tick the boxes to discard "
-        "several at once."
+        "{count} job(s) · click one to open it; tick the boxes to act on several."
     ).format(count=count)
 
 
@@ -218,7 +270,7 @@ def _also_on(postings: list[Posting]) -> list[str]:
 
 
 def _details(job: Job) -> str:
-    return " | ".join(
+    return " · ".join(
         part
         for part in (
             job.company,
@@ -231,60 +283,69 @@ def _details(job: Job) -> str:
     )
 
 
-def analysis_text(
-    job: Job,
-    analysis: JobAnalysis,
-    also_on: list[Posting] | None = None,
-    dates: list[str] | None = None,
-) -> str:
-    # No title: the job's dialog shows it as its header.
-    return "\n".join(
-        [
-            _details(job),
-            job.url,
-            *_also_on(also_on or []),
-            *(dates or []),
-            "",
-            _("Fit: {score}/100").format(score=analysis.fit_score),
-            "",
-            _("SUMMARY"),
-            analysis.summary,
-            "",
-            _("PREPARATION"),
-            *(f"- {step}" for step in analysis.preparation),
-            "",
-            _("INTERVIEW QUESTIONS ({count})").format(count=len(analysis.questions)),
-            *(f"{n}. {question}" for n, question in enumerate(analysis.questions, 1)),
-            "",
-            _("GAPS"),
-            *(f"- {gap}" for gap in analysis.gaps or [_("(none found)")]),
-            "",
-            _("WHAT TO IMPROVE IN THE PROFILE"),
-            *(f"- {improvement}" for improvement in analysis.profile_improvements),
-        ]
-    )
+@dataclass(frozen=True)
+class AnalysisSection:
+    """One part of the analysis, behind its own button on the job's panel."""
+
+    key: str
+    title: str
+    text: str
 
 
-def job_detail(
-    item: ListedJob, analysis: SavedAnalysis | None, now: datetime | None = None
-) -> str:
-    dates = _dates(item, now or _now())
-    if analysis is None:
-        # No description: the dialog shows the keywords found, and the job reads
-        # better on its own site.
-        return "\n".join(
-            [
-                _details(item.job),
-                item.job.url,
-                *_also_on(item.also_on),
-                *dates,
-                "",
-                _(
-                    "Not analyzed yet: pick the LLM and the profile, then click Analyze."
-                ),
-            ]
-        )
+@dataclass(frozen=True)
+class JobPanel:
+    """What the job's panel shows, already as text."""
 
+    status: str
+    facts: str  # the line beside the status: source and when it was found
+    details: str  # company | place | work mode | salary
+    notes: list[str]  # the dates explained, and the other sites with the job
+    fit: int | None
+    fit_label: str
+    summary: str
+    sections: list[AnalysisSection]
+    # Who analyzed it and when; without an analysis, how to get one.
+    footer: str
+    outdated: str  # empty unless the profile changed after the analysis
+
+
+def fit_label(score: int) -> str:
+    if score >= FIT_COLORS[0][0]:
+        return _("Good fit")
+    if score >= FIT_COLORS[1][0]:
+        return _("Worth a look")
+    return _("Weak fit")
+
+
+def analysis_sections(analysis: JobAnalysis) -> list[AnalysisSection]:
+    gaps = analysis.gaps or [_("(none found)")]
+    return [
+        AnalysisSection(
+            "preparation",
+            _("Preparation"),
+            "\n".join(f"• {step}" for step in analysis.preparation),
+        ),
+        AnalysisSection(
+            "questions",
+            _("Questions ({count})").format(count=len(analysis.questions)),
+            "\n\n".join(
+                f"{n}. {question}" for n, question in enumerate(analysis.questions, 1)
+            ),
+        ),
+        AnalysisSection(
+            "gaps",
+            _("Gaps ({count})").format(count=len(analysis.gaps)),
+            "\n".join(f"• {gap}" for gap in gaps),
+        ),
+        AnalysisSection(
+            "profile",
+            _("Improve the profile"),
+            "\n".join(f"• {item}" for item in analysis.profile_improvements),
+        ),
+    ]
+
+
+def _analysis_footer(analysis: SavedAnalysis) -> str:
     footer = _("Analysis by {provider} ({model}) on {when}").format(
         provider=analysis.provider,
         model=analysis.model,
@@ -294,14 +355,88 @@ def job_detail(
         footer += _(", with the {source} profile").format(
             source=analysis.profile_source
         )
-    footer += "."
+    return footer + "."
+
+
+def job_panel(
+    item: ListedJob, analysis: SavedAnalysis | None, now: datetime | None = None
+) -> JobPanel:
+    now = now or _now()
+    facts = " · ".join(
+        [
+            short_source_label(item.job.source),
+            _("found {when}").format(when=ago(item.seen_at, now)),
+        ]
+    )
+    status = job_status_labels()[item.status]
+    details = _details(item.job)
+    notes = [*_dates(item, now), *_also_on(item.also_on)]
+    if analysis is None:
+        # No description: the panel shows the keywords found, and the job reads
+        # better on its own site.
+        return JobPanel(
+            status,
+            facts,
+            details,
+            notes,
+            fit=None,
+            fit_label="",
+            summary="",
+            sections=[],
+            footer=_(
+                "Not analyzed yet: pick the LLM and the profile, then click Analyze."
+            ),
+            outdated="",
+        )
+    outdated = ""
     if analysis.profile_outdated:
-        footer += "\n" + _(
+        outdated = _(
             "The {source} profile changed after this analysis: analyze again to update "
             "it."
         ).format(source=analysis.profile_source)
-    text = analysis_text(item.job, analysis.analysis, item.also_on, dates)
-    return f"{text}\n\n{footer}"
+    result = analysis.analysis
+    return JobPanel(
+        status,
+        facts,
+        details,
+        notes,
+        fit=result.fit_score,
+        fit_label=fit_label(result.fit_score),
+        summary=result.summary,
+        sections=analysis_sections(result),
+        footer=_analysis_footer(analysis),
+        outdated=outdated,
+    )
+
+
+def schedule_line(status: ScheduleStatus | None) -> str:
+    """The sidebar's short version of the schedule."""
+    if status is None:
+        return _("No daily collection")
+    return _("Daily collection at {time}").format(time=status.time)
+
+
+def last_run_line(run: Run | None, now: datetime | None = None) -> str:
+    if run is None:
+        return _("No collection yet")
+    zone = ZoneInfo(settings.timezone)
+    when = (
+        f"{ago(run.started_at, now or _now())}, {run.started_at.astimezone(zone):%H:%M}"
+    )
+    if run.status is RunStatus.running:
+        return _("Collecting since {when}").format(when=when)
+    if run.status is not RunStatus.ok:
+        return _("Last: {when} · {status}").format(
+            when=when, status=run_status_labels()[run.status]
+        )
+    return _("Last: {when} · {count} new").format(when=when, count=run.new_jobs)
+
+
+def badge(count: int) -> str:
+    """A count in a small badge: empty for none, capped so it stays small."""
+    if count <= 0:
+        return ""
+    return str(count) if count < 100 else "99+"
 
 
 def search_row(search: Search) -> tuple[str, ...]:

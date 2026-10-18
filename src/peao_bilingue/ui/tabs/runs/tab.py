@@ -31,7 +31,7 @@ class RunsTab(ctk.CTkFrame):
         super().__init__(master, fg_color="transparent")
         self.app = app
 
-        self.collect_bar = CollectBar(self, on_collect=self._collect)
+        self.collect_bar = CollectBar(self, on_collect=self.collect)
         self.collect_bar.pack(fill="x", pady=(0, 8))
         self.schedule = SchedulePanel(
             self,
@@ -41,7 +41,7 @@ class RunsTab(ctk.CTkFrame):
         )
         self.schedule.pack(fill="x", pady=(0, 8))
         self.history = RunHistory(self)
-        self.history.pack(fill="x")
+        self.history.pack(fill="x", pady=(4, 0))
         self.log = LogView(self)
         self.log.pack(fill="both", expand=True, pady=(12, 0))
         self._query_schedule()
@@ -51,6 +51,7 @@ class RunsTab(ctk.CTkFrame):
     def _query_schedule(self) -> None:
         def show(status: ScheduleStatus | None) -> None:
             self.schedule.show_status(describe_schedule(status))
+            self.app.sidebar.show_schedule(presentation.schedule_line(status))
 
         def fail(failure: BaseException) -> None:
             self.schedule.show_status(
@@ -109,7 +110,11 @@ class RunsTab(ctk.CTkFrame):
     def add_log(self, line: str) -> None:
         self.log.add(line)
 
-    def _collect(self) -> None:
+    def _set_busy(self, busy: bool) -> None:
+        self.collect_bar.set_busy(busy)
+        self.app.sidebar.set_collecting(busy)
+
+    def collect(self) -> None:
         # None = every enabled source; one picked = only it.
         source = self.collect_bar.chosen_source()
         folder = capture_folder() if self.collect_bar.capture() else None
@@ -123,7 +128,7 @@ class RunsTab(ctk.CTkFrame):
             self.app.show_error(failure)
             return
 
-        self.collect_bar.set_busy(True)
+        self._set_busy(True)
         if source:
             self.app.log(
                 _("Collection started: {source}.").format(
@@ -134,7 +139,7 @@ class RunsTab(ctk.CTkFrame):
             self.app.log(_("Collection started."))
 
         def finish(run: Run) -> None:
-            self.collect_bar.set_busy(False)
+            self._set_busy(False)
             self.app.on_change()
             self.app.log(
                 _("Collection {status}: {listed} listed, {new} new.").format(
@@ -147,7 +152,7 @@ class RunsTab(ctk.CTkFrame):
                 self._show_screenshots(folder)
 
         def fail(failure: BaseException) -> None:
-            self.collect_bar.set_busy(False)
+            self._set_busy(False)
             self.app.show_error(failure)
 
         # No notices: whoever asked for the collection is looking at the screen.
