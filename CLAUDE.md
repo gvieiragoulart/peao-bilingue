@@ -607,6 +607,33 @@ the last 7 days. Slugs come from `?get=locations`; `industry=dev` turned out to 
 `engineering`, and isn't used: the searches filter. `jobGeo` has double spaces
 ("Argentina,  Brazil"); the salary comes as strings or numbers, 0 = not given.
 
+**Get on Board** (`GET https://www.getonbrd.com/api/v0/search/jobs?query=<term>&remote=true&
+per_page=100&expand=["company"]`, source `getonbrd`, added 2026-10-18). A Latin American tech
+job board. Its help page on the API says the public API needs no setup and can be used to
+"Display published jobs on another site" and to "Build a custom job search or job board using
+public listings"; its Terms and Conditions (v1.1, 2026-09-17) are the contract with the
+companies that post (they mention throttling API calls). Most jobs are on-site, hybrid or
+remote within one country (Chile, mostly: `remote_modality: remote_local`), so it asks only for
+**fully remote** ones (`remote=true` returns only `fully_remote`), **per term** like Himalayas:
+one call per keyword, a 2 s pause, a 12 h cache per term. The text comes in parts with their
+own headings (functions, description, desirable, benefits), joined in that order;
+`published_at` is epoch; salaries are USD a month. The API docs page (`api-doc.getonbrd.com`)
+renders with JavaScript: the shape was read from real responses.
+
+**Hacker News "Who is hiring?"** (source `hackernews`, added 2026-10-18). The monthly thread where
+companies post jobs, one top-level comment each, read through the HN Search API by Algolia (the
+search HN links to): `search_by_date?tags=story,author_whoishiring` finds the newest thread
+whose title starts with "Ask HN: Who is hiring?" (the same account posts "Who wants to be
+hired?" at the same second), then `items/<id>` brings it whole (~270 posts, ~0.5 MB): **two
+calls per collection**, a 12 h cache. The official Firebase API would take one call per post.
+`search` overrides the base's only to find the thread first (`_query_raw`, cached), then lets
+the base filter. Posts are free text: the first paragraph is the header ("Company | Role |
+Place | REMOTE"), which becomes the title (up to 140 characters) and, up to the first `|`,
+dash, `(` or link, the company. A post stays only when it names one of `hackernews_places`
+(Brazil, LATAM, the Americas, worldwide, anywhere; 23 of 266 on 2026-10-18). **Not "visa"**:
+the fixture's own post says "We're not able to sponsor visas". The text goes through
+`remove_contact_data`; usernames aren't kept (not even in the fixture).
+
 ---
 
 ## Brazilian sites (Phase 6): what the terms allow
