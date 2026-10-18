@@ -41,7 +41,7 @@ class RunsTab(ctk.CTkFrame):
         )
         self.schedule.pack(fill="x", pady=(0, 8))
         self.history = RunHistory(self)
-        self.history.pack(fill="x")
+        self.history.pack(fill="x", pady=(4, 0))
         self.log = LogView(self)
         self.log.pack(fill="both", expand=True, pady=(12, 0))
         self._query_schedule()

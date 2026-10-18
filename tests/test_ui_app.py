@@ -943,3 +943,35 @@ def test_the_panel_swaps_to_another_job_while_open(
     assert tab.dialog.status_chip.cget("text") == "Studying"
     studying = tab.preview.status_buttons.buttons[JobStatus.studying]
     assert studying.cget("fg_color") != "transparent"
+
+
+def test_marking_several_jobs_can_be_undone(
+    window: App, repository: SQLiteRepository
+) -> None:
+    for external_id in ("1", "2"):
+        repository.save_job(job(external_id), ["Python"])
+    repository.change_status("vanhack:2", JobStatus.studying)
+    tab = window.panels["jobs"]
+    tab.refresh()
+    tab.table.toggle("vanhack:1")
+    tab.table.toggle("vanhack:2")
+
+    tab._mark_checked("Applied")
+    assert window.toast.visible
+    assert window.toast.message.cget("text") == "2 job(s) marked as Applied."
+
+    window.toast.action.invoke()  # Undo
+
+    assert not window.toast.winfo_manager()
+    assert [item.job.key for item in repository.list_jobs(status=JobStatus.new)] == [
+        "vanhack:1"
+    ]
+    assert [
+        item.job.key for item in repository.list_jobs(status=JobStatus.studying)
+    ] == ["vanhack:2"]
+
+
+def test_the_toast_goes_away_by_itself(window: App) -> None:
+    window.toast.show("Saved.", seconds=0)
+    assert window.toast.visible
+    assert process_until(window, lambda: not window.toast.visible)

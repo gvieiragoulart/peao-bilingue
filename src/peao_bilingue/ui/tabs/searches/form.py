@@ -21,7 +21,9 @@ class SearchForm(ctk.CTkFrame):
         on_save: Callable[[], None],
         on_remove: Callable[[], None],
     ) -> None:
-        super().__init__(master)
+        super().__init__(
+            master, corner_radius=12, border_width=1, border_color=theme.BORDER
+        )
         # The id of the search on screen; None for a new one.
         self.editing: int | None = None
 
@@ -31,24 +33,30 @@ class SearchForm(ctk.CTkFrame):
         self.name = self._entry(_("Name"))
         self.keywords = self._entry(_("Keywords (comma separated)"))
         self.exclude = self._entry(_("Exclude when present (optional)"))
-        Hint(self, _('Careful: "junior" also matches "mentor junior engineers".')).pack(
-            anchor="w", padx=12
-        )
+        Hint(
+            self,
+            _('Careful: "junior" also matches "mentor junior engineers".'),
+            justify="left",
+            wraplength=320,
+        ).pack(anchor="w", padx=12)
 
         ctk.CTkLabel(self, text=_("Sources (none checked = all)")).pack(
             anchor="w", padx=12, pady=(12, 4)
         )
+        # The buttons and the switch from the bottom, so they never get cut off; the
+        # list of sources scrolls in what is left.
+        buttons = ctk.CTkFrame(self, fg_color="transparent")
+        buttons.pack(side="bottom", fill="x", padx=12, pady=12)
+        self.active = ctk.CTkSwitch(self, text=_("Active"))
+        self.active.pack(side="bottom", anchor="w", padx=12, pady=(8, 0))
+        sources = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        sources.pack(fill="both", expand=True, padx=(4, 4))
         self.sources: dict[str, ctk.CTkCheckBox] = {}
         for name in factories.sources.available():
-            box = ctk.CTkCheckBox(self, text=factories.sources.class_of(name).label)
-            box.pack(anchor="w", padx=16, pady=2)
+            box = ctk.CTkCheckBox(sources, text=factories.sources.class_of(name).label)
+            box.pack(anchor="w", padx=8, pady=2)
             self.sources[name] = box
 
-        self.active = ctk.CTkSwitch(self, text=_("Active"))
-        self.active.pack(anchor="w", padx=12, pady=(12, 0))
-
-        buttons = ctk.CTkFrame(self, fg_color="transparent")
-        buttons.pack(fill="x", padx=12, pady=12)
         ctk.CTkButton(buttons, text=_("Save"), width=90, command=on_save).pack(
             side="left"
         )

@@ -196,9 +196,38 @@ class JobsTab(ctk.CTkFrame):
         if status is JobStatus.discarded:
             self._discard_checked()
             return
+        self._mark(keys, status)
+
+    def _mark(self, keys: list[str], status: JobStatus) -> None:
+        """Gives `keys` a status, offering to undo it."""
+        before = {
+            key: item.status
+            for key in keys
+            if (item := self.table.job(key)) is not None
+        }
         self.app.repository.change_statuses(keys, status)
         logger.info("Marked %d job(s) as %s.", len(keys), status)
         self._after_marking(keys, status)
+        self.app.notify(
+            _("{count} job(s) marked as {status}.").format(
+                count=len(keys), status=presentation.job_status_labels()[status]
+            ),
+            (_("Undo"), lambda: self._restore(before)),
+        )
+
+    def _restore(self, before: dict[str, JobStatus]) -> None:
+        """Undo: each job gets back the status it had."""
+        for status in set(before.values()):
+            keys = [key for key, old in before.items() if old is status]
+            self.app.repository.change_statuses(keys, status)
+        logger.info("Restored the status of %d job(s).", len(before))
+        self.refresh()
+        current = self._current
+        if self.dialog.is_open and current and current.job.key in before:
+            self._current = current.model_copy(
+                update={"status": before[current.job.key]}
+            )
+            self.open_job(current.job.key)
 
     def _after_marking(self, keys: list[str], status: JobStatus) -> None:
         self.table.clear_checked()
@@ -218,9 +247,7 @@ class JobsTab(ctk.CTkFrame):
             return
         if not self.app.confirm(_("Discard {count} job(s)?").format(count=len(keys))):
             return
-        self.app.repository.change_statuses(keys, JobStatus.discarded)
-        logger.info("Discarded %d job(s).", len(keys))
-        self._after_marking(keys, JobStatus.discarded)
+        self._mark(keys, JobStatus.discarded)
 
     def _analyze(self) -> None:
         item = self._current

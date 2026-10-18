@@ -7,10 +7,10 @@ import customtkinter as ctk
 
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import theme
-from peao_bilingue.ui.widgets import OutlineButton
+from peao_bilingue.ui.widgets import Card, OutlineButton
 
 
-class SchedulePanel(ctk.CTkFrame):
+class SchedulePanel(Card):
     def __init__(
         self,
         master: Any,
@@ -24,7 +24,7 @@ class SchedulePanel(ctk.CTkFrame):
             self,
             text=_("Daily automatic collection"),
             font=theme.section(),
-        ).pack(side="left", padx=12, pady=10)
+        ).pack(side="left", padx=16, pady=14)
         self.time = ctk.CTkEntry(self, width=70)
         self.time.pack(side="left")
         self.time.insert(0, time)
