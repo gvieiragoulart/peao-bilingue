@@ -16,6 +16,14 @@ def now() -> datetime:
     return datetime.now(tz=ZoneInfo(settings.timezone))
 
 
+def local(moment: datetime) -> datetime:
+    """SQLite keeps no timezone: a date read back is naive, in the zone `now()`
+    wrote it in."""
+    if moment.tzinfo is not None:
+        return moment
+    return moment.replace(tzinfo=ZoneInfo(settings.timezone))
+
+
 class SearchTable(SQLModel, table=True):
     __tablename__ = "search"
 

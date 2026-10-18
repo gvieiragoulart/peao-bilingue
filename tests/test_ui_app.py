@@ -121,7 +121,7 @@ def test_status_filter_and_column_use_labels(
     tab.refresh()
 
     assert tab.table.tree.get_children() == (new.key,)
-    assert tab.table.tree.item(new.key)["values"][4] == "Applied"
+    assert tab.table.tree.item(new.key)["values"][6] == "Applied"
 
 
 def test_invalid_min_fit_warns_without_crashing(window: App) -> None:

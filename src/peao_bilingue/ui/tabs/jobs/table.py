@@ -15,7 +15,10 @@ class JobTable(Table):
             [
                 ("fit", _("Fit"), 45),
                 ("title", _("Job"), 300),
-                ("location", _("Location"), 160),
+                # When we found it, and its age at the source (● = new there).
+                ("found", _("Found"), 80),
+                ("published", _("Published"), 95),
+                ("location", _("Location"), 130),
                 ("source", _("Source"), 80),
                 ("status", _("Status"), 90),
             ],

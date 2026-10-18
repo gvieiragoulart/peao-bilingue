@@ -3,11 +3,24 @@
 import re
 import unicodedata
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel
+
+# A job published at most this long before we found it is new at the source.
+NEW_AT_SOURCE = timedelta(days=3)
+
+_AGE = re.compile(r"^(\d+)\s*(min|h|d|w|mo|y)\s+ago$", re.IGNORECASE)
+_AGE_UNITS = {
+    "min": timedelta(minutes=1),
+    "h": timedelta(hours=1),
+    "d": timedelta(days=1),
+    "w": timedelta(weeks=1),
+    "mo": timedelta(days=30),
+    "y": timedelta(days=365),
+}
 
 
 def strip_accents(text: str) -> str:
@@ -20,6 +33,23 @@ def strip_accents(text: str) -> str:
 def _only_words(text: str) -> str:
     # "Full-stack" and "Full Stack", "Lemon.io" and "lemon io": the same thing.
     return " ".join(re.findall(r"[a-z0-9]+", strip_accents(text)))
+
+
+def published_on(published_at: str | None, read_at: datetime) -> datetime | None:
+    """When the source published the job; None when it doesn't say.
+
+    The APIs give a date (ISO; a naive one is UTC). VanHack only shows the age ("20 d
+    ago", "3 mo ago"), relative to when the card was read: `read_at`."""
+    if not published_at:
+        return None
+    try:
+        published = datetime.fromisoformat(published_at)
+    except ValueError:
+        age = _AGE.match(published_at.strip())
+        if age is None:
+            return None
+        return read_at - int(age[1]) * _AGE_UNITS[age[2].lower()]
+    return published if published.tzinfo else published.replace(tzinfo=UTC)
 
 
 class JobStatus(StrEnum):
@@ -107,9 +137,22 @@ class ListedJob(BaseModel):
     status: JobStatus
     fit_score: int | None
     searches: list[str]
-    seen_at: datetime
+    seen_at: datetime  # when we found it (timezone-aware)
     # The same job on other sites: kept once, with the other links here.
     also_on: list[Posting] = []
+
+    @property
+    def published(self) -> datetime | None:
+        return published_on(self.job.published_at, self.seen_at)
+
+    @property
+    def new_at_source(self) -> bool | None:
+        """Published at most NEW_AT_SOURCE before we found it; None when the source
+        gives no date. A job can be new to us and old at the source."""
+        published = self.published
+        if published is None:
+            return None
+        return self.seen_at - published <= NEW_AT_SOURCE
 
 
 class JobRepository(ABC):
