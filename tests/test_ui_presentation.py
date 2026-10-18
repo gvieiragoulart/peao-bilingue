@@ -9,6 +9,7 @@ from peao_bilingue import factories
 from peao_bilingue.domain.analysis import SavedAnalysis
 from peao_bilingue.domain.collection import Run, RunStatus, Trigger
 from peao_bilingue.domain.jobs import JobStatus, ListedJob, Posting
+from peao_bilingue.domain.schedule import ScheduleStatus
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.ui import presentation
 
@@ -234,3 +235,33 @@ def test_source_features() -> None:
         "reads your profile",
     ]
     assert presentation.source_features(remotive) == ["no account needed"]
+
+
+def test_badge_is_empty_for_none_and_capped() -> None:
+    assert presentation.badge(0) == ""
+    assert presentation.badge(7) == "7"
+    assert presentation.badge(150) == "99+"
+
+
+def test_schedule_line() -> None:
+    assert presentation.schedule_line(None) == "No daily collection"
+    status = ScheduleStatus(time="08:00", state="Ready")
+    assert presentation.schedule_line(status) == "Daily collection at 08:00"
+
+
+def test_last_run_line() -> None:
+    zone = ZoneInfo("America/Sao_Paulo")
+    now = datetime(2026, 10, 18, 12, 0, tzinfo=zone)
+    run = Run(
+        id=1,
+        trigger=Trigger.scheduled,
+        status=RunStatus.ok,
+        started_at=datetime(2026, 10, 18, 8, 2, tzinfo=zone),
+        new_jobs=12,
+    )
+    assert presentation.last_run_line(None) == "No collection yet"
+    assert presentation.last_run_line(run, now) == "Last: today, 08:02 · 12 new"
+    failed = run.model_copy(update={"status": RunStatus.login_required})
+    assert (
+        presentation.last_run_line(failed, now) == "Last: today, 08:02 · login required"
+    )
