@@ -304,6 +304,23 @@ MESSAGES: dict[str, str] = {
     "The minimum fit must be a number from 0 to 100.": (
         "O fit mínimo precisa ser um número de 0 a 100."
     ),
+    "Found {found} · published at the source {published}.": (
+        "Encontrada {found} · publicada na fonte {published}."
+    ),
+    "Found {found} · the source doesn't give the publication date.": (
+        "Encontrada {found} · a fonte não informa a data de publicação."
+    ),
+    "{mark} New at the source: published at most {days} days before we found it.": (
+        "{mark} Nova na fonte: publicada até {days} dias antes de a encontrarmos."
+    ),
+    # --- window: how long ago -----------------------------------------------------
+    "today": "hoje",
+    "yesterday": "ontem",
+    "{days} d ago": "há {days} d",
+    "1 month ago": "há 1 mês",
+    "{months} months ago": "há {months} meses",
+    "1 year ago": "há 1 ano",
+    "{years} years ago": "há {years} anos",
     # --- window: Jobs tab ---------------------------------------------------------
     "(none)": "(nenhum)",
     "Search the title, company, location, skills and description (Enter to filter)": (
@@ -314,6 +331,8 @@ MESSAGES: dict[str, str] = {
     "Filter": "Filtrar",
     "Fit": "Fit",
     "Job": "Vaga",
+    "Found": "Encontrada",
+    "Published": "Publicada",
     "Location": "Local",
     "Analyze": "Analisar",
     "Open job": "Abrir vaga",

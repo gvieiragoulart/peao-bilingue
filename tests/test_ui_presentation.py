@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -36,14 +36,57 @@ def saved(**overrides: Any) -> SavedAnalysis:
 
 
 def test_job_row_without_analysis_has_empty_fit() -> None:
-    row = presentation.job_row(listed())
+    row = presentation.job_row(listed(), NOW)
     assert row[0] == ""
     assert row[1] == "Fullstack Staff Engineer"
-    assert row[3] == "vanhack" and row[4] == "New"
+    assert row[5] == "vanhack" and row[6] == "New"
 
 
 def test_job_row_shows_fit() -> None:
-    assert presentation.job_row(listed(fit=82))[0] == "82"
+    assert presentation.job_row(listed(fit=82), NOW)[0] == "82"
+
+
+def test_job_row_shows_when_found_and_age_at_the_source() -> None:
+    later = NOW + timedelta(days=2)
+    fresh = presentation.job_row(listed(published_at="1 d ago"), later)
+    old = presentation.job_row(listed(published_at="3 mo ago"), later)
+    unknown = presentation.job_row(listed(), later)
+
+    assert fresh[2] == "2 d ago"
+    assert fresh[3] == "● 3 d ago"  # new at the source when we found it
+    assert old[3] == "3 months ago"
+    assert unknown[3] == "?"
+
+
+@pytest.mark.parametrize(
+    ("when", "expected"),
+    [
+        (NOW, "today"),
+        (NOW.replace(hour=0, minute=1), "today"),
+        (NOW.replace(day=5, hour=23, minute=59), "yesterday"),
+        (NOW - timedelta(days=29), "29 d ago"),
+        (NOW - timedelta(days=30), "1 month ago"),
+        (NOW - timedelta(days=95), "3 months ago"),
+        (NOW - timedelta(days=365), "1 year ago"),
+        (NOW - timedelta(days=800), "2 years ago"),
+        (NOW + timedelta(hours=1), "today"),
+    ],
+)
+def test_ago_counts_calendar_days(when: datetime, expected: str) -> None:
+    assert presentation.ago(when, NOW) == expected
+
+
+def test_detail_shows_the_dates_and_explains_the_mark() -> None:
+    fresh = presentation.job_detail(listed(published_at="1 d ago"), None, NOW)
+    assert "Found today · published at the source yesterday." in fresh
+    assert "● New at the source: published at most 3 days" in fresh
+
+    old = presentation.job_detail(listed(published_at="3 mo ago"), saved(), NOW)
+    assert "published at the source 3 months ago." in old
+    assert "New at the source" not in old
+
+    unknown = presentation.job_detail(listed(), None, NOW)
+    assert "the source doesn't give the publication date" in unknown
 
 
 def test_every_status_has_a_label_and_comes_back_from_it() -> None:

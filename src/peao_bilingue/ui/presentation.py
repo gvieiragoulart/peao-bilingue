@@ -1,13 +1,77 @@
 """Turns entities into text and table rows. No Tk: testable directly."""
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import JobAnalysis, SavedAnalysis
 from peao_bilingue.domain.collection import Run, RunStatus, Trigger
-from peao_bilingue.domain.jobs import Job, JobStatus, ListedJob, Posting
+from peao_bilingue.domain.jobs import NEW_AT_SOURCE, Job, JobStatus, ListedJob, Posting
 from peao_bilingue.domain.privacy import Removed
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
 
 TABLE_ERROR_SIZE = 80
+NEW_MARK = "●"
+
+
+def _now() -> datetime:
+    return datetime.now(tz=ZoneInfo(settings.timezone))
+
+
+def ago(when: datetime, now: datetime) -> str:
+    """How long ago, by calendar day in the user's timezone: "today", "3 d ago"..."""
+    zone = ZoneInfo(settings.timezone)
+    days = (now.astimezone(zone).date() - when.astimezone(zone).date()).days
+    if days <= 0:
+        return _("today")
+    if days == 1:
+        return _("yesterday")
+    if days < 30:
+        return _("{days} d ago").format(days=days)
+    if days < 365:
+        months = days // 30
+        if months == 1:
+            return _("1 month ago")
+        return _("{months} months ago").format(months=months)
+    years = days // 365
+    if years == 1:
+        return _("1 year ago")
+    return _("{years} years ago").format(years=years)
+
+
+def published_label(item: ListedJob, now: datetime) -> str:
+    """The age at the source, marked when the job was new there when we found it."""
+    published = item.published
+    if published is None:
+        return "?"
+    age = ago(published, now)
+    return f"{NEW_MARK} {age}" if item.new_at_source else age
+
+
+def _dates(item: ListedJob, now: datetime) -> list[str]:
+    found = ago(item.seen_at, now)
+    published = item.published
+    if published is None:
+        lines = [
+            _("Found {found} · the source doesn't give the publication date.").format(
+                found=found
+            )
+        ]
+    else:
+        lines = [
+            _("Found {found} · published at the source {published}.").format(
+                found=found, published=ago(published, now)
+            )
+        ]
+    if item.new_at_source:
+        lines.append(
+            _(
+                "{mark} New at the source: published at most {days} days before we "
+                "found it."
+            ).format(mark=NEW_MARK, days=NEW_AT_SOURCE.days)
+        )
+    return lines
 
 
 def all_label() -> str:
@@ -48,10 +112,13 @@ def status_from_label(label: str) -> JobStatus | None:
     return None
 
 
-def job_row(item: ListedJob) -> tuple[str, ...]:
+def job_row(item: ListedJob, now: datetime | None = None) -> tuple[str, ...]:
+    now = now or _now()
     return (
         "" if item.fit_score is None else str(item.fit_score),
         item.job.title,
+        ago(item.seen_at, now),
+        published_label(item, now),
         item.job.location or "",
         item.job.source,
         job_status_labels()[item.status],
@@ -66,7 +133,10 @@ def _also_on(postings: list[Posting]) -> list[str]:
 
 
 def analysis_text(
-    job: Job, analysis: JobAnalysis, also_on: list[Posting] | None = None
+    job: Job,
+    analysis: JobAnalysis,
+    also_on: list[Posting] | None = None,
+    dates: list[str] | None = None,
 ) -> str:
     details = " | ".join(
         part
@@ -85,6 +155,7 @@ def analysis_text(
             details,
             job.url,
             *_also_on(also_on or []),
+            *(dates or []),
             "",
             _("Fit: {score}/100").format(score=analysis.fit_score),
             "",
@@ -106,13 +177,17 @@ def analysis_text(
     )
 
 
-def job_detail(item: ListedJob, analysis: SavedAnalysis | None) -> str:
+def job_detail(
+    item: ListedJob, analysis: SavedAnalysis | None, now: datetime | None = None
+) -> str:
+    dates = _dates(item, now or _now())
     if analysis is None:
         return "\n".join(
             [
                 item.job.title,
                 item.job.url,
                 *_also_on(item.also_on),
+                *dates,
                 "",
                 _(
                     "Not analyzed yet: pick the LLM and the profile, then click Analyze."
@@ -138,7 +213,7 @@ def job_detail(item: ListedJob, analysis: SavedAnalysis | None) -> str:
             "The {source} profile changed after this analysis: analyze again to update "
             "it."
         ).format(source=analysis.profile_source)
-    text = analysis_text(item.job, analysis.analysis, item.also_on)
+    text = analysis_text(item.job, analysis.analysis, item.also_on, dates)
     return f"{text}\n\n{footer}"
 
 

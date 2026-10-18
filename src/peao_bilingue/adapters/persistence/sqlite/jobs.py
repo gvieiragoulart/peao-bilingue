@@ -5,7 +5,7 @@ from sqlmodel import Session, col, select
 
 from peao_bilingue.adapters.persistence.sqlite.analyses import last_analysis
 from peao_bilingue.adapters.persistence.sqlite.database import BaseSQLite
-from peao_bilingue.adapters.persistence.sqlite.tables import JobTable
+from peao_bilingue.adapters.persistence.sqlite.tables import JobTable, local
 from peao_bilingue.domain.jobs import (
     Job,
     JobRepository,
@@ -98,7 +98,7 @@ class JobsSQLite(BaseSQLite, JobRepository):
                         status=row.status,
                         fit_score=fit,
                         searches=row.searches or [],
-                        seen_at=row.seen_at,
+                        seen_at=local(row.seen_at),
                         also_on=_duplicates(session, row.key),
                     )
                 )

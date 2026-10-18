@@ -98,6 +98,17 @@ def test_lists_jobs_with_current_fit(repository: SQLiteRepository) -> None:
     assert jobs["2"].fit_score is None
 
 
+def test_listed_job_knows_when_it_was_found_and_if_new_at_source(
+    repository: SQLiteRepository,
+) -> None:
+    repository.save_job(job("1", published_at="1 d ago"), ["Python"])
+
+    [listed] = repository.list_jobs()
+    # SQLite keeps no timezone: it comes back in the one it was written in.
+    assert listed.seen_at.tzinfo is not None
+    assert listed.new_at_source is True
+
+
 def test_current_fit_is_from_latest_analysis(
     repository: SQLiteRepository,
 ) -> None:
