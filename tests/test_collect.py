@@ -219,6 +219,13 @@ async def test_run_is_kept_in_history(
     assert registered.status == RunStatus.ok and registered.finished_at is not None
 
 
+async def test_run_records_its_sources(with_search: SQLiteRepository) -> None:
+    await run_collection(
+        services(with_search, FakeSource(name="remotive"), FakeSource(name="vanhack"))
+    )
+    assert with_search.list_runs()[0].sources == ["remotive", "vanhack"]
+
+
 async def test_lock_prevents_concurrent_run(
     with_search: SQLiteRepository, monkeypatch: pytest.MonkeyPatch
 ) -> None:

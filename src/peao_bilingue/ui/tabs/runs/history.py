@@ -15,10 +15,11 @@ class RunHistory(Table):
             [
                 ("started", _("Start"), 90),
                 ("trigger", _("Trigger"), 80),
+                ("sources", _("Sources"), 150),
                 ("status", _("Status"), 110),
                 ("listed", _("Listed"), 70),
                 ("new", _("New"), 60),
-                ("error", _("Error"), 440),
+                ("error", _("Error"), 330),
             ],
             height=220,
         )

@@ -90,19 +90,33 @@ class RunsTab(ctk.CTkFrame):
 
     def refresh(self) -> None:
         self.history.show(self.app.repository.list_runs(50))
+        self.collect_bar.set_sources(
+            {presentation.source_label(name): name for name in settings.enabled_sources}
+        )
 
     def add_log(self, line: str) -> None:
         self.log.add(line)
 
     def _collect(self) -> None:
+        # None = every enabled source; one picked = only it.
+        source = self.collect_bar.chosen_source()
         try:
-            services = build_services(repository=self.app.repository)
+            services = build_services(
+                sources=[source] if source else None, repository=self.app.repository
+            )
         except Exception as failure:  # noqa: BLE001 - a misconfigured source is a notice
             self.app.show_error(failure)
             return
 
         self.collect_bar.set_busy(True)
-        self.app.log(_("Collection started."))
+        if source:
+            self.app.log(
+                _("Collection started: {source}.").format(
+                    source=presentation.source_label(source)
+                )
+            )
+        else:
+            self.app.log(_("Collection started."))
 
         def finish(run: Run) -> None:
             self.collect_bar.set_busy(False)

@@ -13,14 +13,19 @@ from peao_bilingue.domain.collection import (
 from peao_bilingue.i18n import _
 
 
+def _to_run(row: RunTable) -> Run:
+    # Rows from before the `sources` column have it as NULL.
+    return Run.model_validate({**row.model_dump(), "sources": row.sources or []})
+
+
 class RunsSQLite(BaseSQLite, RunRepository):
-    def start_run(self, trigger: Trigger) -> Run:
+    def start_run(self, trigger: Trigger, sources: list[str] | None = None) -> Run:
         with self._session() as session:
-            row = RunTable(trigger=trigger)
+            row = RunTable(trigger=trigger, sources=sources or [])
             session.add(row)
             session.commit()
             session.refresh(row)
-            return Run.model_validate(row, from_attributes=True)
+            return _to_run(row)
 
     def finish_run(self, run: Run) -> None:
         with self._session() as session:
@@ -48,7 +53,4 @@ class RunsSQLite(BaseSQLite, RunRepository):
     def list_runs(self, limit: int = 20) -> list[Run]:
         query = select(RunTable).order_by(col(RunTable.id).desc()).limit(limit)
         with self._session() as session:
-            return [
-                Run.model_validate(row, from_attributes=True)
-                for row in session.exec(query)
-            ]
+            return [_to_run(row) for row in session.exec(query)]

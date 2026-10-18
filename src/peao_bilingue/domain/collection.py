@@ -6,7 +6,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import ClassVar, Self
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from peao_bilingue.domain.jobs import Job, JobSummary
 
@@ -33,6 +33,8 @@ class Run(BaseModel):
     new_jobs: int = 0
     error: str | None = None
     artifact: str | None = None
+    # Names of the sources the run collected from (empty in runs from before the field).
+    sources: list[str] = Field(default_factory=list)
 
 
 class JobSource(ABC):
@@ -86,7 +88,7 @@ class Lock(ABC):
 
 class RunRepository(ABC):
     @abstractmethod
-    def start_run(self, trigger: Trigger) -> Run: ...
+    def start_run(self, trigger: Trigger, sources: list[str] | None = None) -> Run: ...
 
     @abstractmethod
     def finish_run(self, run: Run) -> None: ...

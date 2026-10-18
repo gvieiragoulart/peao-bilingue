@@ -101,7 +101,7 @@ async def run_collection(
         orphans = runs.close_orphan_runs(interrupted_message())
         if orphans:
             logger.warning("%d earlier run(s) marked as interrupted.", orphans)
-        run = runs.start_run(trigger)
+        run = runs.start_run(trigger, [source.name for source in services.sources])
         state = _State()
         try:
             await _run(services, run, state, notify=notify)

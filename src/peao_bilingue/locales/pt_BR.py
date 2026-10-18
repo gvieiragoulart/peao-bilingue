@@ -455,6 +455,8 @@ MESSAGES: dict[str, str] = {
     "Collect now": "Coletar agora",
     "Collecting…": "Coletando…",
     "Collection started.": "Coleta iniciada.",
+    "Collection started: {source}.": "Coleta iniciada: {source}.",
+    "All enabled sources": "Todas as fontes ativas",
     "Collection {status}: {listed} listed, {new} new.": (
         "Coleta {status}: {listed} listada(s), {new} nova(s)."
     ),

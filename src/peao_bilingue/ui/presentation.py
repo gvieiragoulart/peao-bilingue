@@ -4,10 +4,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from peao_bilingue import factories
 from peao_bilingue.application.filters import matched_keywords
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import JobAnalysis, SavedAnalysis
 from peao_bilingue.domain.collection import Run, RunStatus, Trigger
+from peao_bilingue.domain.errors import UnknownName
 from peao_bilingue.domain.jobs import NEW_AT_SOURCE, Job, JobStatus, ListedJob, Posting
 from peao_bilingue.domain.privacy import Removed
 from peao_bilingue.domain.searches import Search
@@ -108,6 +110,15 @@ def run_status_labels() -> dict[RunStatus, str]:
         RunStatus.error: _("error"),
         RunStatus.login_required: _("login required"),
     }
+
+
+def source_label(name: str) -> str:
+    """The source's display name; the bare name if its adapter no longer exists (an
+    old run, a stale setting)."""
+    try:
+        return factories.sources.class_of(name).label
+    except UnknownName:
+        return name
 
 
 def trigger_labels() -> dict[Trigger, str]:
@@ -285,6 +296,7 @@ def run_row(run: Run) -> tuple[str, ...]:
     return (
         f"{run.started_at:%d/%m %H:%M}",
         trigger_labels()[run.trigger],
+        ", ".join(source_label(name) for name in run.sources),
         run_status_labels()[run.status],
         str(run.listed_jobs),
         str(run.new_jobs),
