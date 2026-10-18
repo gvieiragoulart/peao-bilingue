@@ -182,6 +182,13 @@ class Settings(BaseSettings):
     # Himalayas (public API): only jobs open to candidates from this country (ISO code)
     # or worldwide; empty = no filter, including US-only jobs.
     himalayas_country: str = "BR"
+    # GitHub job repositories (public API): "owner/repo" of each community's board.
+    github_job_repositories: list[str] = [
+        "backend-br/vagas",
+        "phpdevbr/vagas",
+        "nodejsdevbr/vagas",
+        "frontendbr/vagas",
+    ]
 
     timezone: str = "America/Sao_Paulo"
     collection_time: str = "08:00"
