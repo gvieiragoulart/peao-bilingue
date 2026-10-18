@@ -136,7 +136,9 @@ ticks every listed job); a click on the box only toggles it, elsewhere it opens 
 refresh keeps the boxes of jobs still listed. "Descartar selecionadas" asks (`App.confirm`) and
 calls `JobRepository.change_statuses` (one transaction, all or none). Each `JobStatus` carries
 its display color (`JobStatus.color`, light/dark pair): the Status column draws it as a chip and
-the "Mark as" buttons use it as their border.
+the "Mark as" buttons use it as their border. A click on the Published header cycles ↕ (the
+repository's order, newest found first) → ▼ newest at the source → ▲ oldest → ↕, sorted in the
+table (`JobTable.sort_by_published`), kept across refreshes; jobs with no date go last.
 
 **Dependency rule:** `domain` imports nothing from the project except `i18n` (a leaf utility for
 user-facing error messages); `application` only knows `domain`; adapters implement ports; only

@@ -257,6 +257,41 @@ def test_refresh_keeps_the_boxes_of_jobs_still_listed(
     assert tab.table.checked() == ["vanhack:1"]
 
 
+def test_published_header_sorts_by_date_at_the_source(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("old", published_at="2026-09-01"), ["Python"])
+    repository.save_job(job("undated", published_at=None), ["Python"])
+    repository.save_job(job("recent", published_at="2026-10-10"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    table = tab.table
+    found_order = table.keys()
+    assert table.header_title("published") == "Published ↕"
+
+    # The x of the Published header's cell.
+    columns = [column.identifier for column in table._columns]
+    widths = table._widths()
+    x = sum(widths[: columns.index("published")]) + 5
+
+    table._click_header(click_at(x, 5))
+    assert table.keys() == ["vanhack:recent", "vanhack:old", "vanhack:undated"]
+    assert table.header_title("published") == "Published ▼"
+
+    table._click_header(click_at(x, 5))
+    assert table.keys() == ["vanhack:old", "vanhack:recent", "vanhack:undated"]
+    assert table.header_title("published") == "Published ▲"
+
+    # Kept across a refresh.
+    tab.refresh()
+    assert table.keys() == ["vanhack:old", "vanhack:recent", "vanhack:undated"]
+
+    # A third click goes back to the order they were found in.
+    table._click_header(click_at(x, 5))
+    assert table.keys() == found_order
+    assert table.order() is None
+
+
 def test_invalid_min_fit_warns_without_crashing(window: App) -> None:
     tab = window.panels["jobs"]
     tab.filters.score.insert(0, "abc")
