@@ -557,6 +557,24 @@ functionality"; **Gabriel read the full text and approved this source** (2026-10
 keeps its Strider link. The fixtures are the real pages trimmed to the JSON-LD and `<main>`
 (`tests/fixtures/strider/README.md`).
 
+**GitHub job repositories** (`adapters/sources/github.py`, source `github`, added 2026-10-18;
+`GET https://api.github.com/repos/<owner/repo>/issues?state=open&per_page=100`). Brazilian
+communities post jobs as issues from a template, tagged with labels (seniority, CLT/PJ,
+Remoto, technologies). backend-br/vagas is MIT and its README points at an outside aggregator
+(openings.dev) that links back to each issue, as this one does. The repositories are the
+`github_job_repositories` setting (default backend-br, phpdevbr, nodejsdevbr, frontendbr; on
+2026-10-18 laravelbrasil, python-brasil, golang-br and devopsbr had no such repository).
+Unauthenticated, GitHub allows 60 calls an hour per IP: **one call per repository per
+collection**, a 1 s pause, the 6 h cache. Pull requests come in the same list and are skipped.
+The title is "[place] role na Company" (or "@"/"at"): the place in brackets becomes the
+location and the last "na X" the company (a trailing "(PJ, LATAM)" dropped); otherwise no
+company, since " - X" is as often a technology. Labels are compared without accents (the code
+can't have them): seniority and contract go to `extras`, the rest are skills; the work mode
+comes from a label or, without one, from the title. The body loses the template's HTML
+comments and goes through `remove_contact_data` (recruiters' emails, phones and links; the
+issue link stays). Fixtures: real responses trimmed to the fields read, with emails and
+phones swapped for documentation values (`tests/fixtures/github/README.md`).
+
 ---
 
 ## Brazilian sites (Phase 6): what the terms allow

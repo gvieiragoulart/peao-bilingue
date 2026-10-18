@@ -167,6 +167,14 @@ MESSAGES: dict[str, str] = {
         "Lê a página pública de vagas; não precisa de conta."
     ),
     "the job's requirements": "os requisitos da vaga",
+    "GitHub job repositories (Brazilian communities)": (
+        "Repositórios de vagas no GitHub (comunidades brasileiras)"
+    ),
+    "Jobs posted as issues in Brazilian developer communities' repositories "
+    "(backend-br/vagas and others). Public API, no account.": (
+        "Vagas publicadas como issues nos repositórios das comunidades brasileiras de "
+        "desenvolvimento (backend-br/vagas e outros). API pública, sem conta."
+    ),
     # --- VanHack ------------------------------------------------------------------
     "Jobs abroad with relocation support. Uses your account: log in once by hand and "
     "the robot reuses the saved session.": (
