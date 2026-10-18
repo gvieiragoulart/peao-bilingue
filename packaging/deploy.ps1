@@ -14,7 +14,8 @@ MSIX app, and a folder its processes create under AppData goes to a private
 copy only they see (that is how the first migration "vanished").
 
 .PARAMETER SkipTests
-Builds without running the test suite first.
+Builds without running the test suite first (nor checking Playwright's Chromium,
+which only the tests use).
 
 .PARAMETER BuildOnly
 Builds dist\PeaoBilingue and stops: nothing is installed.
@@ -125,6 +126,11 @@ function Install-Build {
 
 function Invoke-Build {
     if (-not $SkipTests) {
+        # The integration tests launch Playwright's own Chromium (the app uses the
+        # installed Chrome). Each Playwright update wants a new revision; with it in
+        # place this only checks, without downloading.
+        Write-Step "Checking Playwright's Chromium (for the tests)"
+        Invoke-Native "Installing Playwright's Chromium" { uv run playwright install chromium }
         Write-Step 'Running the tests'
         Invoke-Native 'The tests' { uv run pytest -q }
     }

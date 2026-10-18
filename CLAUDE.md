@@ -361,7 +361,10 @@ columns, the settings and the CLI commands were in Portuguese. The update migrat
   (the window or a collection) unless `-Force`; `-SkipTests`, `-BuildOnly`, `-InstallDir`.
   ASCII only (PowerShell 5.1 reads a BOM-less script in the ANSI code page). Gabriel runs it from
   his own terminal: from the agent's shell the install would land in the MSIX container (below).
-  Verified on 2026-10-18 with `-InstallDir` pointing at a temp folder.
+  Verified on 2026-10-18 with `-InstallDir` pointing at a temp folder. Before the tests it runs
+  `playwright install chromium` (a no-op when present): Playwright's browsers live in
+  `%LOCALAPPDATA%\ms-playwright`, and the ones installed from the agent's shell are in the MSIX
+  container, so on Gabriel's first run the 27 `page` tests failed with "Executable doesn't exist".
 - **Claude desktop is MSIX:** a **new** folder created in `AppData` by a process started from the
   agent's shell (the .exe included) goes to `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\...`,
   which only the agent sees. That's how the first migration "vanished": the scheduled task
