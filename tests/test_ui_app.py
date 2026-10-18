@@ -190,10 +190,22 @@ def test_status_filter_and_column_use_labels(
     assert tab.table.row(new.key)[-1] == "Applied"
 
 
+def test_status_filter_starts_on_new(window: App, repository: SQLiteRepository) -> None:
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2"), ["Python"])
+    repository.change_status("vanhack:2", JobStatus.studying)
+    tab = window.panels["jobs"]
+    tab.refresh()
+
+    assert tab.filters.status.get() == "New"
+    assert tab.table.keys() == ["vanhack:1"]
+
+
 def test_status_is_drawn_as_a_chip(window: App, repository: SQLiteRepository) -> None:
     new = with_analyzed_job(repository)
     repository.change_status(new.key, JobStatus.studying)
     tab = window.panels["jobs"]
+    tab.filters.status.set("All")
     tab.refresh()
 
     assert tab.table.status_chip(new.key) == "Studying"
@@ -240,9 +252,50 @@ def test_discards_the_selected_jobs_at_once(
     assert window.notices["questions"] == ["Discard 2 job(s)?"]
     discarded = repository.list_jobs(status=JobStatus.discarded)
     assert sorted(item.job.key for item in discarded) == ["vanhack:1", "vanhack:3"]
-    assert tab.table.status_chip("vanhack:1") == "Discarded"
+    assert tab.table.keys() == ["vanhack:2"]  # the list shows only the new ones
     assert tab.table.checked() == []
     assert tab.discard_checked.cget("state") == "disabled"
+
+
+def test_discarding_the_open_job_closes_the_panel(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    tab.open_job("vanhack:1")
+    window.update()
+
+    tab._change_status(JobStatus.discarded)
+
+    assert not tab.dialog.is_open
+    assert not window.bind("<Escape>")
+    assert tab.table.keys() == ["vanhack:2"]
+    assert window.notices["questions"] == []  # Undo instead of asking first
+    assert window.toast.message.cget("text") == "Job discarded."
+
+    window.toast.action.invoke()  # Undo
+
+    assert sorted(tab.table.keys()) == ["vanhack:1", "vanhack:2"]
+    assert repository.list_jobs(status=JobStatus.discarded) == []
+
+
+def test_discarding_the_open_job_from_the_selection_closes_the_panel(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    tab.open_job("vanhack:1")
+    window.update()
+    tab.table.toggle("vanhack:1")
+
+    tab._discard_checked()
+
+    assert not tab.dialog.is_open
+    assert tab.table.keys() == ["vanhack:2"]
 
 
 def test_refresh_keeps_the_boxes_of_jobs_still_listed(
@@ -307,6 +360,7 @@ def test_marking_status_saves_and_keeps_selection(
 ) -> None:
     new = with_analyzed_job(repository)
     tab = window.panels["jobs"]
+    tab.filters.status.set("All")
     tab.refresh()
     tab.open_job(new.key)
     window.update()
@@ -316,6 +370,25 @@ def test_marking_status_saves_and_keeps_selection(
     assert repository.list_jobs(status=JobStatus.applied)[0].job.key == new.key
     assert tab.table.selected() == new.key
     assert tab.dialog.is_open
+    assert tab.dialog.status_chip.cget("text") == "Applied"
+    applied = tab.preview.status_buttons.buttons[JobStatus.applied]
+    assert applied.cget("fg_color") != "transparent"
+
+
+def test_marked_job_that_left_the_list_stays_open_with_its_status(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("1"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()  # the filter shows only the new ones
+    tab.open_job("vanhack:1")
+    window.update()
+
+    tab._change_status(JobStatus.studying)
+
+    assert tab.table.keys() == []
+    assert tab.dialog.is_open
+    assert tab.dialog.status_chip.cget("text") == "Studying"
 
 
 def test_creates_search_from_screen(window: App, repository: SQLiteRepository) -> None:
@@ -1001,6 +1074,7 @@ def test_the_panel_swaps_to_another_job_while_open(
     repository.save_job(job("2", "Data Engineer"), ["Python"])
     repository.change_status("vanhack:2", JobStatus.studying)
     tab = window.panels["jobs"]
+    tab.filters.status.set("All")
     tab.refresh()
 
     tab.open_job(analyzed.key)
@@ -1023,6 +1097,7 @@ def test_marking_several_jobs_can_be_undone(
         repository.save_job(job(external_id), ["Python"])
     repository.change_status("vanhack:2", JobStatus.studying)
     tab = window.panels["jobs"]
+    tab.filters.status.set("All")
     tab.refresh()
     tab.table.toggle("vanhack:1")
     tab.table.toggle("vanhack:2")

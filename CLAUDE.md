@@ -153,14 +153,17 @@ search, `presentation.search_colors`; `filters.matched_keywords`) and the status
 the fit's color by range (`presentation.fit_color`: ≥75, 50–74, <50). It is **drawn on a
 `tk.Canvas`** (`ui/tabs/jobs/table.py`): a `ttk.Treeview` only colors whole rows, and a row of
 CustomTkinter widgets per job took 45 s for 500 jobs (the Canvas: 0.24 s). The filters apply on
-every change (status as a `CTkSegmentedButton`; Enter in the search box, Ctrl+F focuses it).
+every change (status as a `CTkSegmentedButton`, starting on "New": what's left to review; Enter
+in the search box, Ctrl+F focuses it).
 A click opens the job's **side panel** (`ui/tabs/jobs/dialog.py`, still `JobDialog`) **inside the
 window**, placed on the right (`WIDTH` of the tab; not a `CTkToplevel`, for the same reason as
 the guide); the table stays usable and a click on another row shows that job. It shows
 `presentation.job_panel` (a `JobPanel`): status chip, facts, the fit as a ring (`FitRing`, a
 Canvas arc) with its label and summary, the analysis in parts behind a segmented button
 (`preview.pick_section("questions")`...), the outdated-profile banner, and a footer with the
-LLM/profile pickers, Analyze, Open and the status pills. Esc or ✕ closes it. Generated mouse
+LLM/profile pickers, Analyze, Open and the status pills. Esc or ✕ closes it. Marking a status
+keeps it open, showing the new one, even when the job leaves the filtered list; **discarding
+closes it** (from the pills or the selection bar) and the toast offers Undo. Generated mouse
 and key events don't reach the hidden test window: the tests call the click handler and check
 the Esc binding.
 **Selection and status colors (2026-10-18):** the first column is a box per row (the header's
