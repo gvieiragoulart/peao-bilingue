@@ -6,6 +6,7 @@ from typing import Any
 import customtkinter as ctk
 
 from peao_bilingue.i18n import _
+from peao_bilingue.ui.widgets import OutlineButton
 
 
 class SchedulePanel(ctk.CTkFrame):
@@ -29,12 +30,10 @@ class SchedulePanel(ctk.CTkFrame):
         ctk.CTkButton(self, text=_("Schedule"), width=90, command=on_schedule).pack(
             side="left", padx=6
         )
-        ctk.CTkButton(
+        OutlineButton(
             self,
             text=_("Cancel"),
             width=90,
-            fg_color="transparent",
-            border_width=1,
             command=on_cancel,
         ).pack(side="left")
         self.status = ctk.CTkLabel(self, text=_("Checking…"), text_color="gray55")
