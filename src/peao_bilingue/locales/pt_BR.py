@@ -185,6 +185,26 @@ MESSAGES: dict[str, str] = {
     ),
     "company boards": "páginas das empresas",
     "Jobicy (public API, remote jobs)": "Jobicy (API pública, vagas remotas)",
+    "Get on Board (public API, remote in LATAM)": (
+        "Get on Board (API pública, remotas na América Latina)"
+    ),
+    "Fully remote tech jobs from a Latin American job board, searched once per "
+    "keyword of your searches.": (
+        "Vagas de tecnologia 100% remotas de um site de vagas da América Latina, "
+        "buscadas uma vez por palavra-chave das suas buscas."
+    ),
+    "USD {amount}/month": "USD {amount}/mês",
+    "Hacker News: Who is hiring? (monthly thread)": (
+        "Hacker News: Who is hiring? (tópico mensal)"
+    ),
+    "The monthly thread where companies post jobs on Hacker News; only posts "
+    "open to Brazil, Latin America or anywhere.": (
+        "O tópico mensal em que empresas publicam vagas no Hacker News; só os anúncios "
+        "abertos ao Brasil, à América Latina ou ao mundo todo."
+    ),
+    "Hacker News: no Who is hiring? thread found.": (
+        "Hacker News: nenhum tópico Who is hiring? encontrado."
+    ),
     "Remote jobs open to Brazil, Latin America or anywhere, from the last 7 days.": (
         "Vagas remotas abertas ao Brasil, à América Latina ou ao mundo todo, dos "
         "últimos 7 dias."

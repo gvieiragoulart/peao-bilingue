@@ -184,6 +184,18 @@ class Settings(BaseSettings):
     himalayas_country: str = "BR"
     # Jobicy (public API): its `geo` filter; "brazil" includes LATAM and anywhere jobs.
     jobicy_geo: str = "brazil"
+    # Hacker News "Who is hiring?": only posts naming one of these (without accents).
+    # Not "visa": posts say they can't sponsor one as often as they offer it.
+    hackernews_places: list[str] = [
+        "brazil",
+        "brasil",
+        "latam",
+        "latin america",
+        "south america",
+        "americas",
+        "worldwide",
+        "anywhere",
+    ]
     # GitHub job repositories (public API): "owner/repo" of each community's board.
     github_job_repositories: list[str] = [
         "backend-br/vagas",
