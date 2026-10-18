@@ -10,6 +10,7 @@ from peao_bilingue.composition import (
     build_repository,
     build_scheduler,
     build_services,
+    capture_folder,
 )
 from peao_bilingue.config import settings
 from peao_bilingue.domain.collection import ManualSession, RunStatus, Trigger
@@ -66,6 +67,13 @@ def main() -> None:
     # `--agendado` is what tasks registered before the code was in English call.
     run.add_argument(
         "--scheduled", "--agendado", action="store_true", help=argparse.SUPPRESS
+    )
+    run.add_argument(
+        "--capture",
+        action="store_true",
+        help=_(
+            "save a screenshot + HTML of each search on sources that read web pages"
+        ),
     )
 
     searches = commands.add_parser("searches", help=_("list or add searches"))
@@ -147,7 +155,8 @@ def _run_command(args: argparse.Namespace) -> None:
 
 
 def _run(args: argparse.Namespace) -> None:
-    services = build_services(sources=args.source)
+    folder = capture_folder() if args.capture else None
+    services = build_services(sources=args.source, capture_to=folder)
     run = asyncio.run(
         run_collection(
             services,
@@ -173,6 +182,13 @@ def _run(args: argparse.Namespace) -> None:
         print(run.error)
     if run.artifact:
         print(_("Evidence in {path}.*").format(path=run.artifact))
+    if folder is not None:
+        # The folder only exists if a source that reads web pages saved something.
+        print(
+            _("Screenshots saved in {path}.").format(path=folder)
+            if folder.exists()
+            else _("No screenshots: no source in this collection reads web pages.")
+        )
     if run.status != RunStatus.ok:
         raise SystemExit(1)
 

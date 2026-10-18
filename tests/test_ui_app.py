@@ -1,6 +1,7 @@
 """The real window, hidden, over an in-memory repository."""
 
 import json
+import os
 import time
 import tkinter as tk
 from collections.abc import Callable, Iterator
@@ -381,6 +382,52 @@ def test_collect_now_runs_the_chosen_source(
         window, lambda: tab.collect_bar.button.cget("state") == "normal"
     )
     assert window.notices["errors"] == []
+
+
+@pytest.mark.parametrize("saved", [True, False])
+def test_collect_with_screenshots_opens_their_folder(
+    window: App, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, saved: bool
+) -> None:
+    folder = tmp_path / "captures" / "20261017_100000"
+    received: list[Path | None] = []
+    opened: list[Path] = []
+
+    def build(*, capture_to: Path | None, **_kwargs: object) -> object:
+        received.append(capture_to)
+        return object()
+
+    async def collect(_services: Services, trigger: Trigger) -> Run:
+        if saved and received[-1]:  # a source that reads web pages saved its searches
+            received[-1].mkdir(parents=True)
+        return Run(
+            id=1, trigger=trigger, status=RunStatus.ok, started_at=datetime.now(UTC)
+        )
+
+    monkeypatch.setattr(runs_tab, "capture_folder", lambda: folder)
+    monkeypatch.setattr(runs_tab, "build_services", build)
+    monkeypatch.setattr(runs_tab, "run_collection", collect)
+    monkeypatch.setattr(os, "startfile", opened.append, raising=False)
+    tab = window.panels["runs"]
+
+    tab._collect()  # unchecked: no screenshots
+    assert process_until(
+        window, lambda: tab.collect_bar.button.cget("state") == "normal"
+    )
+    tab.collect_bar.screenshots.select()
+    tab._collect()
+    assert process_until(
+        window, lambda: tab.collect_bar.button.cget("state") == "normal"
+    )
+    window._drain_log()
+
+    assert received == [None, folder]
+    log = tab.log.box.get("1.0", "end")
+    if saved:
+        assert opened == [folder]
+        assert f"Screenshots saved in {folder}." in log
+    else:
+        assert opened == []
+        assert "No screenshots" in log
 
 
 # --- analysis requested on screen ---------------------------------------------------

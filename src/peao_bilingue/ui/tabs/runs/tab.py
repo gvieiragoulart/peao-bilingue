@@ -2,13 +2,15 @@
 components together and runs the collection and the scheduler through the executor."""
 
 import asyncio
+import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import customtkinter as ctk
 
 from peao_bilingue import config
 from peao_bilingue.application.collect import run_collection
-from peao_bilingue.composition import build_services
+from peao_bilingue.composition import build_services, capture_folder
 from peao_bilingue.config import settings
 from peao_bilingue.domain.collection import Run, Trigger
 from peao_bilingue.domain.schedule import ScheduleStatus
@@ -88,6 +90,16 @@ class RunsTab(ctk.CTkFrame):
         self._query_schedule()
         self.app.show_error(failure)
 
+    def _show_screenshots(self, folder: Path) -> None:
+        # The folder only exists if a source that reads web pages saved something.
+        if not folder.exists():
+            self.app.log(
+                _("No screenshots: no source in this collection reads web pages.")
+            )
+            return
+        self.app.log(_("Screenshots saved in {path}.").format(path=folder))
+        os.startfile(folder)
+
     def refresh(self) -> None:
         self.history.show(self.app.repository.list_runs(50))
         self.collect_bar.set_sources(
@@ -100,9 +112,12 @@ class RunsTab(ctk.CTkFrame):
     def _collect(self) -> None:
         # None = every enabled source; one picked = only it.
         source = self.collect_bar.chosen_source()
+        folder = capture_folder() if self.collect_bar.capture() else None
         try:
             services = build_services(
-                sources=[source] if source else None, repository=self.app.repository
+                sources=[source] if source else None,
+                repository=self.app.repository,
+                capture_to=folder,
             )
         except Exception as failure:  # noqa: BLE001 - a misconfigured source is a notice
             self.app.show_error(failure)
@@ -128,6 +143,8 @@ class RunsTab(ctk.CTkFrame):
                     new=run.new_jobs,
                 )
             )
+            if folder is not None:
+                self._show_screenshots(folder)
 
         def fail(failure: BaseException) -> None:
             self.collect_bar.set_busy(False)

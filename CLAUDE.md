@@ -442,6 +442,14 @@ has the video's signed URL and the spoken transcript: only "Level: X" is used.
 Selectors **only** in `selectors.py`, documented. Real anonymized fixtures in
 `tests/fixtures/vanhack/` (its README explains the anonymization and what to audit).
 
+**Screenshots on request** (2026-10-17): the Runs tab's "Save a screenshot of each search" (or
+`peao run --capture`) sets `JobSource.capture_to` (through `build_services(capture_to=)`) to
+`artifacts/captures/<timestamp>/`; after each search, scrolled to the end, VanHack saves a
+full-page PNG + HTML there (`debug.dump`, label made file-safe). Only the search listings, not
+job pages; only sources that read web pages (the APIs keep their raw response in
+`data/cache/`); never in the scheduled run. A failed capture is only logged. The window opens
+the folder when the run ends.
+
 ---
 
 ## API sources
@@ -579,6 +587,7 @@ uv run peao adapters                 # registered sources, LLMs and notifiers
 uv run peao run                      # collect and save; no LLM (analysis is in the app)
 uv run peao run --source vanhack     # only one source
 uv run peao run --notify             # also report new jobs and problems
+uv run peao run --capture            # also save a screenshot + HTML of each search
 uv run peao schedule                 # the daily collection's status
 uv run peao schedule enable --time 08:00             # or `schedule disable`
 uv run pytest
