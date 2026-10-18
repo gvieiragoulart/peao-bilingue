@@ -1,0 +1,256 @@
+{
+ "jobs": [
+  {
+   "absolute_url": "https://job-boards.greenhouse.io/vtex/jobs/6218060004",
+   "data_compliance": [
+    {
+     "type": "gdpr",
+     "requires_consent": false,
+     "requires_processing_consent": false,
+     "requires_retention_consent": false,
+     "retention_period": null,
+     "demographic_data_consent_applies": true
+    }
+   ],
+   "internal_job_id": 4973801004,
+   "location": {
+    "name": "Brazil"
+   },
+   "metadata": [
+    {
+     "id": 4382224004,
+     "name": "Management Level",
+     "value": "Mid-Level",
+     "value_type": "single_select"
+    },
+    {
+     "id": 4568065004,
+     "name": "Job Emphasis",
+     "value": "Data",
+     "value_type": "single_select"
+    }
+   ],
+   "id": 6218060004,
+   "updated_at": "2026-10-06T09:32:25-04:00",
+   "requisition_id": "1967",
+   "title": "Analytics Engineer - Campaign Intelligence [Ads]",
+   "company_name": "VTEX",
+   "first_published": "2026-10-06T08:59:45-04:00",
+   "language": "en",
+   "application_deadline": null,
+   "content": "&lt;p&gt;&lt;span style=&quot;font-size: 14pt;&quot;&gt;&lt;strong&gt;ABOUT THE ROLE&lt;/strong&gt;&lt;/span&gt;&lt;/p&gt;\n&lt;p&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;We are looking for a Senior Analytics Engineer to bring robust, integrated data models and products to life within the VTEX Ads platform. You will be the data modeling reference point across the entire Ads ecosystem—advertisers, publishers, events (clicks, views, impressions), and performance—translating these domains into reliable data for product, client, data science, and business teams. From requirements gathering to production pipelines in our Lakehouse, you will ensure scalability and reliability for decisions that sustain the platform&#39;s operations and revenue.&lt;/span&gt;&lt;/p&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;&lt;span style=&quot;font-size: 14pt;&quot;&gt;&lt;strong&gt;ABOUT THE TEAM&lt;/strong&gt;&lt;/span&gt;&lt;/p&gt;\n&lt;p&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;You will join Campaign Intelligence, the newest team in our Data &amp;amp; Analytics organization, focused on the engine behind the VTEX Ads platform: pacing, target ROAS, budget forecasting, and auction optimization. We are responsible for structuring and serving this platform&#39;s data, giving product, data science, business teams, and clients reliable visibility into advertisers, publishers, and Ads performance—accelerating data-driven decisions on a global scale.&lt;/span&gt;&lt;/p&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;\n&lt;h3&gt;WHAT YOU WILL DO&lt;/h3&gt;\n&lt;ul&gt;\n&lt;li style=&quot;font-size: 12pt;&quot;&gt;Build and maintain robust, scalable analytical models in AWS Cloud.&lt;/li&gt;\n&lt;li style=&quot;font-size: 12pt;&quot;&gt;Participate in defining data requirements alongside product and technology teams.&lt;/li&gt;\n&lt;li style=&quot;font-size: 12pt;&quot;&gt;Develop ingestion, transformation, and data modeling pipelines using the VTEX data platform.&lt;/li&gt;\n&lt;li style=&quot;font-size: 12pt;&quot;&gt;Support stakeholders with technical and analytical topics, translating needs into practical solutions.&lt;/li&gt;\n&lt;li style=&quot;font-size: 12pt;&quot;&gt;Monitor performance, optimize queries, and ensure reliability across SQL and Python environments.&lt;/li&gt;\n&lt;li style=&quot;font-size: 12pt;&quot;&gt;Contribute to spreading best practices and driving the evolution of the data stack.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;&lt;span style=&quot;font-size: 14pt;&quot;&gt;&lt;strong&gt;WHO YOU ARE&lt;/strong&gt;&lt;/span&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li style=&quot;font-size: 12pt;&quot;&gt;\n&lt;h4&gt;&lt;strong&gt;Hard Skills&lt;/strong&gt;&lt;/h4&gt;\n&lt;ul&gt;\n&lt;li&gt;Familiarity with metrics and concepts from ad tech/martech platforms (campaign performance, attribution, ROAS/CTR/CPC, etc.).&lt;/li&gt;\n&lt;li&gt;Experienced in data modeling for large-scale analytics.&lt;/li&gt;\n&lt;li&gt;Experienced with databases and data warehouses on AWS (Athena, Trino, Redshift, etc.).&lt;/li&gt;\n&lt;li&gt;Advanced SQL, Spark, and Python, along with query optimization skills.&lt;/li&gt;\n&lt;li&gt;Hands-on experience with orchestration and data transformation tools (Airflow, Python, Spark, EMR, Glue, etc.).&lt;/li&gt;\n&lt;li&gt;Knowledge of AWS Cloud environments (preferably Redshift, S3, Glue, EMR).&lt;/li&gt;\n&lt;li&gt;Practical experience using GenAI tools (e.g., GitHub Copilot, Claude Code, ChatGPT) to accelerate daily development, debugging, and documentation.&lt;/li&gt;\n&lt;li&gt;Knowledge of semantic data layers (dbt semantic layer, LookML, Cube, etc.).&lt;/li&gt;\n&lt;li&gt;Knowledge of software engineering is considered a plus.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;h4&gt;&lt;strong&gt;Soft Skills&lt;/strong&gt;&lt;/h4&gt;\n&lt;ul&gt;\n&lt;li&gt;Excellent communication skills with the ability to engage both technical and business audiences.&lt;/li&gt;\n&lt;li&gt;Analytical mindset, strong problem-solver, and results-oriented.&lt;/li&gt;\n&lt;li&gt;Autonomy, proactivity, and comfort working in dynamic, iterative environments.&lt;/li&gt;\n&lt;li&gt;Collaborative mindset with a strong focus on organizational impact.&lt;/li&gt;\n&lt;li&gt;Curious mindset, always seeking to understand the &quot;why&quot; behind problems before proposing solutions.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;\n&lt;hr&gt;\n&lt;h2&gt;&lt;span style=&quot;font-size: 14pt;&quot;&gt;About VTEX&lt;/span&gt;&lt;/h2&gt;\n&lt;div&gt;\n&lt;p class=&quot;c-mrkdwn__quote&quot; data-stringify-type=&quot;quote&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;VTEX (NYSE: VTEX) is the composable and complete commerce platform that delivers more efficiency and less maintenance to organizations seeking to make smarter IT investments and modernize their tech stack. Through our pragmatic composability approach, we empower brands, distributors, and retailers with unparalleled flexibility and comprehensive solutions, enabling them to invest solely in what provides a clear business advantage and boosts profitability. VTEX is trusted by 2,400 global B2C and B2B customers, including Carrefour, Colgate, Motorola, Sony, Stanley Black &amp;amp; Decker, and Whirlpool, having 3,400 active online stores across 43 countries (as of FY ended on December 31, 2024).&lt;/span&gt;&lt;/p&gt;\n&lt;p class=&quot;c-mrkdwn__quote&quot; data-stringify-type=&quot;quote&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Founded in the year 2000, VTEX has a history of being unstoppable. Completely against the odds, VTEX is leading a high-tech industry and positioned above market giants. We are building an extraordinary future with more than 1,300 employees scattered across 25 locations in 16 countries in Latin America, North America, Europe, and Asia. For more information, visit&amp;nbsp;&lt;a href=&quot;https://www.vtex.com&quot;&gt;www.vtex.com&lt;/a&gt;.&lt;/span&gt;&lt;/p&gt;\n&lt;p class=&quot;c-mrkdwn__quote&quot; data-stringify-type=&quot;quote&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;At VTEX, you will work in a challenge-driven environment and collaborate with amazing peers. If you are powerful individually, join us, and we will be unstoppable together.&lt;/span&gt;&lt;/p&gt;\n&lt;/div&gt;\n&lt;p class=&quot;p1&quot;&gt;&lt;span style=&quot;font-size: 14pt;&quot;&gt;&lt;strong&gt;BENEFITS&lt;/strong&gt;&lt;/span&gt;&lt;/p&gt;\n&lt;ul class=&quot;ul1&quot;&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Annual profit-sharing program and equity eligibility;&lt;/span&gt;&lt;/li&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Health, dental, and life insurance with national coverage provided by VTEX;&lt;/span&gt;&lt;/li&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Annual budget for professional development in Tech;&lt;/span&gt;&lt;/li&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Language development incentive program (English, Spanish, Portuguese);&lt;/span&gt;&lt;/li&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Flexible meal allowance;&lt;/span&gt;&lt;/li&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Extended parental leaves;&lt;/span&gt;&lt;/li&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Child-care assistance;&lt;/span&gt;&lt;/li&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Flexible work schedule and remote-first culture;&lt;/span&gt;&lt;/li&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Financial assistance to build your work-from-home setup;&lt;/span&gt;&lt;/li&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Wellness program;&lt;/span&gt;&lt;/li&gt;\n&lt;li class=&quot;li1&quot; style=&quot;font-size: 12pt;&quot;&gt;&lt;span style=&quot;font-size: 12pt;&quot;&gt;Free shipping on 1000+ VTEX stores&lt;/span&gt;&lt;/li&gt;\n&lt;/ul&gt;\n&lt;h6&gt;&lt;span style=&quot;color: rgb(255, 255, 255); font-size: 12pt;&quot;&gt;#LI-Remote&amp;nbsp;&lt;/span&gt;&lt;/h6&gt;",
+   "departments": [
+    {
+     "id": 4045366004,
+     "name": "Data",
+     "child_ids": [
+      4028769004,
+      4028774004
+     ],
+     "parent_id": 4028740004
+    }
+   ],
+   "offices": [
+    {
+     "id": 4014142004,
+     "name": "Brazil",
+     "location": null,
+     "child_ids": [
+      4039516004,
+      4014143004,
+      4014144004,
+      4014146004,
+      4024780004
+     ],
+     "parent_id": 4014121004
+    }
+   ],
+   "ai_disclaimer": null,
+   "include_ai_disclaimer": null,
+   "ai_opt_out_request_url": null
+  },
+  {
+   "absolute_url": "https://job-boards.greenhouse.io/vtex/jobs/5856357004",
+   "data_compliance": [
+    {
+     "type": "gdpr",
+     "requires_consent": false,
+     "requires_processing_consent": false,
+     "requires_retention_consent": false,
+     "retention_period": null,
+     "demographic_data_consent_applies": true
+    }
+   ],
+   "internal_job_id": 5079645004,
+   "location": {
+    "name": "São Paulo"
+   },
+   "metadata": [
+    {
+     "id": 4382224004,
+     "name": "Management Level",
+     "value": "Mid-Level",
+     "value_type": "single_select"
+    },
+    {
+     "id": 4568065004,
+     "name": "Job Emphasis",
+     "value": null,
+     "value_type": "single_select"
+    }
+   ],
+   "id": 5856357004,
+   "updated_at": "2026-06-03T14:02:13-04:00",
+   "requisition_id": "2086",
+   "title": "Partner Technical Account Engineer",
+   "company_name": "VTEX",
+   "first_published": "2026-04-07T14:20:55-04:00",
+   "language": "en",
+   "application_deadline": null,
+   "content": "&lt;div&gt;\n&lt;p&gt;VTEX is a global leader in digital commerce technology, providing innovative solutions for businesses seeking excellence in their online ventures. As an integral part of the Global Strategic Alliances team, you will have the opportunity to contribute to VTEX&#39;s ongoing success by serving as the primary technical point of contact for our most strategic VTEX partners.&amp;nbsp;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;Key Responsibilities:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;Technical Advisory:&lt;/strong&gt; Serve as the lead technical authority for key partners, providing expert guidance on platform architecture, best practices and scalability.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Technical Governance:&lt;/strong&gt; Oversee the technical health of partner projects, identifying potential risks and ensuring alignment with VTEX’s performance standards and security protocols.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Enablement &amp;amp; Coaching:&lt;/strong&gt; Conduct workshops and technical training sessions to ensure partner developers are proficient in VTEX foundations and capabilities.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Strategic Problem Solving:&lt;/strong&gt; Act as the final escalation point for complex technical hurdles, working closely with the Partner Manager, the internal Product and CX team to resolve platform-specific challenges.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Innovation Roadmap:&lt;/strong&gt; Stay ahead of commerce trends to help partners innovate and expand their service offerings.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Payment Provider Homologation Process: &lt;/strong&gt;Be the owner of the payment connectors homologation process by managing the assessment and prioritization of incoming requests. Lead process optimization initiatives to enhance operational efficiency and improve time-to-market.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Requirements:&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;Academic Background: &lt;/strong&gt;Bachelor&#39;s degree in Engineering, Computer Science or related fields.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;VTEX Expertise:&lt;/strong&gt; Proven knowledge and experience with the VTEX platform, specially regarding Payment Provider Protocol and Marketplace integrations.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Technical Skills: Expertise in GraphQL and RESTful APIs, with proficient knowledge of architecting complex integrations between commerce platforms and third-party systems, focusing on scalable and high-performance solutions.&lt;/strong&gt;&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Effective Communication:&lt;/strong&gt; Strong argumentative skills and the ability to articulate viewpoints based on data.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Languages:&amp;nbsp;&lt;/strong&gt;Advanced English and Portuguese; Spanish is considered a plus.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Proactive Attitude:&lt;/strong&gt; Eagerness to learn, adapt to challenges, and drive results.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;If you are driven by the challenge of building scalable digital ecosystems and being the technical reference to guide global partners, submit your resume and join the VTEX team, where we turn ideas into reality!&lt;/p&gt;\n&lt;/div&gt;\n&lt;div&gt;&lt;hr&gt;&lt;/div&gt;\n&lt;h2&gt;About VTEX&lt;/h2&gt;\n&lt;div&gt;VTEX (NYSE: VTEX) is the composable and complete commerce platform that delivers more efficiency and less maintenance to organizations seeking to make smarter IT investments and modernize their tech stack. Through our pragmatic composability approach, we empower brands, distributors, and retailers with unparalleled flexibility and comprehensive solutions, enabling them to invest solely in what provides a clear business advantage and boosts profitability. VTEX is trusted by 2,600 global B2C and B2B clients, including Carrefour, Colgate, Motorola, Sony, Stanley Black &amp;amp; Decker, and Whirlpool, having 3,500 active online stores across 43 countries (as of FY ended on December 31, 2023). For more information, visit www.vtex.com.&lt;/div&gt;\n&lt;h2&gt;Benefits&lt;/h2&gt;\n&lt;ul&gt;\n&lt;li&gt;Health, dental, and life insurance with national coverage provided by VTEX&lt;/li&gt;\n&lt;li&gt;Language development incentive program (English, Spanish)&lt;/li&gt;\n&lt;li&gt;Flexible work schedule&lt;/li&gt;\n&lt;li&gt;Flexible meal allowance&lt;/li&gt;\n&lt;li&gt;Extended parental leaves&lt;/li&gt;\n&lt;li&gt;Child-care assistance&lt;/li&gt;\n&lt;li&gt;Financial assistance to build your work-from-home setup&lt;/li&gt;\n&lt;li&gt;Totalpass partnership&lt;/li&gt;\n&lt;li&gt;Free shipping on 1000+ VTEX stores&lt;/li&gt;\n&lt;/ul&gt;",
+   "departments": [
+    {
+     "id": 4039609004,
+     "name": "Core Marketing",
+     "child_ids": [],
+     "parent_id": 4028738004
+    }
+   ],
+   "offices": [
+    {
+     "id": 4014144004,
+     "name": "São Paulo",
+     "location": null,
+     "child_ids": [],
+     "parent_id": 4014142004
+    }
+   ],
+   "ai_disclaimer": null,
+   "include_ai_disclaimer": null,
+   "ai_opt_out_request_url": null
+  },
+  {
+   "absolute_url": "https://job-boards.greenhouse.io/vtex/jobs/6195094004",
+   "data_compliance": [
+    {
+     "type": "gdpr",
+     "requires_consent": false,
+     "requires_processing_consent": false,
+     "requires_retention_consent": false,
+     "retention_period": null,
+     "demographic_data_consent_applies": true
+    }
+   ],
+   "internal_job_id": 5153046004,
+   "location": {
+    "name": "Manhattan, New York"
+   },
+   "metadata": [
+    {
+     "id": 4382224004,
+     "name": "Management Level",
+     "value": "Senior",
+     "value_type": "single_select"
+    },
+    {
+     "id": 4568065004,
+     "name": "Job Emphasis",
+     "value": null,
+     "value_type": "single_select"
+    }
+   ],
+   "id": 6195094004,
+   "updated_at": "2026-09-28T12:40:49-04:00",
+   "requisition_id": "2112",
+   "title": "Lead Field Marketing Specialist - Business Development",
+   "company_name": "VTEX",
+   "first_published": "2026-09-28T12:40:49-04:00",
+   "language": "en",
+   "application_deadline": null,
+   "content": "&lt;p&gt;&lt;strong&gt;&lt;em&gt;Connecting enterprise teams to scalable commerce solutions&lt;/em&gt;&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&lt;strong&gt;&lt;em&gt;Focused on enterprise engagement and digital transformation initiatives&lt;/em&gt;&lt;/strong&gt;&lt;/p&gt;\n&lt;p&gt;&amp;nbsp;&lt;/p&gt;\n&lt;h3&gt;&lt;strong&gt;About the Field Marketing Team&lt;/strong&gt;&lt;/h3&gt;\n&lt;p&gt;The Field Marketing team is responsible for creating predictable, scalable pipeline and accelerating revenue growth by turning market awareness into qualified opportunities. The team drives integrated campaigns, account-based programs, outbound prospecting initiatives, and full-funnel execution in close partnership with Sales. Success in this function is measured by the ability to create meaningful sales conversations, generate qualified meetings, meet quarterly&amp;nbsp; opportunity quota, and consistently contribute to pipeline growth.&lt;br&gt;&lt;br&gt;&lt;/p&gt;\n&lt;h3&gt;&lt;strong&gt;The Role&lt;/strong&gt;&lt;/h3&gt;\n&lt;p&gt;As a &lt;strong&gt;Lead Field Marketing Specialist - Business Development&lt;/strong&gt;, you will be responsible for creating qualified pipeline through strategic outbound prospecting, business relationship development, and high-impact follow-up across target accounts. This is a true hunter role focused on opening doors, building momentum within accounts, and creating sales opportunities through a combination of modern outbound tactics and traditional relationship-building skills.&lt;/p&gt;\n&lt;p&gt;The ideal candidate brings strong outbound sales experience, is confident working across multiple ICPs and verticals, has a solid understanding of the ecommerce and digital commerce industry, and understands how to build a book of business over time.This person knows how to generate traction through cold outreach, thoughtful persistence, account research, referrals, event networking, and strong follow-up discipline. They are highly accountable, metrics-driven, and bring a proven track record of meeting and exceeding KPI expectations. The right person for this role has an outgoing, go-getter personality, thrives in the trenches, and knows how to turn hustle, persistence, and strong business relationship instincts into pipeline.&lt;/p&gt;\n&lt;p&gt;This role will also support event-related business development efforts and must be comfortable traveling locally and nationally for trade shows, field events, meetings, and prospect engagement.&lt;br&gt;&lt;br&gt;&lt;/p&gt;\n&lt;h3&gt;&lt;strong&gt;What You’ll Do&lt;/strong&gt;&lt;/h3&gt;\n&lt;p&gt;&lt;strong&gt;Outbound Pipeline Creation&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Own outbound prospecting efforts across target accounts, segments, ICPs, and verticals to generate qualified sales opportunities.&lt;/li&gt;\n&lt;li&gt;Build account penetration strategies that identify key stakeholders, buying groups, whitespace, and business needs within named accounts.&lt;/li&gt;\n&lt;li&gt;Execute high-quality outbound outreach across phone, email, LinkedIn, events, referrals, and other channels to create meaningful sales conversations.&lt;/li&gt;\n&lt;li&gt;Personalize messaging based on business context, market signals, vertical challenges, role-specific pain points, and account research.&lt;/li&gt;\n&lt;li&gt;Build momentum within accounts through consistent follow-up, relationship development, and strategic persistence.&lt;/li&gt;\n&lt;li&gt;Monitor market momentum across target accounts and engage at the right time with the right persona based on buying signals, business changes, account activity, and market movement.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Business Relationship Development&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Establish early-stage relationships with the right personas within target accounts and develop trust through relevant, informed outreach.&lt;/li&gt;\n&lt;li&gt;Support the development of a strong book of business by creating and nurturing connections across target accounts over time.&lt;/li&gt;\n&lt;li&gt;Represent the company effectively as a first point of contact and create a strong impression with prospects across all touchpoints.&lt;/li&gt;\n&lt;li&gt;Identify opportunities to expand engagement within accounts by building relationships across multiple stakeholders and functions.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Inbound and Marketing Follow-Up&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Qualify high-value inbound leads, campaign responses, and event-generated contacts with speed, judgment, and commercial focus.&lt;/li&gt;\n&lt;li&gt;Prioritize follow-up based on fit, urgency, buying signals, and opportunity potential.&lt;/li&gt;\n&lt;li&gt;Book discovery meetings for Account Executives and ensure a strong handoff with clear notes, business context, and recommended next steps.&lt;/li&gt;\n&lt;li&gt;Distinguish between low-intent engagement and real pipeline opportunity, focusing effort where conversion potential is strongest.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Events and Market Presence&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Support local and national event efforts through pre-event outreach, on-site prospect engagement, and post-event follow-up.&lt;/li&gt;\n&lt;li&gt;Use events as a pipeline-generation opportunity to build relationships, uncover opportunities, and move prospects into active sales conversations.&lt;/li&gt;\n&lt;li&gt;Travel as needed for trade shows, customer meetings, field events, and other business development initiatives (30-40% travel expected in this role, both local and national).&amp;nbsp;&lt;/li&gt;\n&lt;/ul&gt;\n&lt;p&gt;&lt;strong&gt;Operational Discipline and Market Feedback&lt;/strong&gt;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Maintain strong CRM hygiene, including accurate activity tracking, lead and account updates, disposition notes, meeting outcomes, and account intelligence.&lt;/li&gt;\n&lt;li&gt;Track performance against KPIs and contribute to a disciplined, measurable pipeline development process.&lt;/li&gt;\n&lt;li&gt;Share market feedback, prospect insights, objections, and competitive intelligence to help strengthen messaging and targeting.&lt;/li&gt;\n&lt;li&gt;Contribute to improving outreach strategies, talk tracks, sequencing, and account engagement best practices.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;h3&gt;&lt;strong&gt;&lt;br&gt;Required Qualifications&lt;/strong&gt;&lt;/h3&gt;\n&lt;ul&gt;\n&lt;li&gt;5+ years of experience in business development, outbound sales, inside sales, or pipeline generation in a B2B environment.&lt;/li&gt;\n&lt;li&gt;Proven, documented track record of meeting or exceeding KPIs related to outbound activity, meeting generation, pipeline creation, and conversion performance.&lt;/li&gt;\n&lt;li&gt;Strong outbound prospecting experience with the ability to create opportunities from scratch, not simply respond to inbound leads.&lt;/li&gt;\n&lt;li&gt;Experience working across multiple ICPs, buyer personas, and industry verticals.&lt;/li&gt;\n&lt;li&gt;Demonstrated business relationship development skills and the ability to build a book of business over time.&lt;/li&gt;\n&lt;li&gt;Strong written and verbal communication skills, with confidence across phone, email, LinkedIn, video, and live conversations.&lt;/li&gt;\n&lt;li&gt;High level of organization, follow-up discipline, and CRM accountability.&lt;/li&gt;\n&lt;li&gt;Comfortable operating in a metrics-driven environment with clear expectations and performance visibility.&lt;/li&gt;\n&lt;li&gt;Willingness to travel locally and nationally in support of events, meetings, and business development initiatives.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;h3&gt;&lt;strong&gt;&lt;br&gt;Preferred Qualifications&lt;/strong&gt;&lt;/h3&gt;\n&lt;ul&gt;\n&lt;li&gt;Experience supporting field marketing, event follow-up, and account-based pipeline generation.&lt;/li&gt;\n&lt;li&gt;Familiarity with Salesforce, HubSpot, LinkedIn Sales Navigator, sequencing tools, and intent or data platforms.&lt;/li&gt;\n&lt;li&gt;Experience prospecting into ecommerce, SaaS, technology, or digital transformation-related environments.&lt;/li&gt;\n&lt;li&gt;Experience engaging mid-market and enterprise accounts.&lt;/li&gt;\n&lt;li&gt;Familiarity with Salesforce, HubSpot, LinkedIn Sales Navigator, sequencing tools, intent or data platforms, experience with AI-first go-to-market environments and comfort leveraging AI to improve research&lt;/li&gt;\n&lt;/ul&gt;\n&lt;h3&gt;&lt;strong&gt;&lt;br&gt;What Success Looks Like&lt;/strong&gt;&lt;/h3&gt;\n&lt;ul&gt;\n&lt;li&gt;Consistently generating qualified meetings and pipeline through outbound prospecting.&lt;/li&gt;\n&lt;li&gt;Building momentum within target accounts and developing relationships across multiple stakeholders.&lt;/li&gt;\n&lt;li&gt;Meeting or exceeding activity, conversion, and pipeline KPIs.&lt;/li&gt;\n&lt;li&gt;Creating a strong partnership with Sales, Marketing, and RevOps through disciplined execution and clear feedback loops.&lt;/li&gt;\n&lt;li&gt;Representing the company with professionalism, urgency, and strong commercial instincts across every prospect touchpoint.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;h3&gt;&lt;strong&gt;&lt;br&gt;Why This Role Matters&lt;/strong&gt;&lt;/h3&gt;\n&lt;p&gt;This role sits at the center of pipeline creation. It is not simply about lead response. It is about creating opportunity, opening doors, and helping turn market presence into real business. The person in this role will play a critical part in helping the organization penetrate target accounts, support event strategy, and create qualified conversations that contribute directly to growth.&lt;/p&gt;\n&lt;div&gt;&lt;hr&gt;&lt;/div&gt;\n&lt;div&gt;&amp;nbsp;&lt;/div&gt;\n&lt;h3&gt;&lt;strong&gt;About VTEX&lt;/strong&gt;&lt;/h3&gt;\n&lt;div&gt;\n&lt;p&gt;VTEX (NYSE: VTEX) is the composable and complete commerce platform that delivers more efficiency and less maintenance to organizations seeking to make smarter IT investments and modernize their tech stack. Through our pragmatic composability approach, we empower brands, distributors, and retailers with unparalleled flexibility and comprehensive solutions, enabling them to invest solely in what provides a clear business advantage and boosts profitability. VTEX is trusted by 2.400 global B2C and B2B customers, including Carrefour, Colgate, Motorola, Sony, Stanley Black &amp;amp; Decker, and Whirlpool, having 3.400 active online stores across 43 countries (as of FY ended on December 31, 2024).&lt;/p&gt;\n&lt;p&gt;Founded in the year 2000, VTEX has a history of being unstoppable. Completely against the odds, VTEX is leading a high-tech industry and positioned above market giants. We are building an extraordinary future with more than 1,300 employees scattered across 25 locations in 16 countries in Latin America, North America, Europe, and Asia. For more information, visit &lt;a href=&quot;https://www.vtex.com&quot;&gt;www.vtex.com&lt;/a&gt;.&lt;/p&gt;\n&lt;p&gt;At VTEX, you will work in a challenge-driven environment and collaborate with amazing peers. If you are powerful individually, join us, and we will be unstoppable together.&lt;/p&gt;\n&lt;/div&gt;",
+   "departments": [
+    {
+     "id": 4076910004,
+     "name": "Demand Generation",
+     "child_ids": [],
+     "parent_id": 4028746004
+    }
+   ],
+   "offices": [
+    {
+     "id": 4014141004,
+     "name": "Manhattan, New York",
+     "location": null,
+     "child_ids": [],
+     "parent_id": 4014140004
+    }
+   ],
+   "ai_disclaimer": null,
+   "include_ai_disclaimer": null,
+   "ai_opt_out_request_url": null
+  },
+  {
+   "absolute_url": "https://job-boards.greenhouse.io/vtex/jobs/6098704004",
+   "data_compliance": [
+    {
+     "type": "gdpr",
+     "requires_consent": false,
+     "requires_processing_consent": false,
+     "requires_retention_consent": false,
+     "retention_period": null,
+     "demographic_data_consent_applies": true
+    }
+   ],
+   "internal_job_id": 5177378004,
+   "location": {
+    "name": "Barcelona"
+   },
+   "metadata": [
+    {
+     "id": 4382224004,
+     "name": "Management Level",
+     "value": "Mid-Level",
+     "value_type": "single_select"
+    },
+    {
+     "id": 4568065004,
+     "name": "Job Emphasis",
+     "value": null,
+     "value_type": "single_select"
+    }
+   ],
+   "id": 6098704004,
+   "updated_at": "2026-06-22T11:19:47-04:00",
+   "requisition_id": "2136",
+   "title": "Commerce Engineer EMEA-APAC",
+   "company_name": "VTEX",
+   "first_published": "2026-06-22T11:19:47-04:00",
+   "language": "en",
+   "application_deadline": null,
+   "content": "&lt;h2&gt;About the team&lt;/h2&gt;\n&lt;div&gt;The Commerce Engineer team is the support and engine of the VTEX Sales Team. The team seeks to guide and find scalable solutions for our potential customers. The team is trained and prepared to define the project scope, technical proposal, and pricing to reinforce the Sales team approach.Your main responsibilities will include:&lt;br&gt;Build and maintain strong, strategic relationships with large enterprise clients, ensuring consistent and high-level communication.&lt;/div&gt;\n&lt;div&gt;&amp;nbsp;&lt;/div&gt;\n&lt;div&gt;&lt;span style=&quot;text-decoration: underline;&quot;&gt;&lt;strong&gt;*This role requires you to be based in Barcelona, and to attend the office 4 days a week (Monday–Thursday), with remote work on Fridays.&lt;/strong&gt;&lt;/span&gt;&lt;/div&gt;\n&lt;div&gt;\n&lt;h3 class=&quot;p-rich_text_section&quot;&gt;&lt;strong data-stringify-type=&quot;bold&quot;&gt;Your main responsibilities will include:&lt;/strong&gt;&lt;/h3&gt;\n&lt;/div&gt;\n&lt;div&gt;\n&lt;ul&gt;\n&lt;li&gt;Deeply understand client needs, proposing tailored projects and solutions that drive their business outcomes.&lt;/li&gt;\n&lt;li&gt;Proactively monitor the use of our products and services, identifying areas for improvement and value creation.&lt;/li&gt;\n&lt;li&gt;Act as a trusted advisor, guiding clients in adopting best practices to maximize the return on VTEX solutions.&lt;/li&gt;\n&lt;li&gt;Identify upsell opportunities and new projects, directly contributing to revenue growth and increased GMV within the portfolio.&lt;/li&gt;\n&lt;li&gt;Develop performance-driven strategies to help clients sell more and sell better.&lt;/li&gt;\n&lt;li&gt;Anticipate churn risks, acting swiftly and empathetically to reverse critical situations with personalized action plans.&lt;/li&gt;\n&lt;li&gt;Drive the expansion of Annual Contract Value (ACV), from qualifying leads to closing long-term agreements.&lt;/li&gt;\n&lt;li&gt;Stay up to date on our product roadmap and complete relevant certifications to support your growth within VTEX.&lt;/li&gt;\n&lt;/ul&gt;\n&lt;/div&gt;\n&lt;div&gt;\n&lt;h3&gt;Required Skills &amp;amp; Experience&lt;/h3&gt;\n&lt;ul&gt;\n&lt;li&gt;Solid experience in Customer Success, Account Management, or related areas, especially working with Enterprise (Tier 1) clients.&lt;/li&gt;\n&lt;li&gt;Proven track record in consultative account management, with a focus on customer retention, revenue expansion (upsell/cross-sell), and long-term success.&lt;/li&gt;\n&lt;li&gt;Knowledge of churn reduction strategies and customer engagement tactics throughout the client lifecycle.&lt;/li&gt;\n&lt;li&gt;Excellent verbal and written communication skills, with the ability to engage with stakeholders at all levels, including C-level executives.&lt;/li&gt;\n&lt;li&gt;Strong analytical skills, with the ability to interpret key performance metrics (e.g., NPS, churn rate, GMV, ACV) and make data-driven decisions.&lt;/li&gt;\n&lt;li&gt;Experience using CRM and Customer Success platforms, such as Salesforce, HubSpot, Gainsight, or similar tools.&lt;/li&gt;\n&lt;li&gt;Proactive mindset with a strong sense of ownership and urgency, focused on problem-solving and value creation.&lt;/li&gt;\n&lt;li&gt;Bachelor’s degree completed, preferably in Business Administration, Marketing, Engineering, Communication, or related fields.&lt;/li&gt;\n&lt;li&gt;Availability for in-person client meetings, when necessary.&lt;/li&gt;\n&lt;li&gt;Fluent English proficiency:, Working with global clients or VTEX-related materials in English.&lt;/li&gt;\n&lt;li&gt;Preferred languages: Spanish, Italian, French &amp;amp; German are a not mandatory but desired&lt;/li&gt;\n&lt;/ul&gt;\n&lt;/div&gt;\n&lt;div&gt;&lt;hr&gt;&lt;/div&gt;\n&lt;div&gt;&amp;nbsp;&lt;/div&gt;\n&lt;h2&gt;About VTEX&lt;/h2&gt;\n&lt;div&gt;\n&lt;p&gt;VTEX (NYSE: VTEX) is the composable and complete commerce platform that delivers more efficiency and less maintenance to organizations seeking to make smarter IT investments and modernize their tech stack. Through our pragmatic composability approach, we empower brands, distributors, and retailers with unparalleled flexibility and comprehensive solutions, enabling them to invest solely in what provides a clear business advantage and boosts profitability. VTEX is trusted by 2,600 global B2C and B2B clients, including Carrefour, Colgate, Motorola, Sony, Stanley Black &amp;amp; Decker, and Whirlpool, having 3,500 active online stores across 43 countries (as of FY ended on December 31, 2023). For more information, visit&amp;nbsp;&lt;a href=&quot;https://www.vtex.com&quot;&gt;www.vtex.com&lt;/a&gt;.&lt;br&gt;&lt;br&gt;Founded in the year 2000, VTEX has a history of being unstoppable. Completely against the odds, VTEX is leading a high-tech industry and positioned above market giants. We are building an extraordinary future with more than 1,700 employees scattered across 18 locations in 12 countries in Latin America, North America, Europe, and Asia.&lt;br&gt;&lt;br&gt;At VTEX, you will work in a challenge-driven environment and collaborate with amazing peers. If you are powerful individually, join us, and we will be unstoppable together.&lt;/p&gt;\n&lt;h2&gt;Benefits&lt;/h2&gt;\n&lt;ul&gt;\n&lt;li&gt;Competitive Salary&lt;/li&gt;\n&lt;li&gt;Flexible work schedule&lt;/li&gt;\n&lt;li&gt;Meal Allowance&lt;/li&gt;\n&lt;li&gt;Transportation assistance&lt;/li&gt;\n&lt;li&gt;Extended parental leaves&lt;/li&gt;\n&lt;li&gt;Language scholarship:&amp;nbsp; 80% subsidies in English and Spanish courses&lt;/li&gt;\n&lt;li&gt;Free shipping on 1000+ VTEX stores&lt;/li&gt;\n&lt;/ul&gt;\n&lt;/div&gt;",
+   "departments": [
+    {
+     "id": 4075266004,
+     "name": "Commerce Solution Engineer",
+     "child_ids": [],
+     "parent_id": 4028746004
+    }
+   ],
+   "offices": [
+    {
+     "id": 4014129004,
+     "name": "Barcelona",
+     "location": null,
+     "child_ids": [],
+     "parent_id": 4014128004
+    }
+   ],
+   "ai_disclaimer": null,
+   "include_ai_disclaimer": null,
+   "ai_opt_out_request_url": null
+  }
+ ],
+ "meta": {
+  "total": 30
+ }
+}

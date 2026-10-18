@@ -575,6 +575,38 @@ comments and goes through `remove_contact_data` (recruiters' emails, phones and 
 issue link stays). Fixtures: real responses trimmed to the fields read, with emails and
 phones swapped for documentation values (`tests/fixtures/github/README.md`).
 
+**Company job boards** (`adapters/sources/company_boards.py`, source `company_boards`, added
+2026-10-18). The public APIs of three applicant tracking systems: Greenhouse
+(`boards-api.greenhouse.io/v1/boards/<board>/jobs?content=true`; its docs: "Job Board data is
+publicly available, so authentication is not required for any GET endpoints"), Lever
+(`api.lever.co/v0/postings/<board>?mode=json`, "designed to help you create a job site") and
+Ashby (`api.ashbyhq.com/posting-api/job-board/<board>`). The boards are the `company_boards`
+setting, "ats:board[=Company]" (Nubank on Ashby; Stone, QuintoAndar, Wellhub (`gympass`), VTEX,
+EBANX, Clara and Canonical on Greenhouse; Toptal and dLocal on Lever: probed on 2026-10-18 for
+jobs in Brazil/LATAM; GitLab and Okta had none). Greenhouse names the company (oddly, sometimes:
+"Stone - Linkedin"), Lever and Ashby don't: "=Company" wins. **One call per board per
+collection** (the whole board, descriptions included: ~19 MB for the ten, 919 jobs kept), a 1 s
+pause, the 6 h cache. `decode` wraps each response with its board, so the cache knows it too.
+These companies hire everywhere, so a job stays only when its location (Greenhouse's
+location and offices, Lever's `allLocations`, Ashby's location, secondary locations and
+address country) names one of `company_boards_places` (Brazil, Brazilian cities, "remoto",
+LATAM, the Americas, worldwide, anywhere), without accents; an empty list keeps all. Greenhouse's
+`content` comes HTML-escaped (`html.unescape` before `html_to_text`). A bad entry raises a
+`CollectionError` when the source searches (not in `__init__`), so only this source fails.
+Fixtures: three real boards trimmed to a few jobs chosen by location, contact data swapped (the
+fixture script's first phone pattern also ate the long ids in URLs: a phone pattern must
+require a separator or an area code in parentheses).
+
+**Jobicy** (`GET https://jobicy.com/api/v2/remote-jobs?count=100&geo=brazil`, source `jobicy`,
+added 2026-10-18). Terms (the API page and every response's `friendlyNotice`): credit Jobicy
+with a direct link, application buttons go to the original job URL, don't present the jobs as
+your own; no key; a sync pass at most once an hour, with caching. `geo=brazil` (`JOBICY_GEO`)
+already includes the LATAM and "Anywhere" jobs (61 on 2026-10-18; `geo=latam` only added jobs
+for other countries), so it's **one call per collection** with the 6 h cache. The feed has only
+the last 7 days. Slugs come from `?get=locations`; `industry=dev` turned out to be
+`engineering`, and isn't used: the searches filter. `jobGeo` has double spaces
+("Argentina,  Brazil"); the salary comes as strings or numbers, 0 = not given.
+
 ---
 
 ## Brazilian sites (Phase 6): what the terms allow
