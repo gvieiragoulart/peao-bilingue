@@ -1,5 +1,5 @@
-"""The Runs tab's top row: what a collection does, which sources take part and the button
-to start one."""
+"""The Runs tab's top row: what a collection does, which sources take part, whether to
+save a screenshot of each search, and the button to start one."""
 
 from collections.abc import Callable
 from typing import Any
@@ -30,8 +30,13 @@ class CollectBar(ctk.CTkFrame):
             self, text=_("Collect now"), width=140, command=on_collect
         )
         self.button.pack(side="right")
+        # Only for this collection: the scheduled one never takes screenshots.
+        self.screenshots = ctk.CTkCheckBox(
+            self, text=_("Save a screenshot of each search")
+        )
+        self.screenshots.pack(side="right", padx=(0, 12))
         self.source = ctk.CTkOptionMenu(self, values=[all_sources_label()], width=190)
-        self.source.pack(side="right", padx=(0, 8))
+        self.source.pack(side="right", padx=(0, 12))
 
     def set_sources(self, sources: dict[str, str]) -> None:
         """`sources`: label -> name of each enabled source. The choice stays if the
@@ -45,10 +50,13 @@ class CollectBar(ctk.CTkFrame):
         """The name of the chosen source; None = all the enabled ones."""
         return self._sources.get(self.source.get())
 
+    def capture(self) -> bool:
+        return bool(self.screenshots.get())
+
     def set_busy(self, busy: bool) -> None:
-        if busy:
-            self.button.configure(state="disabled", text=_("Collecting…"))
-            self.source.configure(state="disabled")
-        else:
-            self.button.configure(state="normal", text=_("Collect now"))
-            self.source.configure(state="normal")
+        state = "disabled" if busy else "normal"
+        self.button.configure(
+            state=state, text=_("Collecting…") if busy else _("Collect now")
+        )
+        self.source.configure(state=state)
+        self.screenshots.configure(state=state)

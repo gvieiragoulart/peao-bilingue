@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import datetime
 from enum import StrEnum
+from pathlib import Path
 from typing import ClassVar, Self
 
 from pydantic import BaseModel, Field
@@ -41,6 +42,9 @@ class JobSource(ABC):
     name: ClassVar[str]
     label: ClassVar[str]  # display name
     needs_browser: ClassVar[bool] = False
+    # Set by composition when the user asks for screenshots: sources that read web pages
+    # save each search's page here; the others ignore it.
+    capture_to: Path | None = None
 
     async def __aenter__(self) -> Self:
         """Opens the source's resources (browser, HTTP client)."""

@@ -1,9 +1,11 @@
 """The VanHack source: collects by reading the DOM, in the manually saved session."""
 
 import asyncio
+import logging
 import random
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager, suppress
+from pathlib import Path
 from typing import Any, Self, TypeVar
 
 from playwright.async_api import BrowserContext, Page
@@ -24,6 +26,8 @@ from peao_bilingue.domain.jobs import Job, JobSummary, Skill
 from peao_bilingue.domain.profile import Profile, ProfileSource
 from peao_bilingue.factories import sources
 from peao_bilingue.i18n import _
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -102,6 +106,8 @@ class VanHack(JobSource, ProfileSource, ManualSession):
         cards = await self._with_evidence(
             f"search_{term}", listing.search(self.page, term, self.max_scrolls)
         )
+        if self.capture_to is not None:
+            await self._capture(f"search_{term}", self.capture_to)
         return [_summary(card) for card in cards]
 
     async def detail(self, summary: JobSummary) -> Job:
@@ -129,6 +135,14 @@ class VanHack(JobSource, ProfileSource, ManualSession):
         except Exception as failure:
             artifact = await self._save_evidence(label)
             raise CollectionError(f"VanHack, {label}: {failure}", artifact) from failure
+
+    async def _capture(self, label: str, folder: Path) -> None:
+        """The page as the robot read it (scrolled to the end), asked for by the user. A
+        failed capture doesn't fail the search: the cards were already read."""
+        try:
+            await debug.dump(self.page, label, folder)
+        except Exception as failure:  # noqa: BLE001 - only a missing screenshot
+            logger.warning("Capturing %s failed: %s", label, failure)
 
     async def _save_evidence(self, label: str) -> str | None:
         # The page may have died along with the failure; don't hide the original error.

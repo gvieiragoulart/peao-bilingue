@@ -5,7 +5,7 @@ import pathlib
 import pytest
 from playwright.async_api import Page
 
-from peao_bilingue.adapters.sources.vanhack import auth, detail, listing
+from peao_bilingue.adapters.sources.vanhack import auth, debug, detail, listing
 from peao_bilingue.adapters.sources.vanhack import source as source_module
 from peao_bilingue.adapters.sources.vanhack.source import VanHack, _job, _summary
 from peao_bilingue.domain.collection import JobSource
@@ -105,3 +105,66 @@ async def test_failed_enter_closes_browser(
         async with VanHack():
             pass
     assert browser.closed
+
+
+# --- screenshots asked for in a collection ------------------------------------------
+
+
+@pytest.fixture
+async def on_listing(page: Page, monkeypatch: pytest.MonkeyPatch) -> VanHack:
+    """A VanHack already on the listing: `search` reads the fixture, no navigation."""
+    await page.set_content((FIXTURES / "listing.html").read_text(encoding="utf-8"))
+
+    async def read_listing(page: Page, *_: object) -> list[dict[str, object]]:
+        return await listing.extract(page)
+
+    async def no_pause() -> None:
+        return None
+
+    monkeypatch.setattr(listing, "search", read_listing)
+    monkeypatch.setattr(source_module, "_polite_pause", no_pause)
+    source = VanHack()
+    source._page = page
+    return source
+
+
+async def test_search_saves_screenshot_when_asked(
+    on_listing: VanHack, tmp_path: pathlib.Path
+) -> None:
+    on_listing.capture_to = tmp_path / "captures"
+
+    summaries = await on_listing.search("node.js")
+
+    assert summaries
+    [png] = (tmp_path / "captures").glob("*_search_node-js.png")
+    assert "vh-cards" in png.with_suffix(".html").read_text(encoding="utf-8")
+
+
+async def test_search_saves_nothing_by_default(
+    on_listing: VanHack, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dumped: list[object] = []
+
+    async def dump(*args: object) -> None:
+        dumped.append(args)
+
+    monkeypatch.setattr(debug, "dump", dump)
+    assert await on_listing.search("python")
+    assert dumped == []
+
+
+async def test_failed_screenshot_does_not_fail_search(
+    on_listing: VanHack, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def broken(*_: object) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(debug, "dump", broken)
+    on_listing.capture_to = tmp_path
+
+    assert await on_listing.search("python")
+
+
+def test_file_label_is_safe_in_a_file_name() -> None:
+    assert debug.file_label("search_Node.js / C#") == "search_node-js-c"
+    assert debug.file_label("???") == "page"

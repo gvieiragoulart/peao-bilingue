@@ -50,6 +50,9 @@ DATA_DIR = Path(
     os.environ.get("PEAO_DATA_DIR") or os.environ.get("PEAO_DADOS") or BASE_DIR / "data"
 )
 CONFIG_PATH = DATA_DIR / "config.json"
+# What the app saw on a page: evidence of a failed reading and the screenshots asked for
+# in a collection.
+ARTIFACTS_DIR = BASE_DIR / "artifacts"
 ENV_PATH = BASE_DIR / ".env"
 
 KEYRING_SERVICE = "peao-bilingue"

@@ -79,6 +79,13 @@ MESSAGES: dict[str, str] = {
         "Execução {id}: {status} — {listed} listadas, {new} novas."
     ),
     "Evidence in {path}.*": "Evidência em {path}.*",
+    "save a screenshot + HTML of each search on sources that read web pages": (
+        "salva print + HTML de cada pesquisa nas fontes que leem páginas web"
+    ),
+    "Screenshots saved in {path}.": "Prints salvos em {path}.",
+    "No screenshots: no source in this collection reads web pages.": (
+        "Nenhum print: nenhuma fonte desta coleta lê páginas web."
+    ),
     "Search {id} created.": "Busca {id} criada.",
     "[{id}] {name}: {keywords} | sources: {sources} | {status}": (
         "[{id}] {name}: {keywords} | fontes: {sources} | {status}"
@@ -457,6 +464,7 @@ MESSAGES: dict[str, str] = {
     "Collection started.": "Coleta iniciada.",
     "Collection started: {source}.": "Coleta iniciada: {source}.",
     "All enabled sources": "Todas as fontes ativas",
+    "Save a screenshot of each search": "Salvar print de cada pesquisa",
     "Collection {status}: {listed} listed, {new} new.": (
         "Coleta {status}: {listed} listada(s), {new} nova(s)."
     ),
