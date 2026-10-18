@@ -20,6 +20,16 @@ BLOCKS = {"SAFETY", "BLOCKLIST", "PROHIBITED_CONTENT"}
 class Gemini(LLMProvider):
     name = "gemini"
     label = "Gemini (Google)"
+    description = _(
+        "Google's Gemini models through the Gemini API. Needs your API key and a model "
+        "name."
+    )
+    about = _(
+        "The app sends the job and your profile, without contact data, only when you "
+        "click Analyze on a job. There is no default model: the catalog changes, so "
+        "write the one your key can use."
+    )
+    site = "https://aistudio.google.com"
     fields: ClassVar[dict[str, str]] = {
         "gemini_model": _("Model (required)"),
         "gemini_api_key": _("API key"),

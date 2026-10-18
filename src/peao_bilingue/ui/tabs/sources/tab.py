@@ -12,13 +12,10 @@ from peao_bilingue.i18n import _
 from peao_bilingue.ui import theme
 from peao_bilingue.ui.tabs.sources.dialog import SourceDialog
 from peao_bilingue.ui.tabs.sources.source_card import SourceCard
+from peao_bilingue.ui.widgets import CardGrid
 
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
-
-# Below this width a card's description wraps into too many lines.
-CARD_MIN_WIDTH = 420
-MAX_COLUMNS = 3
 
 
 def session_status() -> dict[int, str]:
@@ -47,45 +44,27 @@ class SourcesTab(ctk.CTkScrollableFrame):
         ).pack(anchor="w", padx=6, pady=(0, 10))
 
         # The cards in a grid that reflows with the tab's width.
-        self.grid_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.grid_frame = CardGrid(self)
         self.grid_frame.pack(fill="x")
         self.cards: dict[str, SourceCard] = {}
         for name in factories.sources.available():
             self.cards[name] = SourceCard(
                 self.grid_frame, name, on_toggle=self._save, on_open=self.open
             )
+        self.grid_frame.cards = list(self.cards.values())
         self.dialog: SourceDialog | None = None
         # The last login or check result per source, shown again when its dialog opens.
         self.session_status: dict[str, str] = {}
-        self.columns = 0
         self.arrange(2)
         # add="+": CustomTkinter's own binding keeps the scroll region in sync.
-        self.bind("<Configure>", self._on_resize, add="+")
+        self.bind("<Configure>", self.grid_frame.fit, add="+")
+
+    @property
+    def columns(self) -> int:
+        return self.grid_frame.columns
 
     def arrange(self, columns: int) -> None:
-        """Places the cards in `columns` columns of equal width (1 to MAX_COLUMNS)."""
-        columns = max(1, min(columns, MAX_COLUMNS))
-        if columns == self.columns:
-            return
-        self.columns = columns
-        for column in range(MAX_COLUMNS):
-            used = column < columns
-            self.grid_frame.grid_columnconfigure(
-                column, weight=int(used), uniform="card" if used else ""
-            )
-        for index, card in enumerate(self.cards.values()):
-            card.grid(
-                row=index // columns,
-                column=index % columns,
-                sticky="nsew",
-                padx=6,
-                pady=6,
-            )
-
-    def _on_resize(self, event: Any) -> None:
-        # The event's width is in screen pixels; the card's minimum isn't scaled.
-        width = event.width / self._get_widget_scaling()
-        self.arrange(int(width // CARD_MIN_WIDTH))
+        self.grid_frame.arrange(columns)
 
     def refresh(self) -> None:
         for name, card in self.cards.items():

@@ -1,6 +1,6 @@
-"""Each source's icon: its own logo (`source_logos`, generated) or, for a source without
-one, a monogram on a colored tile. The same drawing goes on the Sources tab's cards and
-dialog and on the Jobs tab's rows and panel.
+"""Each source's and LLM's icon: its own logo (`source_logos`, `llm_logos`, generated)
+or, for one without, a monogram on a colored tile. The same drawing goes on the Sources
+and LLMs tabs' cards and modals and on the Jobs tab's rows and panel.
 
 Tk has no image scaling worth the name, so the logos come pre-rendered in several
 sizes and the nearest one is drawn. Remote OK has no logo on purpose (its terms ask not
@@ -14,6 +14,7 @@ from weakref import WeakKeyDictionary
 import customtkinter as ctk
 
 from peao_bilingue.ui import presentation, theme
+from peao_bilingue.ui.llm_logos import LLM_LOGOS
 from peao_bilingue.ui.source_logos import LOGOS
 
 RADIUS = 0.22  # of the side, as the logos' tiles (packaging/source_icons.py)
@@ -37,7 +38,7 @@ _fonts: "WeakKeyDictionary[tk.Misc, dict[int, tkfont.Font]]" = WeakKeyDictionary
 
 
 def has_logo(name: str) -> bool:
-    return name in LOGOS
+    return name in LOGOS or name in LLM_LOGOS
 
 
 def monogram(name: str) -> tuple[str, theme.Pair]:
@@ -52,7 +53,8 @@ def monogram(name: str) -> tuple[str, theme.Pair]:
 
 def logo(widget: tk.Misc, name: str, pixels: int) -> tk.PhotoImage | None:
     """The logo in the size nearest `pixels`, or None when the source has none."""
-    sizes = LOGOS.get(name)
+    # Source and LLM names never collide (a test makes sure).
+    sizes = LOGOS.get(name) or LLM_LOGOS.get(name)
     if not sizes:
         return None
     size = min(sizes, key=lambda candidate: (abs(candidate - pixels), -candidate))
