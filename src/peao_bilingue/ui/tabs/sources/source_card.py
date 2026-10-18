@@ -10,7 +10,7 @@ from peao_bilingue import factories
 from peao_bilingue.domain.collection import ManualSession
 from peao_bilingue.i18n import _
 from peao_bilingue.ui.presentation import source_features
-from peao_bilingue.ui.widgets import Hint
+from peao_bilingue.ui.widgets import Hint, OutlineButton
 
 PADDING = 16
 # Room the On/Off switch takes next to the title.
@@ -81,15 +81,10 @@ class SourceCard(ctk.CTkFrame):
                 width=110,
                 command=lambda: on_login(self),
             ).pack(side="left")
-            ctk.CTkButton(
+            OutlineButton(
                 actions,
                 text=_("Check session"),
                 width=130,
-                fg_color="transparent",
-                border_width=1,
-                # The theme's text is white: on a transparent button it vanishes in
-                # light mode.
-                text_color=("gray10", "gray90"),
                 command=lambda: on_check(self),
             ).pack(side="left", padx=6)
             self.status = ctk.CTkLabel(actions, text="")

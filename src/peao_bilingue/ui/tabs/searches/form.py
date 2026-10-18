@@ -10,7 +10,7 @@ from peao_bilingue import factories
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation
-from peao_bilingue.ui.widgets import Hint
+from peao_bilingue.ui.widgets import Hint, OutlineButton
 
 
 class SearchForm(ctk.CTkFrame):
@@ -54,12 +54,10 @@ class SearchForm(ctk.CTkFrame):
         ctk.CTkButton(buttons, text=_("Save"), width=90, command=on_save).pack(
             side="left"
         )
-        ctk.CTkButton(
+        OutlineButton(
             buttons,
             text=_("New"),
             width=80,
-            fg_color="transparent",
-            border_width=1,
             command=self.clear,
         ).pack(side="left", padx=6)
         ctk.CTkButton(

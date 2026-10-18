@@ -25,7 +25,7 @@ from peao_bilingue.domain.schedule import check_time
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation
-from peao_bilingue.ui.widgets import Form, adapter_fields
+from peao_bilingue.ui.widgets import Form, OutlineButton, adapter_fields
 
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
@@ -83,24 +83,20 @@ class Onboarding(ctk.CTkFrame):
         # Packed before the content, so a tall step never pushes the buttons away.
         footer = ctk.CTkFrame(self, fg_color="transparent")
         footer.pack(side="bottom", fill="x", padx=24, pady=(8, 20))
-        ctk.CTkButton(
+        OutlineButton(
             footer,
             text=_("Skip the guide"),
             width=130,
-            fg_color="transparent",
-            border_width=1,
             command=self.skip,
         ).pack(side="left")
         self.next_button = ctk.CTkButton(
             footer, text=_("Next"), width=120, command=self.next
         )
         self.next_button.pack(side="right")
-        self.back_button = ctk.CTkButton(
+        self.back_button = OutlineButton(
             footer,
             text=_("Back"),
             width=100,
-            fg_color="transparent",
-            border_width=1,
             command=self.back,
         )
         self.back_button.pack(side="right", padx=8)
@@ -266,12 +262,10 @@ class Onboarding(ctk.CTkFrame):
                 "yourself. You can also skip this and do it later, on the Profile tab."
             ),
         )
-        ctk.CTkButton(
+        OutlineButton(
             page,
             text=_("Import file…"),
             width=130,
-            fg_color="transparent",
-            border_width=1,
             command=self._import,
         ).pack(anchor="w", pady=(0, 8))
         self.cv = ctk.CTkTextbox(page, wrap="word", height=260)
