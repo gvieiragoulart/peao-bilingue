@@ -21,6 +21,16 @@ class Ollama(LLMProvider):
 
     name = "ollama"
     label = _("Ollama (local, free)")
+    description = _(
+        "Open models running on this PC through Ollama. Free, and nothing leaves the "
+        "computer."
+    )
+    about = _(
+        "Install Ollama, start it (ollama serve) and download a model (ollama pull). "
+        "On a 6 GB GPU, quantized 7–8B models fit. The app always sets the context "
+        "size: Ollama's small default would cut the prompt without saying so."
+    )
+    site = "https://ollama.com"
     fields: ClassVar[dict[str, str]] = {
         "ollama_host": _("Address"),
         "ollama_model": _("Model"),

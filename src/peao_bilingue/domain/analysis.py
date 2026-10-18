@@ -49,6 +49,11 @@ class LLMProvider(ABC):
 
     name: ClassVar[str]
     label: ClassVar[str]
+    # What it is, in one or two sentences (the LLMs tab's cards).
+    description: ClassVar[str] = ""
+    # How the app uses it, longer: cost, what it sends (the LLM's modal).
+    about: ClassVar[str] = ""
+    site: ClassVar[str] = ""  # where to get a key or the program
     # Settings fields that configure the adapter -> label on screen. This way the
     # window builds the form for a new provider without being changed.
     fields: ClassVar[dict[str, str]] = {}

@@ -7,6 +7,7 @@ import pytest
 from peao_bilingue import factories
 from peao_bilingue.config import Settings
 from peao_bilingue.ui import source_icons
+from peao_bilingue.ui.llm_logos import LLM_LOGOS
 from peao_bilingue.ui.source_logos import LOGOS
 from peao_bilingue.ui.widgets import adapter_fields, field_type
 
@@ -55,5 +56,24 @@ def test_every_logo_is_a_png_tk_reads() -> None:
         assert nearest.width() == 32
         assert source_icons.logo(root, "github", 30) is nearest
         assert source_icons.logo(root, "remoteok", 30) is None
+    finally:
+        root.destroy()
+
+
+def test_every_llm_has_a_logo_and_no_name_collides_with_a_source() -> None:
+    llms = set(factories.llms.available())
+    assert llms <= set(LLM_LOGOS)
+    assert not llms & set(factories.sources.available())
+
+
+@pytest.mark.integration
+def test_every_llm_logo_is_a_png_tk_reads() -> None:
+    root = tk.Tk()
+    try:
+        for name, sizes in LLM_LOGOS.items():
+            for size, data in sizes.items():
+                image = tk.PhotoImage(master=root, data=data)
+                assert (image.width(), image.height()) == (size, size), name
+        assert source_icons.logo(root, "ollama", 40) is not None
     finally:
         root.destroy()
