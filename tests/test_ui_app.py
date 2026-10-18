@@ -129,7 +129,7 @@ def test_table_shows_keywords_found_as_chips(
 
     assert tab.table.chips("vanhack:1") == ["python", "react"]
     assert tab.table.chips("vanhack:2") == []
-    assert tab.count.cget("text").startswith("2 job(s).")
+    assert tab.count.cget("text").startswith("2 job(s) ·")
 
 
 def test_clicking_a_row_opens_the_dialog(
@@ -185,7 +185,7 @@ def test_status_filter_and_column_use_labels(
     tab.refresh()
 
     assert tab.table.keys() == [new.key]
-    assert tab.table.row(new.key)[6] == "Applied"
+    assert tab.table.row(new.key)[-1] == "Applied"
 
 
 def test_status_is_drawn_as_a_chip(window: App, repository: SQLiteRepository) -> None:
@@ -876,3 +876,48 @@ def test_collect_now_from_the_sidebar_opens_runs(
 
     assert started == [True]
     assert window.current == "runs"
+
+
+def test_selection_bar_shows_only_with_ticked_boxes(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    assert not tab.selection_bar.winfo_manager()
+
+    tab.table.toggle("vanhack:1")
+    assert tab.selection_bar.winfo_manager() == "pack"
+
+    tab.table.clear_checked()
+    assert not tab.selection_bar.winfo_manager()
+
+
+def test_marks_the_selected_jobs_with_a_status(
+    window: App, repository: SQLiteRepository
+) -> None:
+    for external_id in ("1", "2", "3"):
+        repository.save_job(job(external_id), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    tab.table.toggle("vanhack:1")
+    tab.table.toggle("vanhack:2")
+
+    tab._mark_checked("Studying")
+
+    studying = repository.list_jobs(status=JobStatus.studying)
+    assert sorted(item.job.key for item in studying) == ["vanhack:1", "vanhack:2"]
+    assert window.notices["questions"] == []  # only discarding asks first
+    assert tab.table.checked() == []
+    assert tab.mark_checked.get() == "Mark as…"
+
+
+def test_fit_is_drawn_as_a_chip(window: App, repository: SQLiteRepository) -> None:
+    analyzed = with_analyzed_job(repository, "1", fit=82)
+    repository.save_job(job("2"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+
+    assert tab.table.fit_chip(analyzed.key) == "82"
+    assert tab.table.fit_chip("vanhack:2") is None
