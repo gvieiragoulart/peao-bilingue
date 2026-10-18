@@ -122,6 +122,16 @@ from `Settings` itself. Sources with a manual login implement the `ManualSession
 login/check buttons automatically. Tabs have an internal id (`jobs`, `runs`...) and a translated
 title. `peao-ui` is a gui-script: it opens with no console.
 
+**Jobs tab (2026-10-17):** the table fills the tab and shows, as colored chips (one color per
+search, `presentation.search_colors`), the keywords of the job's searches that show up in it
+(`filters.matched_keywords`); no description. It is **drawn on a `tk.Canvas`**
+(`ui/tabs/jobs/table.py`): a `ttk.Treeview` only colors whole rows, and a row of CustomTkinter
+widgets per job took 45 s for 500 jobs (the Canvas: 0.24 s). A click opens the job's dialog
+(`ui/tabs/jobs/dialog.py`) **inside the window**, placed over the tab (not a `CTkToplevel`, for
+the same reason as the guide), with the analysis, the LLM/profile pickers, Analyze, Open and the
+status buttons; Esc, ✕ or a click outside closes it. Generated mouse and key events don't reach
+the hidden test window: the tests call the click handler and check the Esc binding.
+
 **Dependency rule:** `domain` imports nothing from the project except `i18n` (a leaf utility for
 user-facing error messages); `application` only knows `domain`; adapters implement ports; only
 `composition.py`, `cli.py` and `ui/` know concrete adapters.

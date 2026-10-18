@@ -291,8 +291,6 @@ MESSAGES: dict[str, str] = {
     "Not analyzed yet: pick the LLM and the profile, then click Analyze.": (
         "Ainda não analisada: escolha o LLM e o perfil e clique em Analisar."
     ),
-    "DESCRIPTION": "DESCRIÇÃO",
-    "(no description)": "(sem descrição)",
     "Analysis by {provider} ({model}) on {when}": (
         "Análise por {provider} ({model}) em {when}"
     ),
@@ -337,8 +335,11 @@ MESSAGES: dict[str, str] = {
     "Analyze": "Analisar",
     "Open job": "Abrir vaga",
     "Mark as:": "Marcar como:",
-    "{count} job(s). Pick one to see its analysis or to analyze it.": (
-        "{count} vaga(s). Selecione uma para ver a análise ou analisar."
+    "{count} job(s). Click one to see it or analyze it.": (
+        "{count} vaga(s). Clique em uma para ver ou analisar."
+    ),
+    "No keyword from the searches shows up in this job anymore.": (
+        "Nenhuma palavra-chave das buscas aparece mais nesta vaga."
     ),
     "Pick a job to analyze.": "Selecione uma vaga para analisar.",
     "Analyzing…": "Analisando…",

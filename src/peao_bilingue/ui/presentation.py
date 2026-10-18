@@ -1,8 +1,10 @@
 """Turns entities into text and table rows. No Tk: testable directly."""
 
+from dataclasses import dataclass
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from peao_bilingue.application.filters import matched_keywords
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import JobAnalysis, SavedAnalysis
 from peao_bilingue.domain.collection import Run, RunStatus, Trigger
@@ -13,6 +15,18 @@ from peao_bilingue.i18n import _
 
 TABLE_ERROR_SIZE = 80
 NEW_MARK = "●"
+
+# One color per search, (light theme, dark theme), all dark enough for white text.
+SEARCH_COLORS: tuple[tuple[str, str], ...] = (
+    ("#1f6aa5", "#1f6aa5"),
+    ("#2e7d32", "#388e3c"),
+    ("#7b1fa2", "#8e24aa"),
+    ("#c62828", "#d32f2f"),
+    ("#00796b", "#00897b"),
+    ("#d84315", "#e64a19"),
+    ("#3949ab", "#3f51b5"),
+    ("#ad1457", "#c2185b"),
+)
 
 
 def _now() -> datetime:
@@ -125,6 +139,41 @@ def job_row(item: ListedJob, now: datetime | None = None) -> tuple[str, ...]:
     )
 
 
+@dataclass(frozen=True)
+class KeywordGroup:
+    """The keywords of one search that show up in a job."""
+
+    search: str
+    keywords: list[str]
+
+
+def job_keywords(item: ListedJob, searches: list[Search]) -> list[KeywordGroup]:
+    """For each search the job was found by, the keywords that show up in it. A
+    search deleted since, or one whose keywords no longer show up, is left out."""
+    by_name = {search.name: search for search in searches}
+    groups = []
+    for name in item.searches:
+        search = by_name.get(name)
+        if search is None:
+            continue
+        found = matched_keywords(item.job, search)
+        if found:
+            groups.append(KeywordGroup(name, found))
+    return groups
+
+
+def search_colors(names: list[str]) -> dict[str, tuple[str, str]]:
+    """A color per search, by its position: the same search keeps its color."""
+    return {
+        name: SEARCH_COLORS[index % len(SEARCH_COLORS)]
+        for index, name in enumerate(names)
+    }
+
+
+def job_count(count: int) -> str:
+    return _("{count} job(s). Click one to see it or analyze it.").format(count=count)
+
+
 def _also_on(postings: list[Posting]) -> list[str]:
     return [
         _("Also on {source}: {url}").format(source=posting.source, url=posting.url)
@@ -132,13 +181,8 @@ def _also_on(postings: list[Posting]) -> list[str]:
     ]
 
 
-def analysis_text(
-    job: Job,
-    analysis: JobAnalysis,
-    also_on: list[Posting] | None = None,
-    dates: list[str] | None = None,
-) -> str:
-    details = " | ".join(
+def _details(job: Job) -> str:
+    return " | ".join(
         part
         for part in (
             job.company,
@@ -149,10 +193,18 @@ def analysis_text(
         )
         if part
     )
+
+
+def analysis_text(
+    job: Job,
+    analysis: JobAnalysis,
+    also_on: list[Posting] | None = None,
+    dates: list[str] | None = None,
+) -> str:
+    # No title: the job's dialog shows it as its header.
     return "\n".join(
         [
-            job.title,
-            details,
+            _details(job),
             job.url,
             *_also_on(also_on or []),
             *(dates or []),
@@ -182,9 +234,11 @@ def job_detail(
 ) -> str:
     dates = _dates(item, now or _now())
     if analysis is None:
+        # No description: the dialog shows the keywords found, and the job reads
+        # better on its own site.
         return "\n".join(
             [
-                item.job.title,
+                _details(item.job),
                 item.job.url,
                 *_also_on(item.also_on),
                 *dates,
@@ -192,9 +246,6 @@ def job_detail(
                 _(
                     "Not analyzed yet: pick the LLM and the profile, then click Analyze."
                 ),
-                "",
-                _("DESCRIPTION"),
-                item.job.description or _("(no description)"),
             ]
         )
 

@@ -58,3 +58,14 @@ def test_lists_matching_searches() -> None:
         search(name="React", keywords=["react.js"]),
     ]
     assert filters.matching_searches(JOB, searches) == ["Python", "React"]
+
+
+def test_matched_keywords_in_search_order() -> None:
+    found = filters.matched_keywords(
+        JOB, search(keywords=["Django", "cobol", "python", "django"])
+    )
+    assert found == ["Django", "python"]
+
+
+def test_no_matched_keywords() -> None:
+    assert filters.matched_keywords(JOB, search(keywords=["cobol"])) == []

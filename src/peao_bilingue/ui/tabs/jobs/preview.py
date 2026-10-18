@@ -1,4 +1,4 @@
-"""The Jobs tab's side panel: the selected job's detail and what can be done with it."""
+"""The body of the job's dialog: the detail and what can be done with the job."""
 
 from collections.abc import Callable
 from typing import Any
