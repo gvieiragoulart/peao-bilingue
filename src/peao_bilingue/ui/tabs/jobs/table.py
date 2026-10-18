@@ -1,5 +1,6 @@
 """The Jobs tab's table: one row per job, with the keywords found and the status as
-colored chips, and a box per row to select several jobs at once.
+colored chips, and a box per row to select several jobs at once. A click on the
+Published header sorts by the date at the source.
 
 Drawn on a Canvas: a ttk.Treeview only colors whole rows, never one cell, and a row
 of CustomTkinter widgets per job is far too slow (500 jobs took 45 s to build; the
@@ -9,7 +10,7 @@ import tkinter as tk
 from collections.abc import Callable
 from dataclasses import dataclass
 from tkinter import font as tkfont
-from typing import Any
+from typing import Any, Literal
 
 import customtkinter as ctk
 
@@ -32,6 +33,15 @@ CHECKED_COLOR = ("#d9dee4", "#262d35")
 CHECK_SIZE = 14
 WHEEL_ROWS = 3
 
+# The order by the date at the source; None keeps the repository's (newest found first).
+PublishedOrder = Literal["newest", "oldest"] | None
+NEXT_ORDER: dict[PublishedOrder, PublishedOrder] = {
+    None: "newest",
+    "newest": "oldest",
+    "oldest": None,
+}
+ORDER_ARROWS: dict[PublishedOrder, str] = {None: "↕", "newest": "▼", "oldest": "▲"}
+
 
 @dataclass(frozen=True)
 class Column:
@@ -49,7 +59,7 @@ def columns() -> list[Column]:
         Column("keywords", _("Keywords"), 250),
         # When we found it, and its age at the source (● = new there).
         Column("found", _("Found"), 100),
-        Column("published", _("Published"), 95),
+        Column("published", _("Published"), 115),  # room for the sort arrow
         Column("location", _("Location"), 130),
         Column("source", _("Source"), 115),
         Column("status", _("Status"), 115),  # room for the chip of "Descartada"
@@ -66,7 +76,8 @@ class JobTable(ctk.CTkFrame):
         super().__init__(master, fg_color="transparent")
         self._columns = columns()
         self._jobs: dict[str, ListedJob] = {}
-        self._keys: list[str] = []
+        self._keys: list[str] = []  # in the order drawn
+        self._order: PublishedOrder = None
         self._keywords: dict[str, list[KeywordGroup]] = {}
         self._colors: dict[str, tuple[str, str]] = {}
         self._selected: str | None = None
@@ -120,7 +131,7 @@ class JobTable(ctk.CTkFrame):
         colors: dict[str, tuple[str, str]],
     ) -> None:
         self._jobs = {item.job.key: item for item in jobs}
-        self._keys = list(self._jobs)
+        self._keys = self._sorted()
         self._keywords = keywords
         self._colors = colors
         if self._selected not in self._jobs:
@@ -173,6 +184,30 @@ class JobTable(ctk.CTkFrame):
         self._redraw()
         self._on_check_change()
 
+    def order(self) -> PublishedOrder:
+        return self._order
+
+    def sort_by_published(self, order: PublishedOrder) -> None:
+        """Kept across refreshes, until changed."""
+        self._order = order
+        self._keys = self._sorted()
+        self._hovered = None
+        self._redraw()
+
+    def _sorted(self) -> list[str]:
+        """Jobs with no date at the source go last, either way; ties keep the
+        repository's order."""
+        keys = list(self._jobs)
+        if self._order is None:
+            return keys
+        published = {
+            key: when for key in keys if (when := self._jobs[key].published) is not None
+        }
+        dated = sorted(
+            published, key=published.__getitem__, reverse=self._order == "newest"
+        )
+        return [*dated, *(key for key in keys if key not in published)]
+
     # ---- read back from what was drawn (for the tests)
 
     def keys(self) -> list[str]:
@@ -187,6 +222,10 @@ class JobTable(ctk.CTkFrame):
     def status_chip(self, key: str) -> str:
         [label] = self._texts(f"statustext{self._keys.index(key)}")
         return label
+
+    def header_title(self, identifier: str) -> str:
+        [item] = self.header.find_withtag(f"header{identifier}")
+        return str(self.header.itemcget(item, "text"))  # type: ignore[no-untyped-call]
 
     def box_ticked(self, key: str) -> bool:
         return bool(self.canvas.find_withtag(f"tick{self._keys.index(key)}"))
@@ -232,13 +271,17 @@ class JobTable(ctk.CTkFrame):
                 self._draw_box(self.header, x, 0, width, self._all_checked(), "all")
                 x += width
                 continue
+            title = column.title
+            if column.identifier == "published":
+                title = f"{title} {ORDER_ARROWS[self._order]}"
             self.header.create_text(
                 x + self._px(CELL_PADDING),
                 row_height // 2,
-                text=self._fit(column.title, width, self._header_font),
+                text=self._fit(title, width, self._header_font),
                 anchor="w",
                 fill=text,
                 font=self._header_font,
+                tags=("header", f"header{column.identifier}"),
             )
             x += width
         self.header.create_line(0, row_height - 1, x, row_height - 1, fill="gray50")
@@ -429,8 +472,16 @@ class JobTable(ctk.CTkFrame):
         index = int(self.canvas.canvasy(y) // self._px(ROW_HEIGHT))
         return index if 0 <= index < len(self._keys) else None
 
+    def _column_at(self, x: float) -> str | None:
+        left = 0
+        for column, width in zip(self._columns, self._widths(), strict=True):
+            if left <= x < left + width:
+                return column.identifier
+            left += width
+        return None
+
     def _in_check_column(self, x: float) -> bool:
-        return x < self._widths()[0]
+        return self._column_at(x) == "check"
 
     def _click(self, event: "tk.Event[tk.Canvas]") -> None:
         index = self._index_at(event.y)
@@ -444,8 +495,11 @@ class JobTable(ctk.CTkFrame):
         self._on_click(key)
 
     def _click_header(self, event: "tk.Event[tk.Canvas]") -> None:
-        if self._in_check_column(event.x):
+        column = self._column_at(event.x)
+        if column == "check":
             self.toggle_all()
+        elif column == "published":
+            self.sort_by_published(NEXT_ORDER[self._order])
 
     def _hover(self, event: "tk.Event[tk.Canvas]") -> None:
         self._set_hover(self._index_at(event.y))
