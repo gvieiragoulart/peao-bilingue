@@ -8,7 +8,11 @@ import customtkinter as ctk
 from peao_bilingue import __version__
 from peao_bilingue.config import Settings
 from peao_bilingue.i18n import _
-from peao_bilingue.ui.widgets import Field, Form, Heading
+from peao_bilingue.ui.widgets import Field, Form, Heading, OutlineButton
+
+
+def appearance_labels() -> dict[str, str]:
+    return {"system": _("Same as Windows"), "light": _("Light"), "dark": _("Dark")}
 
 
 class AboutSection(ctk.CTkFrame):
@@ -37,6 +41,14 @@ class AboutSection(ctk.CTkFrame):
         )
         self.form.pack(fill="x", pady=(6, 4))
 
+        appearance = ctk.CTkFrame(self, fg_color="transparent")
+        appearance.pack(fill="x", pady=(0, 10))
+        ctk.CTkLabel(appearance, text=_("Appearance")).pack(side="left", padx=(8, 12))
+        self.appearance = ctk.CTkSegmentedButton(
+            appearance, values=list(appearance_labels().values())
+        )
+        self.appearance.pack(side="left")
+
         support = ctk.CTkFrame(self, fg_color="transparent")
         support.pack(fill="x")
         for text, width, command, padx in (
@@ -44,17 +56,20 @@ class AboutSection(ctk.CTkFrame):
             (_("Project page"), 130, on_project_page, 6),
             (_("Run the setup guide again"), 190, on_setup_guide, 0),
         ):
-            ctk.CTkButton(
+            OutlineButton(
                 support,
                 text=text,
                 width=width,
-                fg_color="transparent",
-                border_width=1,
                 command=command,
             ).pack(side="left", padx=padx)
 
     def load(self, current: Settings) -> None:
         self.form.load(current)
+        self.appearance.set(appearance_labels()[current.appearance])
 
     def values(self) -> dict[str, Any]:
-        return self.form.values()
+        by_label = {label: mode for mode, label in appearance_labels().items()}
+        return {
+            **self.form.values(),
+            "appearance": by_label.get(self.appearance.get(), "system"),
+        }

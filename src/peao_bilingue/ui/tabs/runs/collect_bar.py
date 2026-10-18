@@ -7,29 +7,32 @@ from typing import Any
 import customtkinter as ctk
 
 from peao_bilingue.i18n import _
-from peao_bilingue.ui.widgets import Hint
+from peao_bilingue.ui.widgets import Card, Hint
 
 
 def all_sources_label() -> str:
     return _("All enabled sources")
 
 
-class CollectBar(ctk.CTkFrame):
+class CollectBar(Card):
     def __init__(self, master: Any, on_collect: Callable[[], None]) -> None:
-        super().__init__(master, fg_color="transparent")
+        super().__init__(master)
         # Label shown -> source name; "all" isn't in it.
         self._sources: dict[str, str] = {}
-        Hint(
+        hint = Hint(
             self,
             _(
                 "The collection looks for new jobs and saves them, with no LLM: analyze "
                 "the ones you want on the Jobs tab."
             ),
-        ).pack(side="left")
+            justify="left",
+            anchor="w",
+            wraplength=380,
+        )
         self.button = ctk.CTkButton(
             self, text=_("Collect now"), width=140, command=on_collect
         )
-        self.button.pack(side="right")
+        self.button.pack(side="right", padx=(0, 16), pady=14)
         # Only for this collection: the scheduled one never takes screenshots.
         self.screenshots = ctk.CTkCheckBox(
             self, text=_("Save a screenshot of each search")
@@ -37,6 +40,8 @@ class CollectBar(ctk.CTkFrame):
         self.screenshots.pack(side="right", padx=(0, 12))
         self.source = ctk.CTkOptionMenu(self, values=[all_sources_label()], width=190)
         self.source.pack(side="right", padx=(0, 12))
+        # Packed last: the pickers on the right keep their width, the text wraps.
+        hint.pack(side="left", fill="x", expand=True, padx=(16, 12), pady=14)
 
     def set_sources(self, sources: dict[str, str]) -> None:
         """`sources`: label -> name of each enabled source. The choice stays if the

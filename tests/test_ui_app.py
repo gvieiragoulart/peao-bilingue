@@ -8,6 +8,7 @@ from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 
+import customtkinter as ctk
 import pytest
 from builders import analysis, job, profile
 from fakes import FakeProvider, FakeReleaseFeed, FakeScheduler
@@ -114,7 +115,9 @@ def test_jobs_show_and_detail_has_analysis(
     tab.open_job(new.key)
     window.update()
     assert tab.dialog.is_open
-    assert "INTERVIEW QUESTIONS (20)" in tab.preview.detail.get("1.0", "end")
+    assert tab.preview.ring.score == 82
+    tab.preview.pick_section("questions")
+    assert "20. Question 20" in tab.preview.detail.get("1.0", "end")
 
 
 def test_table_shows_keywords_found_as_chips(
@@ -128,7 +131,7 @@ def test_table_shows_keywords_found_as_chips(
 
     assert tab.table.chips("vanhack:1") == ["python", "react"]
     assert tab.table.chips("vanhack:2") == []
-    assert tab.count.cget("text").startswith("2 job(s).")
+    assert tab.count.cget("text").startswith("2 job(s) ·")
 
 
 def test_clicking_a_row_opens_the_dialog(
@@ -184,7 +187,7 @@ def test_status_filter_and_column_use_labels(
     tab.refresh()
 
     assert tab.table.keys() == [new.key]
-    assert tab.table.row(new.key)[6] == "Applied"
+    assert tab.table.row(new.key)[-1] == "Applied"
 
 
 def test_status_is_drawn_as_a_chip(window: App, repository: SQLiteRepository) -> None:
@@ -463,6 +466,44 @@ def test_collect_picker_offers_only_enabled_sources(window: App) -> None:
     assert tab.collect_bar.chosen_source() is None
 
 
+def test_source_card_shows_description_and_state(window: App) -> None:
+    card = window.panels["sources"].cards["remotive"]
+    assert card.title.cget("text") == REMOTIVE
+    assert card.description.cget("text").startswith("Remote software development")
+    accent = ctk.ThemeManager.theme["CTkButton"]["fg_color"]
+
+    card.set_enabled(True)
+    assert card.switch.cget("text") == "On"
+    assert card.cget("border_color") == accent
+
+    card.set_enabled(False)
+    assert card.switch.cget("text") == "Off"
+    assert card.cget("border_color") != accent
+
+    # Only sources with a manual login get the login buttons and status.
+    assert card.status is None
+    assert window.panels["sources"].cards["vanhack"].status is not None
+
+
+def test_source_cards_reflow_in_a_grid(window: App) -> None:
+    tab = window.panels["sources"]
+    names = list(tab.cards)
+
+    def place(name: str) -> tuple[int, int]:
+        info = tab.cards[name].grid_info()
+        return int(info["row"]), int(info["column"])
+
+    tab.arrange(3)
+    assert [place(name) for name in names[:4]] == [(0, 0), (0, 1), (0, 2), (1, 0)]
+    tab.arrange(1)
+    assert [place(name) for name in names[:2]] == [(0, 0), (1, 0)]
+    # Never more columns than the maximum, never fewer than one.
+    tab.arrange(9)
+    assert tab.columns == 3
+    tab.arrange(0)
+    assert tab.columns == 1
+
+
 @pytest.mark.parametrize(
     ("choice", "expected"), [(REMOTIVE, ["remotive"]), (None, None)]
 )
@@ -491,7 +532,7 @@ def test_collect_now_runs_the_chosen_source(
     if choice:
         tab.collect_bar.source.set(choice)
 
-    tab._collect()
+    tab.collect()
 
     assert built == [expected]
     assert tab.collect_bar.button.cget("state") == "disabled"
@@ -526,12 +567,12 @@ def test_collect_with_screenshots_opens_their_folder(
     monkeypatch.setattr(os, "startfile", opened.append, raising=False)
     tab = window.panels["runs"]
 
-    tab._collect()  # unchecked: no screenshots
+    tab.collect()  # unchecked: no screenshots
     assert process_until(
         window, lambda: tab.collect_bar.button.cget("state") == "normal"
     )
     tab.collect_bar.screenshots.select()
-    tab._collect()
+    tab.collect()
     assert process_until(
         window, lambda: tab.collect_bar.button.cget("state") == "normal"
     )
@@ -582,9 +623,7 @@ def test_analyze_uses_chosen_llm_and_profile(
     tab.preview.llm.set("Ollama (local, free)")
     tab._analyze()
 
-    assert process_until(
-        window, lambda: "INTERVIEW QUESTIONS" in tab.preview.detail.get("1.0", "end")
-    )
+    assert process_until(window, lambda: tab.preview.ring.score == 74)
     assert requested_llms == ["ollama"]
     saved = saved_analysis(repository, "vanhack:1")
     assert (saved.analysis.fit_score, saved.provider, saved.profile_source) == (
@@ -694,7 +733,7 @@ def the_guide(window: App) -> Onboarding:
 def test_a_new_user_gets_the_guide_in_place_of_the_tabs(new_user_window: App) -> None:
     guide = the_guide(new_user_window)
     assert guide.winfo_manager() == "pack"
-    assert not new_user_window.tabs.winfo_manager()
+    assert not new_user_window.content.winfo_manager()
 
 
 def test_the_guide_saves_everything_at_the_end(
@@ -714,7 +753,7 @@ def test_the_guide_saves_everything_at_the_end(
         guide.next()
 
     assert new_user_window.onboarding is None
-    assert new_user_window.tabs.winfo_manager() == "pack"
+    assert new_user_window.content.winfo_manager() == "pack"
     [search] = repository.list_searches()
     assert (search.name, search.keywords, search.exclude) == (
         "python, django",
@@ -779,3 +818,160 @@ def test_the_guide_opens_again_from_settings(window: App) -> None:
     window.open_onboarding()
     the_guide(window).skip()
     assert window.onboarding is None
+
+
+def test_appearance_is_saved_and_applied(
+    window: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    applied: list[str] = []
+    # The mode is process-wide: recorded, not changed, so other tests keep theirs.
+    monkeypatch.setattr(ctk, "set_appearance_mode", applied.append)
+    tab = window.panels["settings"]
+    assert tab.about.appearance.get() == "Same as Windows"
+
+    tab.about.appearance.set("Dark")
+    tab._save()
+
+    recorded = json.loads(config.CONFIG_PATH.read_text(encoding="utf-8"))
+    assert recorded["appearance"] == "dark"
+    assert applied == ["dark"]
+
+
+# --- the sidebar ------------------------------------------------------------------------
+
+
+def test_the_sidebar_switches_sections(window: App) -> None:
+    assert window.current == "jobs"
+    assert window.panels["jobs"].winfo_manager() == "pack"
+
+    window.sidebar.items["runs"].invoke()
+
+    assert window.current == "runs"
+    assert window.panels["runs"].winfo_manager() == "pack"
+    assert not window.panels["jobs"].winfo_manager()
+    assert window.sidebar.active() == "runs"
+    assert window.page_title.cget("text") == "Runs"
+
+
+def test_the_sidebar_counts_the_jobs_to_review(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2"), ["Python"])
+    window.on_change()
+    assert window.sidebar.items["jobs"].badge.cget("text").strip() == "2"
+
+    repository.change_statuses(["vanhack:1", "vanhack:2"], JobStatus.discarded)
+    window.on_change()
+    assert not window.sidebar.items["jobs"].badge.winfo_manager()
+
+
+def test_collect_now_from_the_sidebar_opens_runs(
+    window: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    started: list[bool] = []
+    monkeypatch.setattr(window.panels["runs"], "collect", lambda: started.append(True))
+
+    window.sidebar.collect_button.invoke()
+
+    assert started == [True]
+    assert window.current == "runs"
+
+
+def test_selection_bar_shows_only_with_ticked_boxes(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    assert not tab.selection_bar.winfo_manager()
+
+    tab.table.toggle("vanhack:1")
+    assert tab.selection_bar.winfo_manager() == "pack"
+
+    tab.table.clear_checked()
+    assert not tab.selection_bar.winfo_manager()
+
+
+def test_marks_the_selected_jobs_with_a_status(
+    window: App, repository: SQLiteRepository
+) -> None:
+    for external_id in ("1", "2", "3"):
+        repository.save_job(job(external_id), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    tab.table.toggle("vanhack:1")
+    tab.table.toggle("vanhack:2")
+
+    tab._mark_checked("Studying")
+
+    studying = repository.list_jobs(status=JobStatus.studying)
+    assert sorted(item.job.key for item in studying) == ["vanhack:1", "vanhack:2"]
+    assert window.notices["questions"] == []  # only discarding asks first
+    assert tab.table.checked() == []
+    assert tab.mark_checked.get() == "Mark as…"
+
+
+def test_fit_is_drawn_as_a_chip(window: App, repository: SQLiteRepository) -> None:
+    analyzed = with_analyzed_job(repository, "1", fit=82)
+    repository.save_job(job("2"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+
+    assert tab.table.fit_chip(analyzed.key) == "82"
+    assert tab.table.fit_chip("vanhack:2") is None
+
+
+def test_the_panel_swaps_to_another_job_while_open(
+    window: App, repository: SQLiteRepository
+) -> None:
+    analyzed = with_analyzed_job(repository, "1", fit=82)
+    repository.save_job(job("2", "Data Engineer"), ["Python"])
+    repository.change_status("vanhack:2", JobStatus.studying)
+    tab = window.panels["jobs"]
+    tab.refresh()
+
+    tab.open_job(analyzed.key)
+    assert tab.preview.fit_card.winfo_manager() == "pack"
+    tab.open_job("vanhack:2")
+    window.update()
+
+    assert tab.dialog.is_open
+    assert tab.dialog.heading.cget("text") == "Data Engineer"
+    assert not tab.preview.fit_card.winfo_manager()  # not analyzed
+    assert tab.dialog.status_chip.cget("text") == "Studying"
+    studying = tab.preview.status_buttons.buttons[JobStatus.studying]
+    assert studying.cget("fg_color") != "transparent"
+
+
+def test_marking_several_jobs_can_be_undone(
+    window: App, repository: SQLiteRepository
+) -> None:
+    for external_id in ("1", "2"):
+        repository.save_job(job(external_id), ["Python"])
+    repository.change_status("vanhack:2", JobStatus.studying)
+    tab = window.panels["jobs"]
+    tab.refresh()
+    tab.table.toggle("vanhack:1")
+    tab.table.toggle("vanhack:2")
+
+    tab._mark_checked("Applied")
+    assert window.toast.visible
+    assert window.toast.message.cget("text") == "2 job(s) marked as Applied."
+
+    window.toast.action.invoke()  # Undo
+
+    assert not window.toast.winfo_manager()
+    assert [item.job.key for item in repository.list_jobs(status=JobStatus.new)] == [
+        "vanhack:1"
+    ]
+    assert [
+        item.job.key for item in repository.list_jobs(status=JobStatus.studying)
+    ] == ["vanhack:2"]
+
+
+def test_the_toast_goes_away_by_itself(window: App) -> None:
+    window.toast.show("Saved.", seconds=0)
+    assert window.toast.visible
+    assert process_until(window, lambda: not window.toast.visible)

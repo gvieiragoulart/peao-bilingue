@@ -20,13 +20,12 @@ from peao_bilingue.adapters.documents import read_document
 from peao_bilingue.application.profile import manual_profile
 from peao_bilingue.config import settings
 from peao_bilingue.domain.collection import ManualSession
-from peao_bilingue.domain.profile import ProfileSource
 from peao_bilingue.domain.repository import Repository
 from peao_bilingue.domain.schedule import check_time
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
-from peao_bilingue.ui import presentation
-from peao_bilingue.ui.widgets import Form, adapter_fields
+from peao_bilingue.ui import presentation, theme
+from peao_bilingue.ui.widgets import Form, OutlineButton, adapter_fields
 
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
@@ -74,34 +73,28 @@ class Onboarding(ctk.CTkFrame):
 
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(20, 8))
-        self.step_label = ctk.CTkLabel(header, text="", text_color="gray55")
+        self.step_label = ctk.CTkLabel(header, text="", text_color=theme.MUTED)
         self.step_label.pack(anchor="w")
-        self.title_label = ctk.CTkLabel(
-            header, text="", font=ctk.CTkFont(size=20, weight="bold")
-        )
+        self.title_label = ctk.CTkLabel(header, text="", font=theme.display(20))
         self.title_label.pack(anchor="w")
 
         # Packed before the content, so a tall step never pushes the buttons away.
         footer = ctk.CTkFrame(self, fg_color="transparent")
         footer.pack(side="bottom", fill="x", padx=24, pady=(8, 20))
-        ctk.CTkButton(
+        OutlineButton(
             footer,
             text=_("Skip the guide"),
             width=130,
-            fg_color="transparent",
-            border_width=1,
             command=self.skip,
         ).pack(side="left")
         self.next_button = ctk.CTkButton(
             footer, text=_("Next"), width=120, command=self.next
         )
         self.next_button.pack(side="right")
-        self.back_button = ctk.CTkButton(
+        self.back_button = OutlineButton(
             footer,
             text=_("Back"),
             width=100,
-            fg_color="transparent",
-            border_width=1,
             command=self.back,
         )
         self.back_button.pack(side="right", padx=8)
@@ -177,7 +170,7 @@ class Onboarding(ctk.CTkFrame):
                 "to prepare and 20 interview questions."
             ).format(app=APP_NAME),
         )
-        self._text(page, _("How your data is treated"), font=ctk.CTkFont(weight="bold"))
+        self._text(page, _("How your data is treated"), font=theme.strong())
         for line in (
             _(
                 "Everything stays on this computer: the jobs, your profile and the "
@@ -200,7 +193,7 @@ class Onboarding(ctk.CTkFrame):
         self._text(
             page,
             _("It takes about 3 minutes, and everything can be changed later."),
-            text_color="gray55",
+            text_color=theme.MUTED,
         )
         return page
 
@@ -246,15 +239,14 @@ class Onboarding(ctk.CTkFrame):
             if name in settings.enabled_sources:
                 box.select()
             self.source_boxes[name] = box
-            features = []
-            if issubclass(cls, ManualSession):
-                features.append(_("needs your login"))
-            if issubclass(cls, ProfileSource):
-                features.append(_("reads your profile"))
-            if features:
-                ctk.CTkLabel(page, text=" · ".join(features), text_color="gray55").pack(
-                    anchor="w", padx=(30, 0)
-                )
+            features = " · ".join(presentation.source_features(cls))
+            ctk.CTkLabel(
+                page,
+                text=f"{cls.description}\n{features}",
+                text_color=theme.MUTED,
+                wraplength=WRAP - 30,
+                justify="left",
+            ).pack(anchor="w", padx=(30, 0))
         return page
 
     def _profile(self) -> Any:
@@ -268,12 +260,10 @@ class Onboarding(ctk.CTkFrame):
                 "yourself. You can also skip this and do it later, on the Profile tab."
             ),
         )
-        ctk.CTkButton(
+        OutlineButton(
             page,
             text=_("Import file…"),
             width=130,
-            fg_color="transparent",
-            border_width=1,
             command=self._import,
         ).pack(anchor="w", pady=(0, 8))
         self.cv = ctk.CTkTextbox(page, wrap="word", height=260)
@@ -346,7 +336,7 @@ class Onboarding(ctk.CTkFrame):
         self._text(
             page,
             _("The keys live in Windows Credential Manager, not in a file."),
-            text_color="gray55",
+            text_color=theme.MUTED,
         )
         return page
 
@@ -380,7 +370,7 @@ class Onboarding(ctk.CTkFrame):
                 "Even with the app closed (Windows Task Scheduler). If the computer is "
                 "off at that time, it collects when it's turned on."
             ),
-            text_color="gray55",
+            text_color=theme.MUTED,
         )
         notifier = factories.notifiers.class_of(WINDOWS_NOTICE)
         self.windows_notice = ctk.CTkSwitch(page, text=notifier.label)
@@ -390,7 +380,7 @@ class Onboarding(ctk.CTkFrame):
         self._text(
             page,
             _("Email and WhatsApp can be set up later, on the Settings tab."),
-            text_color="gray55",
+            text_color=theme.MUTED,
         )
         return page
 

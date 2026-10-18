@@ -139,6 +139,25 @@ class ApiSource(JobSource):
         return self.cache.with_name(f"{self.cache.stem}-{key}{self.cache.suffix}")
 
     async def _download(self, url: str, params: dict[str, str]) -> Json:
+        response = await self._get(url, params)
+        try:
+            data = self.decode(response)
+        except ValueError as failure:
+            raise CollectionError(
+                _("{source} is down or there is no network: {error}").format(
+                    source=self.brand, error=failure
+                )
+            ) from failure
+        if not isinstance(data, dict | list):
+            raise CollectionError(
+                _("{source} answered in an unexpected format.").format(
+                    source=self.brand
+                )
+            )
+        return data
+
+    async def _get(self, url: str, params: dict[str, str]) -> httpx.Response:
+        """A real call, with the pause between calls and the errors made readable."""
         if self._client is None:
             raise RuntimeError("Use the source inside `async with`.")
         if self._already_called and self.pause_s:
@@ -147,7 +166,6 @@ class ApiSource(JobSource):
         try:
             response = await self._client.get(url, params=params)
             response.raise_for_status()
-            data = self.decode(response)
         except httpx.HTTPStatusError as failure:
             code = failure.response.status_code
             if code == 429:
@@ -161,19 +179,13 @@ class ApiSource(JobSource):
                     source=self.brand, code=code
                 )
             ) from failure
-        except (httpx.HTTPError, ValueError) as failure:
+        except httpx.HTTPError as failure:
             raise CollectionError(
                 _("{source} is down or there is no network: {error}").format(
                     source=self.brand, error=failure
                 )
             ) from failure
-        if not isinstance(data, dict | list):
-            raise CollectionError(
-                _("{source} answered in an unexpected format.").format(
-                    source=self.brand
-                )
-            )
-        return data
+        return response
 
     def _read_cache(self, file: Path, query: dict[str, Any]) -> Json | None:
         if not file.exists():

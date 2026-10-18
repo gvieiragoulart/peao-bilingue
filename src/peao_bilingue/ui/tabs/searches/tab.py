@@ -17,8 +17,9 @@ class SearchesTab(ctk.CTkFrame):
         super().__init__(master, fg_color="transparent")
         self.app = app
 
-        self.grid_columnconfigure(0, weight=3)
-        self.grid_columnconfigure(1, weight=2)
+        # "uniform": the 3:2 split holds whatever width the table asks for.
+        self.grid_columnconfigure(0, weight=3, uniform="split")
+        self.grid_columnconfigure(1, weight=2, uniform="split")
         self.grid_rowconfigure(0, weight=1)
 
         self.table = SearchTable(self)

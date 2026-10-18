@@ -6,9 +6,11 @@ from typing import Any
 import customtkinter as ctk
 
 from peao_bilingue.i18n import _
+from peao_bilingue.ui import theme
+from peao_bilingue.ui.widgets import Card, OutlineButton
 
 
-class SchedulePanel(ctk.CTkFrame):
+class SchedulePanel(Card):
     def __init__(
         self,
         master: Any,
@@ -21,23 +23,21 @@ class SchedulePanel(ctk.CTkFrame):
         ctk.CTkLabel(
             self,
             text=_("Daily automatic collection"),
-            font=ctk.CTkFont(weight="bold"),
-        ).pack(side="left", padx=12, pady=10)
+            font=theme.section(),
+        ).pack(side="left", padx=16, pady=14)
         self.time = ctk.CTkEntry(self, width=70)
         self.time.pack(side="left")
         self.time.insert(0, time)
         ctk.CTkButton(self, text=_("Schedule"), width=90, command=on_schedule).pack(
             side="left", padx=6
         )
-        ctk.CTkButton(
+        OutlineButton(
             self,
             text=_("Cancel"),
             width=90,
-            fg_color="transparent",
-            border_width=1,
             command=on_cancel,
         ).pack(side="left")
-        self.status = ctk.CTkLabel(self, text=_("Checking…"), text_color="gray55")
+        self.status = ctk.CTkLabel(self, text=_("Checking…"), text_color=theme.MUTED)
         self.status.pack(side="left", padx=12)
 
     def chosen_time(self) -> str:

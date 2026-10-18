@@ -135,7 +135,91 @@ MESSAGES: dict[str, str] = {
     "We Work Remotely (public RSS, remote jobs)": (
         "We Work Remotely (RSS público, vagas remotas)"
     ),
+    "Remote software development jobs, with data 24 h behind. One call per "
+    "collection, as its terms ask.": (
+        "Vagas remotas de desenvolvimento de software, com dados de 24 h atrás. Uma "
+        "chamada por coleta, como pedem os termos."
+    ),
+    "The ~100 latest remote jobs from every field, with a shortened description; the "
+    "full text is on the site.": (
+        "As ~100 vagas remotas mais recentes de todas as áreas, com a descrição "
+        "resumida; o texto completo fica no site."
+    ),
+    "Jobs in Germany with visa sponsorship, a path to relocation. Many are written in "
+    "German.": (
+        "Vagas na Alemanha com patrocínio de visto, um caminho para a mudança. Muitas "
+        "estão em alemão."
+    ),
+    "Remote jobs open to Brazil or worldwide, searched once per keyword of your "
+    "searches.": (
+        "Vagas remotas abertas ao Brasil ou ao mundo todo, buscadas uma vez por "
+        "palavra-chave das suas buscas."
+    ),
+    "Remote back-end, full-stack and front-end jobs, from the site's RSS feeds.": (
+        "Vagas remotas de back-end, full-stack e front-end, dos feeds RSS do site."
+    ),
+    "Strider (public jobs page, remote in LATAM)": (
+        "Strider (página pública de vagas, remotas na América Latina)"
+    ),
+    "Long-term remote jobs at US companies, open to Latin America. Reads the "
+    "public jobs page; no account needed.": (
+        "Vagas remotas de longo prazo em empresas dos EUA, abertas à América Latina. "
+        "Lê a página pública de vagas; não precisa de conta."
+    ),
+    "the job's requirements": "os requisitos da vaga",
+    "GitHub job repositories (Brazilian communities)": (
+        "Repositórios de vagas no GitHub (comunidades brasileiras)"
+    ),
+    "Jobs posted as issues in Brazilian developer communities' repositories "
+    "(backend-br/vagas and others). Public API, no account.": (
+        "Vagas publicadas como issues nos repositórios das comunidades brasileiras de "
+        "desenvolvimento (backend-br/vagas e outros). API pública, sem conta."
+    ),
+    "Company job boards (Greenhouse, Lever, Ashby)": (
+        "Páginas de vagas das empresas (Greenhouse, Lever, Ashby)"
+    ),
+    "Jobs straight from the boards of companies that hire in Brazil or remotely "
+    "in Latin America (Nubank, Stone, QuintoAndar...). Public APIs, no account.": (
+        "Vagas direto das páginas das empresas que contratam no Brasil ou remoto na "
+        "América Latina (Nubank, Stone, QuintoAndar...). APIs públicas, sem conta."
+    ),
+    "company boards": "páginas das empresas",
+    "Jobicy (public API, remote jobs)": "Jobicy (API pública, vagas remotas)",
+    "Get on Board (public API, remote in LATAM)": (
+        "Get on Board (API pública, remotas na América Latina)"
+    ),
+    "Fully remote tech jobs from a Latin American job board, searched once per "
+    "keyword of your searches.": (
+        "Vagas de tecnologia 100% remotas de um site de vagas da América Latina, "
+        "buscadas uma vez por palavra-chave das suas buscas."
+    ),
+    "USD {amount}/month": "USD {amount}/mês",
+    "Hacker News: Who is hiring? (monthly thread)": (
+        "Hacker News: Who is hiring? (tópico mensal)"
+    ),
+    "The monthly thread where companies post jobs on Hacker News; only posts "
+    "open to Brazil, Latin America or anywhere.": (
+        "O tópico mensal em que empresas publicam vagas no Hacker News; só os anúncios "
+        "abertos ao Brasil, à América Latina ou ao mundo todo."
+    ),
+    "Hacker News: no Who is hiring? thread found.": (
+        "Hacker News: nenhum tópico Who is hiring? encontrado."
+    ),
+    "Remote jobs open to Brazil, Latin America or anywhere, from the last 7 days.": (
+        "Vagas remotas abertas ao Brasil, à América Latina ou ao mundo todo, dos "
+        "últimos 7 dias."
+    ),
+    "Invalid company board {entry!r}: use greenhouse:, lever: or ashby: followed by "
+    "the board's name.": (
+        "Página de empresa inválida {entry!r}: use greenhouse:, lever: ou ashby: "
+        "seguido do nome da página."
+    ),
     # --- VanHack ------------------------------------------------------------------
+    "Jobs abroad with relocation support. Uses your account: log in once by hand and "
+    "the robot reuses the saved session.": (
+        "Vagas no exterior com apoio à mudança. Usa a sua conta: faça o login uma vez, "
+        "à mão, e o robô reaproveita a sessão salva."
+    ),
     "Cloudflare rejected this browser (Security check could not complete)": (
         "Cloudflare recusou este navegador (Security check could not complete)"
     ),
@@ -288,13 +372,7 @@ MESSAGES: dict[str, str] = {
     "'{field}' must be a whole number.": "'{field}' precisa ser um número inteiro.",
     # --- window: job detail -------------------------------------------------------
     "Also on {source}: {url}": "Também em {source}: {url}",
-    "Fit: {score}/100": "Fit: {score}/100",
-    "SUMMARY": "RESUMO",
-    "PREPARATION": "PREPARAÇÃO",
-    "INTERVIEW QUESTIONS ({count})": "PERGUNTAS DE ENTREVISTA ({count})",
-    "GAPS": "GAPS",
     "(none found)": "(nenhum identificado)",
-    "WHAT TO IMPROVE IN THE PROFILE": "O QUE MELHORAR NO PERFIL",
     "Not analyzed yet: pick the LLM and the profile, then click Analyze.": (
         "Ainda não analisada: escolha o LLM e o perfil e clique em Analisar."
     ),
@@ -328,27 +406,34 @@ MESSAGES: dict[str, str] = {
     "{years} years ago": "há {years} anos",
     # --- window: Jobs tab ---------------------------------------------------------
     "(none)": "(nenhum)",
-    "Search the title, company, location, skills and description (Enter to filter)": (
-        "Procurar no título, empresa, local, skills e descrição (Enter para filtrar)"
-    ),
     "fit ≥": "fit ≥",
     "Minimum fit": "Fit mínimo",
-    "Filter": "Filtrar",
     "Fit": "Fit",
     "Job": "Vaga",
-    "Found": "Encontrada",
     "Published": "Publicada",
-    "Location": "Local",
     "Analyze": "Analisar",
     "Open job": "Abrir vaga",
     "Mark as:": "Marcar como:",
-    "{count} job(s). Click one to see it or analyze it; tick the boxes to discard "
-    "several at once.": (
-        "{count} vaga(s). Clique em uma para ver ou analisar; marque as caixas para "
-        "descartar várias de uma vez."
+    "{count} job(s) · click one to open it; tick the boxes to act on several.": (
+        "{count} vaga(s) · clique em uma para abrir; marque as caixas para agir em "
+        "várias."
     ),
-    "Discard selected": "Descartar selecionadas",
-    "Clear selection": "Limpar seleção",
+    "found {when}": "encontrada {when}",
+    "Mark as…": "Marcar como…",
+    "{count} job(s) marked as {status}.": "{count} vaga(s) marcada(s) como {status}.",
+    "Undo": "Desfazer",
+    "Good fit": "Bom encaixe",
+    "Worth a look": "Vale olhar",
+    "Weak fit": "Encaixe fraco",
+    "Preparation": "Preparação",
+    "Questions ({count})": "Perguntas ({count})",
+    "Gaps ({count})": "Lacunas ({count})",
+    "Improve the profile": "Melhorar o perfil",
+    "Discard": "Descartar",
+    "Clear": "Limpar",
+    "Search the title, company, skills and description": (
+        "Buscar no título, empresa, skills e descrição"
+    ),
     "{count} selected": "{count} selecionada(s)",
     "Discard {count} job(s)?": "Descartar {count} vaga(s)?",
     "No keyword from the searches shows up in this job anymore.": (
@@ -383,6 +468,9 @@ MESSAGES: dict[str, str] = {
     ),
     "browser": "navegador",
     "reads your profile": "lê o seu perfil",
+    "no account needed": "sem conta",
+    "On": "Ligada",
+    "Off": "Desligada",
     "Check session": "Verificar sessão",
     "Log in": "Fazer login",
     "Valid session": "Sessão válida",
@@ -500,6 +588,17 @@ MESSAGES: dict[str, str] = {
         "vencida. Ligue só os que já estiverem preenchidos."
     ),
     "Settings saved.": "Configurações salvas.",
+    "Appearance": "Aparência",
+    "job radar": "radar de vagas",
+    "No daily collection": "Sem coleta diária",
+    "Daily collection at {time}": "Coleta diária às {time}",
+    "No collection yet": "Nenhuma coleta ainda",
+    "Collecting since {when}": "Coletando desde {when}",
+    "Last: {when} · {status}": "Última: {when} · {status}",
+    "Last: {when} · {count} new": "Última: {when} · {count} novas",
+    "Same as Windows": "Igual ao Windows",
+    "Light": "Claro",
+    "Dark": "Escuro",
     "About and support": "Sobre e suporte",
     "Version {version}": "Versão {version}",
     "Check for a new version when the app opens": (

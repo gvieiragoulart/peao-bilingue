@@ -41,6 +41,8 @@ class Run(BaseModel):
 class JobSource(ABC):
     name: ClassVar[str]
     label: ClassVar[str]  # display name
+    # What the source brings, in one or two sentences (the Sources tab's cards).
+    description: ClassVar[str] = ""
     needs_browser: ClassVar[bool] = False
     # Set by composition when the user asks for screenshots: sources that read web pages
     # save each search's page here; the others ignore it.

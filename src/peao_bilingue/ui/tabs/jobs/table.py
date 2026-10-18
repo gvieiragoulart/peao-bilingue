@@ -1,6 +1,7 @@
-"""The Jobs tab's table: one row per job, with the keywords found and the status as
-colored chips, and a box per row to select several jobs at once. A click on the
-Published header sorts by the date at the source.
+"""The Jobs tab's table: one row per job, its title over a line with the company, place,
+source and when it was found; the fit, the keywords found and the status as soft
+chips; and a box per row to select several jobs at once. A click on the Published
+header sorts by the date at the source.
 
 Drawn on a Canvas: a ttk.Treeview only colors whole rows, never one cell, and a row
 of CustomTkinter widgets per job is far too slow (500 jobs took 45 s to build; the
@@ -16,21 +17,27 @@ import customtkinter as ctk
 
 from peao_bilingue.domain.jobs import ListedJob
 from peao_bilingue.i18n import _
-from peao_bilingue.ui import presentation
+from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.presentation import KeywordGroup
 from peao_bilingue.ui.widgets import theme_color
 
-ROW_HEIGHT = 30
-CHIP_HEIGHT = 20
-CHIP_PADDING = 8  # on each side of the chip's text
+ROW_HEIGHT = 54  # two lines: the title and the one under it
+HEADER_HEIGHT = 40
+CHIP_HEIGHT = 22
+CHIP_PADDING = 9  # on each side of the chip's text
 CHIP_GAP = 4
-CELL_PADDING = 8
+CELL_PADDING = 10
+FIT_WIDTH = 40
 TITLE_MIN_WIDTH = 160
-MORE_CHIPS_COLOR = ("gray55", "gray40")
-HOVER_COLOR = ("gray80", "gray22")
-SELECTED_COLOR = ("gray72", "gray28")  # neutral: a blue row would hide blue chips
-CHECKED_COLOR = ("#d9dee4", "#262d35")
-CHECK_SIZE = 14
+INSET = 6  # between the card's rounded border and the canvases
+MORE_CHIPS_COLOR = ("#6E7782", "#8A939E")
+HOVER_COLOR = theme.RAISED
+SELECTED_COLOR = theme.CONTROL_HOVER  # neutral: a colored row would hide the chips
+CHECKED_COLOR = ("#FBF3E2", "#26241F")  # the accent's tone, softer
+ROW_LINE = ("#EEF0F2", "#272C34")
+CHECK_SIZE = 16
+CHECK_RADIUS = 4
+NEW_DOT = 7
 WHEEL_ROWS = 3
 
 # The order by the date at the source; None keeps the repository's (newest found first).
@@ -51,29 +58,30 @@ class Column:
 
 
 def columns() -> list[Column]:
-    # Same order as presentation.job_row, with the keywords after the title.
+    # Same order as presentation.job_row, with the keywords after the title (whose
+    # cell also holds the line under it).
     return [
-        Column("check", "", 32),  # the selection boxes; the header's selects all
-        Column("fit", _("Fit"), 45),
+        Column("check", "", 44),  # the selection boxes; the header's selects all
+        Column("fit", _("Fit"), 60),
         Column("title", _("Job"), 280),
         Column("keywords", _("Keywords"), 250),
-        # When we found it, and its age at the source (● = new there).
-        Column("found", _("Found"), 100),
-        Column("published", _("Published"), 115),  # room for the sort arrow
-        Column("location", _("Location"), 130),
-        Column("source", _("Source"), 115),
-        Column("status", _("Status"), 115),  # room for the chip of "Descartada"
+        Column("published", _("Published"), 120),  # its age at the source (● = new)
+        Column("status", _("Status"), 124),  # room for the chip of "Descartada"
     ]
 
 
-def pick(pair: tuple[str, str]) -> str:
-    """A (light, dark) color pair, by the current appearance mode."""
-    return pair[1] if ctk.get_appearance_mode() == "Dark" else pair[0]
+pick = theme.pick
 
 
 class JobTable(ctk.CTkFrame):
     def __init__(self, master: Any) -> None:
-        super().__init__(master, fg_color="transparent")
+        super().__init__(
+            master,
+            fg_color=theme.SURFACE,
+            corner_radius=12,
+            border_width=1,
+            border_color=theme.BORDER,
+        )
         self._columns = columns()
         self._jobs: dict[str, ListedJob] = {}
         self._keys: list[str] = []  # in the order drawn
@@ -90,18 +98,26 @@ class JobTable(ctk.CTkFrame):
         scaling = float(ctk.ScalingTracker.get_widget_scaling(self))
         self._scale = scaling
         family = ctk.CTkFont().cget("family")
-        self._text_font = tkfont.Font(family=family, size=-round(13 * scaling))
-        self._header_font = tkfont.Font(
-            family=family, size=-round(13 * scaling), weight="bold"
-        )
-        self._chip_font = tkfont.Font(family=family, size=-round(12 * scaling))
+
+        def font(
+            size: int, weight: Literal["normal", "bold"] = "normal"
+        ) -> tkfont.Font:
+            return tkfont.Font(
+                family=family, size=-round(size * scaling), weight=weight
+            )
+
+        self._text_font = font(13)
+        self._title_font = font(13, "bold")
+        self._meta_font = font(12)
+        self._header_font = font(12, "bold")
+        self._chip_font = font(12, "bold")
 
         self.header = tk.Canvas(
-            self, height=self._px(ROW_HEIGHT), highlightthickness=0, borderwidth=0
+            self, height=self._px(HEADER_HEIGHT), highlightthickness=0, borderwidth=0
         )
-        self.header.pack(side="top", fill="x")
+        self.header.pack(side="top", fill="x", padx=INSET, pady=(INSET, 0))
         body = ctk.CTkFrame(self, fg_color="transparent")
-        body.pack(side="top", fill="both", expand=True)
+        body.pack(side="top", fill="both", expand=True, padx=INSET, pady=(0, INSET))
         self.canvas = tk.Canvas(
             body,
             highlightthickness=0,
@@ -223,6 +239,10 @@ class JobTable(ctk.CTkFrame):
         [label] = self._texts(f"statustext{self._keys.index(key)}")
         return label
 
+    def fit_chip(self, key: str) -> str | None:
+        found = self._texts(f"fittext{self._keys.index(key)}")
+        return found[0] if found else None
+
     def header_title(self, identifier: str) -> str:
         [item] = self.header.find_withtag(f"header{identifier}")
         return str(self.header.itemcget(item, "text"))  # type: ignore[no-untyped-call]
@@ -257,34 +277,41 @@ class JobTable(ctk.CTkFrame):
 
     def _redraw(self) -> None:
         self._pending_redraw = None
-        background = theme_color("CTkFrame", "fg_color")
-        text = theme_color("CTkLabel", "text_color")
+        background = pick(theme.SURFACE)
+        text = pick(theme.TEXT)
         self.canvas.configure(background=background)
         self.header.configure(background=background)
         widths = self._widths()
         row_height = self._px(ROW_HEIGHT)
+        header_height = self._px(HEADER_HEIGHT)
 
         self.header.delete("all")
         x = 0
         for column, width in zip(self._columns, widths, strict=True):
             if column.identifier == "check":
-                self._draw_box(self.header, x, 0, width, self._all_checked(), "all")
+                ticked = self._all_checked()
+                self._draw_box(self.header, x, 0, width, header_height, ticked, "all")
                 x += width
                 continue
             title = column.title
+            color = pick(theme.MUTED)
             if column.identifier == "published":
                 title = f"{title} {ORDER_ARROWS[self._order]}"
+                if self._order is not None:
+                    color = text
             self.header.create_text(
                 x + self._px(CELL_PADDING),
-                row_height // 2,
+                header_height // 2,
                 text=self._fit(title, width, self._header_font),
                 anchor="w",
-                fill=text,
+                fill=color,
                 font=self._header_font,
                 tags=("header", f"header{column.identifier}"),
             )
             x += width
-        self.header.create_line(0, row_height - 1, x, row_height - 1, fill="gray50")
+        self.header.create_line(
+            0, header_height - 1, x, header_height - 1, fill=pick(theme.BORDER)
+        )
 
         self.canvas.delete("all")
         for index, key in enumerate(self._keys):
@@ -296,6 +323,8 @@ class JobTable(ctk.CTkFrame):
     def _draw_row(self, index: int, key: str, widths: list[int], text: str) -> None:
         row_height = self._px(ROW_HEIGHT)
         top = index * row_height
+        middle = top + row_height // 2
+        padding = self._px(CELL_PADDING)
         self.canvas.create_rectangle(
             0,
             top,
@@ -305,35 +334,79 @@ class JobTable(ctk.CTkFrame):
             fill=self._row_color(index),
             tags=("row", f"row{index}"),
         )
-        values = iter(presentation.job_row(self._jobs[key]))
+        fit, title, meta, published, status = presentation.job_row(self._jobs[key])
         x = 0
         for column, width in zip(self._columns, widths, strict=True):
             if column.identifier == "check":
                 checked = key in self._checked
-                self._draw_box(self.canvas, x, top, width, checked, str(index))
+                self._draw_box(
+                    self.canvas, x, top, width, row_height, checked, str(index)
+                )
+            elif column.identifier == "fit":
+                if fit:
+                    color = presentation.fit_color(int(fit))
+                    width_ = self._px(FIT_WIDTH)
+                    self._chip(index, x + padding, top, fit, color, "fit", width_)
+                else:
+                    self._text(index, x + padding, middle, "—", pick(theme.MUTED))
+            elif column.identifier == "title":
+                for line, y, font, ink in (
+                    (title, 0.36, self._title_font, text),
+                    (meta, 0.68, self._meta_font, pick(theme.MUTED)),
+                ):
+                    self.canvas.create_text(
+                        x + padding,
+                        top + round(row_height * y),
+                        text=self._fit(line, width, font),
+                        anchor="w",
+                        fill=ink,
+                        font=font,
+                        tags=("text", f"text{index}"),
+                    )
             elif column.identifier == "keywords":
                 self._draw_chips(index, key, x, top, width)
+            elif column.identifier == "published":
+                self._draw_published(index, x, middle, width, published, text)
             elif column.identifier == "status":
-                room = width - 2 * self._px(CHIP_PADDING)
-                self._chip(
-                    index,
-                    x + self._px(CELL_PADDING),
-                    top,
-                    self._fit(next(values), room, self._chip_font),
-                    self._jobs[key].status.color,
-                    kind="status",
-                )
-            else:
-                self.canvas.create_text(
-                    x + self._px(CELL_PADDING),
-                    top + row_height // 2,
-                    text=self._fit(next(values), width, self._text_font),
-                    anchor="w",
-                    fill=text,
-                    font=self._text_font,
-                    tags=("text", f"text{index}"),
-                )
+                room = width - padding - 2 * self._px(CHIP_PADDING)
+                label = self._fit(status, room, self._chip_font)
+                color = self._jobs[key].status.color
+                self._chip(index, x + padding, top, label, color, "status")
             x += width
+        bottom = top + row_height - 1
+        self.canvas.create_line(0, bottom, sum(widths), bottom, fill=pick(ROW_LINE))
+
+    def _draw_published(
+        self, index: int, left: int, middle: int, width: int, label: str, text: str
+    ) -> None:
+        """The age at the source; "new there" as an accent dot, not the character."""
+        x = left + self._px(CELL_PADDING)
+        if label.startswith(presentation.NEW_MARK):
+            dot = self._px(NEW_DOT)
+            self.canvas.create_oval(
+                x,
+                middle - dot // 2,
+                x + dot,
+                middle - dot // 2 + dot,
+                width=0,
+                fill=pick(theme.ACCENT),
+                tags=("newdot", f"newdot{index}"),
+            )
+            label = label.removeprefix(presentation.NEW_MARK).strip()
+            x += dot + self._px(6)
+        room = width - (x - left) + self._px(CELL_PADDING)
+        self._text(index, x, middle, self._fit(label, room, self._text_font), text)
+
+    def _text(self, index: int, x: int, y: int, value: str, color: str) -> None:
+        self.canvas.create_text(
+            x,
+            y,
+            text=value,
+            anchor="w",
+            fill=color,
+            font=self._text_font,
+            tags=("text", f"text{index}"),
+        )
 
     def _draw_chips(
         self, index: int, key: str, left: int, top: int, width: int
@@ -368,13 +441,17 @@ class JobTable(ctk.CTkFrame):
         label: str,
         pair: tuple[str, str],
         kind: str = "chip",
+        width: int | None = None,
     ) -> int:
-        """A rounded chip at `x`; returns where the next one starts. `kind` tags it
-        apart: the keywords' chips and the status's are read back separately."""
+        """A soft, rounded chip at `x` in the color `pair` stands for; returns where
+        the next one starts. `kind` tags it apart: the keywords' chips, the fit and
+        the status are read back separately."""
         height = self._px(CHIP_HEIGHT)
         y = top + (self._px(ROW_HEIGHT) - height) // 2
-        width = self._chip_font.measure(label) + 2 * self._px(CHIP_PADDING)
-        color = pick(pair)
+        if width is None:
+            width = self._chip_font.measure(label) + 2 * self._px(CHIP_PADDING)
+        background, foreground = presentation.soft(pair, theme.SURFACE)
+        color = pick(background)
         tags = (kind, f"{kind}{index}")
         self.canvas.create_oval(
             x, y, x + height, y + height, fill=color, outline=color, tags=tags
@@ -401,7 +478,7 @@ class JobTable(ctk.CTkFrame):
             x + width // 2,
             y + height // 2,
             text=label,
-            fill="white",
+            fill=pick(foreground),
             font=self._chip_font,
             tags=(*tags, f"{kind}text{index}"),
         )
@@ -413,20 +490,27 @@ class JobTable(ctk.CTkFrame):
         left: int,
         top: int,
         width: int,
+        height: int,
         checked: bool,
         tag: str,
     ) -> None:
-        """A selection box centered in the cell, filled with a tick when checked."""
+        """A rounded selection box centered in the cell, filled with a tick when
+        checked."""
         size = self._px(CHECK_SIZE)
         x = left + (width - size) // 2
-        y = top + (self._px(ROW_HEIGHT) - size) // 2
+        y = top + (height - size) // 2
         fill = theme_color("CTkCheckBox", "fg_color")
         border = theme_color("CTkCheckBox", "border_color")
-        canvas.create_rectangle(
-            x,
-            y,
-            x + size,
-            y + size,
+        r = self._px(CHECK_RADIUS)
+        x1, y1 = x + size, y + size
+        # Each corner's point twice in a smoothed polygon: Tk's rounded rectangle.
+        corners = [
+            x + r, y, x1 - r, y, x1, y, x1, y + r, x1, y1 - r, x1, y1,
+            x1 - r, y1, x + r, y1, x, y1, x, y1 - r, x, y + r, x, y,
+        ]  # fmt: skip
+        canvas.create_polygon(
+            corners,
+            smooth=True,
             outline=fill if checked else border,
             fill=fill if checked else "",
             width=self._px(1.5),
@@ -435,11 +519,11 @@ class JobTable(ctk.CTkFrame):
         if checked:
             canvas.create_line(
                 [
-                    (x + size * 0.22, y + size * 0.52),
-                    (x + size * 0.42, y + size * 0.72),
-                    (x + size * 0.78, y + size * 0.3),
+                    (x + size * 0.24, y + size * 0.52),
+                    (x + size * 0.43, y + size * 0.7),
+                    (x + size * 0.76, y + size * 0.32),
                 ],
-                fill="white",
+                fill=pick(theme.ON_ACCENT),
                 width=self._px(2),
                 tags=("tick", f"tick{tag}"),
             )
@@ -464,7 +548,7 @@ class JobTable(ctk.CTkFrame):
             return pick(CHECKED_COLOR)
         if index == self._hovered:
             return pick(HOVER_COLOR)
-        return theme_color("CTkFrame", "fg_color")
+        return pick(theme.SURFACE)
 
     # ---- events
 

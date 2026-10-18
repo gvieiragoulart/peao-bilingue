@@ -15,6 +15,7 @@ from peao_bilingue.logs import LOG_DIR
 from peao_bilingue.ui.tabs.settings.about import AboutSection
 from peao_bilingue.ui.tabs.settings.limits import LimitsSection
 from peao_bilingue.ui.tabs.settings.notices import NoticesSection
+from peao_bilingue.ui.widgets import SECTION_PADDING, section_card
 
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
@@ -25,17 +26,17 @@ class SettingsTab(ctk.CTkScrollableFrame):
         super().__init__(master, fg_color="transparent")
         self.app = app
 
-        self.limits = LimitsSection(self)
-        self.limits.pack(fill="x", pady=(0, 16))
-        self.notices = NoticesSection(self)
-        self.notices.pack(fill="x")
+        self.limits = LimitsSection(section_card(self))
+        self.limits.pack(fill="x", padx=SECTION_PADDING, pady=SECTION_PADDING)
+        self.notices = NoticesSection(section_card(self))
+        self.notices.pack(fill="x", padx=SECTION_PADDING, pady=SECTION_PADDING)
         self.about = AboutSection(
-            self,
+            section_card(self),
             on_open_logs=self._open_logs,
             on_project_page=self._open_project_page,
             on_setup_guide=self.app.open_onboarding,
         )
-        self.about.pack(fill="x", pady=(0, 8))
+        self.about.pack(fill="x", padx=SECTION_PADDING, pady=SECTION_PADDING)
 
         ctk.CTkButton(self, text=_("Save"), width=120, command=self._save).pack(
             anchor="w", pady=12
@@ -67,4 +68,5 @@ class SettingsTab(ctk.CTkScrollableFrame):
             self.app.show_error(failure)
             return
         config.save(changes)
+        ctk.set_appearance_mode(settings.appearance)
         self.app.inform(_("Settings saved."))

@@ -44,6 +44,11 @@ def html_to_text(html: str) -> str:
     extractor = _Extractor()
     extractor.feed(html)
     extractor.close()
-    lines = (" ".join(line.split()) for line in "".join(extractor.parts).splitlines())
+    return tidy_lines("".join(extractor.parts))
+
+
+def tidy_lines(text: str) -> str:
+    """One space between words, no empty lines."""
+    lines = (" ".join(line.split()) for line in text.splitlines())
     # A line with only the bullet (e.g. an empty <li>) says nothing.
     return "\n".join(line for line in lines if line and line != "-")
