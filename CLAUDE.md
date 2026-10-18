@@ -355,6 +355,13 @@ columns, the settings and the CLI commands were in Portuguese. The update migrat
 - **Gabriel's installation (2026-10-13):** the program in `%LOCALAPPDATA%\Programs\PeaoBilingue`,
   data in `%LOCALAPPDATA%\PeaoBilingue` (migrated from the project's `data/`), a Start menu
   shortcut and the 08:00 task calling the .exe. The project's `data/` is only a development copy.
+- **Updating it (2026-10-18):** `powershell -ExecutionPolicy Bypass -File packaging\deploy.ps1`
+  runs the tests, builds, and swaps the install folder, keeping the old one as
+  `PeaoBilingue.previous` (`-Rollback` restores it). It refuses while the installed .exe runs
+  (the window or a collection) unless `-Force`; `-SkipTests`, `-BuildOnly`, `-InstallDir`.
+  ASCII only (PowerShell 5.1 reads a BOM-less script in the ANSI code page). Gabriel runs it from
+  his own terminal: from the agent's shell the install would land in the MSIX container (below).
+  Verified on 2026-10-18 with `-InstallDir` pointing at a temp folder.
 - **Claude desktop is MSIX:** a **new** folder created in `AppData` by a process started from the
   agent's shell (the .exe included) goes to `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\...`,
   which only the agent sees. That's how the first migration "vanished": the scheduled task
