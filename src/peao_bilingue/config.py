@@ -182,12 +182,50 @@ class Settings(BaseSettings):
     # Himalayas (public API): only jobs open to candidates from this country (ISO code)
     # or worldwide; empty = no filter, including US-only jobs.
     himalayas_country: str = "BR"
+    # Jobicy (public API): its `geo` filter; "brazil" includes LATAM and anywhere jobs.
+    jobicy_geo: str = "brazil"
     # GitHub job repositories (public API): "owner/repo" of each community's board.
     github_job_repositories: list[str] = [
         "backend-br/vagas",
         "phpdevbr/vagas",
         "nodejsdevbr/vagas",
         "frontendbr/vagas",
+    ]
+    # Company job boards (public ATS APIs): "ats:board[=Company]", the board's name as
+    # in its URL; "=Company" names it (Lever and Ashby don't, Greenhouse sometimes oddly).
+    company_boards: list[str] = [
+        "ashby:nubank=Nubank",
+        "greenhouse:stone=Stone",
+        "greenhouse:quintoandar=QuintoAndar",
+        "greenhouse:gympass=Wellhub",
+        "greenhouse:vtex",
+        "greenhouse:ebanx",
+        "greenhouse:clara=Clara",
+        "greenhouse:canonical",
+        "lever:toptal=Toptal",
+        "lever:dlocal=dLocal",
+    ]
+    # Only jobs whose location names one of these (without accents); empty = all.
+    company_boards_places: list[str] = [
+        "brazil",
+        "brasil",
+        "sao paulo",
+        "rio de janeiro",
+        "belo horizonte",
+        "curitiba",
+        "porto alegre",
+        "florianopolis",
+        "campinas",
+        "recife",
+        "osasco",
+        "barueri",
+        "remoto",
+        "latam",
+        "latin america",
+        "south america",
+        "americas",
+        "worldwide",
+        "anywhere",
     ]
 
     timezone: str = "America/Sao_Paulo"

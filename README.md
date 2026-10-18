@@ -49,7 +49,10 @@ click Analyze.
 remote jobs, no account), Arbeitnow (jobs in Germany with visa sponsorship), Himalayas (remote
 jobs open to people in Brazil), We Work Remotely (public RSS) and Strider (its public jobs page:
 long-term remote jobs at US companies, open to Latin America), and the job repositories of
-Brazilian communities on GitHub (backend-br/vagas and others, set in `github_job_repositories`).
+Brazilian communities on GitHub (backend-br/vagas and others, set in `github_job_repositories`),
+and companies' own job boards on Greenhouse, Lever and Ashby (Nubank, Stone, QuintoAndar and
+others, set in `company_boards`; only jobs open in Brazil, LATAM or worldwide), and Jobicy (a
+public API of remote jobs open to Brazil).
 The APIs are queried once per
 collection and the answer is reused for hours; Remotive asks for at most ~4 calls a day. Each
 job keeps its original link on the source, as their terms ask. Turn the sources on in the

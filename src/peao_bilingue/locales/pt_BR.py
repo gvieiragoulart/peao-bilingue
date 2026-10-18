@@ -175,6 +175,25 @@ MESSAGES: dict[str, str] = {
         "Vagas publicadas como issues nos repositórios das comunidades brasileiras de "
         "desenvolvimento (backend-br/vagas e outros). API pública, sem conta."
     ),
+    "Company job boards (Greenhouse, Lever, Ashby)": (
+        "Páginas de vagas das empresas (Greenhouse, Lever, Ashby)"
+    ),
+    "Jobs straight from the boards of companies that hire in Brazil or remotely "
+    "in Latin America (Nubank, Stone, QuintoAndar...). Public APIs, no account.": (
+        "Vagas direto das páginas das empresas que contratam no Brasil ou remoto na "
+        "América Latina (Nubank, Stone, QuintoAndar...). APIs públicas, sem conta."
+    ),
+    "company boards": "páginas das empresas",
+    "Jobicy (public API, remote jobs)": "Jobicy (API pública, vagas remotas)",
+    "Remote jobs open to Brazil, Latin America or anywhere, from the last 7 days.": (
+        "Vagas remotas abertas ao Brasil, à América Latina ou ao mundo todo, dos "
+        "últimos 7 dias."
+    ),
+    "Invalid company board {entry!r}: use greenhouse:, lever: or ashby: followed by "
+    "the board's name.": (
+        "Página de empresa inválida {entry!r}: use greenhouse:, lever: ou ashby: "
+        "seguido do nome da página."
+    ),
     # --- VanHack ------------------------------------------------------------------
     "Jobs abroad with relocation support. Uses your account: log in once by hand and "
     "the robot reuses the saved session.": (
