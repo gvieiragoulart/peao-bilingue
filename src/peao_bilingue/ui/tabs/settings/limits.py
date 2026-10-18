@@ -1,4 +1,5 @@
-"""The Settings tab's collection limits."""
+"""The Settings tab's collection limits. What only one source uses (VanHack's
+browser and scrolls) is in that source's dialog, on the Sources tab."""
 
 from typing import Any
 
@@ -12,8 +13,6 @@ from peao_bilingue.ui.widgets import Field, Form, Heading
 def limit_fields() -> list[Field]:
     return [
         Field("max_details_per_run", _("Jobs detailed per source, per run"), "integer"),
-        Field("max_listing_scrolls", _("Maximum listing scrolls"), "integer"),
-        Field("headless", _("Hide the browser during the collection"), "boolean"),
         Field("profile_notes_path", _("Profile notes file")),
     ]
 

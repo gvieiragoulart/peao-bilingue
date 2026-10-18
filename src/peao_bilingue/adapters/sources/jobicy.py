@@ -12,7 +12,7 @@ feed only has the last 7 days of jobs: a job seen once stays saved.
 """
 
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 
@@ -29,10 +29,20 @@ URL = "https://jobicy.com/api/v2/remote-jobs"
 @sources.register("jobicy")
 class Jobicy(ApiSource):
     name = "jobicy"
-    label = _("Jobicy (public API, remote jobs)")
+    label = "Jobicy"
     description = _(
-        "Remote jobs open to Brazil, Latin America or anywhere, from the last 7 days."
+        "A global remote job board: jobs open to Brazil, Latin America or anywhere, "
+        "from the last 7 days. Public API, no account."
     )
+    about = _(
+        "One call per collection, kept for 6 hours. The region is Jobicy's geo "
+        'filter: "brazil" already includes the Latin America and anywhere jobs. '
+        "Each job links back to Jobicy, as its terms ask."
+    )
+    site = "https://jobicy.com"
+    fields: ClassVar[dict[str, str]] = {
+        "jobicy_geo": _("Region"),
+    }
     brand = "Jobicy"
     url = URL
 

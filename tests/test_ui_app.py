@@ -441,7 +441,7 @@ def test_invalid_time_warns(window: App) -> None:
     assert window.scheduler.status() is None
 
 
-REMOTIVE = "Remotive (public API, remote jobs)"
+REMOTIVE = "Remotive"
 
 
 def test_collect_picker_offers_only_enabled_sources(window: App) -> None:
@@ -469,20 +469,91 @@ def test_collect_picker_offers_only_enabled_sources(window: App) -> None:
 def test_source_card_shows_description_and_state(window: App) -> None:
     card = window.panels["sources"].cards["remotive"]
     assert card.title.cget("text") == REMOTIVE
-    assert card.description.cget("text").startswith("Remote software development")
+    assert card.description.cget("text").startswith("Fully remote jobs")
     accent = ctk.ThemeManager.theme["CTkButton"]["fg_color"]
 
+    # The switch says nothing: its position does; the border follows it.
     card.set_enabled(True)
-    assert card.switch.cget("text") == "On"
+    assert card.switch.cget("text") == ""
     assert card.cget("border_color") == accent
-
     card.set_enabled(False)
-    assert card.switch.cget("text") == "Off"
     assert card.cget("border_color") != accent
 
-    # Only sources with a manual login get the login buttons and status.
-    assert card.status is None
-    assert window.panels["sources"].cards["vanhack"].status is not None
+
+def test_clicking_a_card_opens_its_dialog(window: App) -> None:
+    tab = window.panels["sources"]
+    tab.cards["himalayas"].open()
+    dialog = tab.dialog
+    assert dialog is not None
+    assert dialog.name == "himalayas"
+    assert dialog.title.cget("text") == "Himalayas"
+    assert dialog.about is not None
+    assert dialog.about.cget("text").startswith("Searched once per keyword")
+    # Its settings, and no login: only sources with a manual login have one.
+    assert dialog.form is not None
+    assert [field.name for field in dialog.form.fields] == ["himalayas_country"]
+    assert dialog.status is None
+
+    # Another card swaps it; Esc closes it (the binding: the hidden test window
+    # gets no generated keys).
+    tab.cards["vanhack"].open()
+    assert tab.dialog is not None
+    assert tab.dialog.name == "vanhack"
+    assert tab.dialog.status is not None
+    assert window.bind("<Escape>")
+    tab.dialog.close()
+    assert tab.dialog is None
+    assert not window.bind("<Escape>")
+
+
+def test_the_dialog_saves_the_source_settings(window: App) -> None:
+    tab = window.panels["sources"]
+    tab.open("company_boards")
+    assert tab.dialog is not None and tab.dialog.form is not None
+    boards = tab.dialog.form._widgets["company_boards"]
+    assert boards.get("1.0", "end").splitlines()[0] == "ashby:nubank=Nubank"
+    boards.delete("1.0", "end")
+    # One per line; blank lines and spaces around go.
+    boards.insert("1.0", "lever:toptal=Toptal\n\n  greenhouse:vtex  \n")
+    tab.dialog.save()
+
+    assert settings.company_boards == ["lever:toptal=Toptal", "greenhouse:vtex"]
+    assert tab.dialog is None  # saved: closed
+    assert window.notices["infos"] == ["Settings saved."]
+
+
+def test_the_dialog_switch_is_the_card_switch(window: App) -> None:
+    tab = window.panels["sources"]
+    tab.open("remotive")
+    assert tab.dialog is not None
+    tab.dialog.switch.toggle()  # what a click does: flips it and calls back
+    assert tab.cards["remotive"].enabled
+    assert "remotive" in settings.enabled_sources
+    assert REMOTIVE in window.panels["runs"].collect_bar.source.cget("values")
+
+
+def test_the_session_status_survives_closing_the_dialog(window: App) -> None:
+    tab = window.panels["sources"]
+    tab.open("vanhack")
+    tab._show_status("vanhack", "Valid session")
+    assert tab.dialog is not None and tab.dialog.status is not None
+    assert tab.dialog.status.cget("text") == "Valid session"
+    tab.dialog.close()
+    tab.open("vanhack")
+    assert tab.dialog is not None and tab.dialog.status is not None
+    assert tab.dialog.status.cget("text") == "Valid session"
+
+
+def test_the_jobs_table_draws_each_source_icon(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2", source="remoteok"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+
+    assert tab.table.icon_items("vanhack:1") == 1  # its logo
+    assert tab.table.icon_items("remoteok:2") == 2  # a monogram: tile and letters
 
 
 def test_source_cards_reflow_in_a_grid(window: App) -> None:

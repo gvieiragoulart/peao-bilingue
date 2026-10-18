@@ -8,7 +8,7 @@ which keeps usage under 4 a day.
 """
 
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 
@@ -25,11 +25,20 @@ URL = "https://remotive.com/api/remote-jobs"
 @sources.register("remotive")
 class Remotive(ApiSource):
     name = "remotive"
-    label = _("Remotive (public API, remote jobs)")
+    label = "Remotive"
     description = _(
-        "Remote software development jobs, with data 24 h behind. One call per "
-        "collection, as its terms ask."
+        "Fully remote jobs from vetted companies, here in software development. "
+        "Public API, no account."
     )
+    about = _(
+        "Remotive's free API has the jobs 24 h late and asks for no more than a few "
+        "calls a day, so the app makes one call per collection and keeps the "
+        "answer for 6 hours. Each job links back to Remotive, as its terms ask."
+    )
+    site = "https://remotive.com"
+    fields: ClassVar[dict[str, str]] = {
+        "remotive_category": _("Category"),
+    }
     brand = "Remotive"
     url = URL
 

@@ -40,11 +40,17 @@ INLINE_IMAGE = re.compile(r"<img\b[^>]*>?")
 @sources.register("remoteok")
 class RemoteOK(ApiSource):
     name = "remoteok"
-    label = _("Remote OK (public API, remote jobs)")
+    label = "Remote OK"
     description = _(
-        "The ~100 latest remote jobs from every field, with a shortened "
-        "description; the full text is on the site."
+        "One of the biggest remote job boards, with open salaries: the ~100 latest "
+        "remote jobs from every field. Public API, no account."
     )
+    about = _(
+        "One call per collection, kept for 6 hours. The API brings a shortened "
+        "description; the full text is on the site. Each job links back to Remote "
+        "OK, as its terms ask."
+    )
+    site = "https://remoteok.com"
     brand = "Remote OK"
     url = URL
 
