@@ -684,6 +684,13 @@ commit and push.
       first run (3), native Windows notifications (4), version + update check (7), an app log +
       "open the logs folder" (8).
 
+- [x] **More sources for Brazil and LATAM** (2026-10-18, branch `add-job-sources`): Strider
+      (public page), GitHub job repositories, company boards (Greenhouse/Lever/Ashby), Jobicy,
+      Get on Board, Hacker News "Who is hiring?". All off by default, like the other APIs.
+      **Adzuna** waits for Gabriel: its API needs a free `app_id`/`app_key` (developer.adzuna.com;
+      terms allow "Personal research", 250 calls a day, descriptions are only a snippet), and
+      the adapter needs a real response as its fixture first.
+
 Waiting on Gabriel (costs money or needs him): the first real analysis with the Analyze button
 (Claude spends credit; Ollama is free but needs installing), a real email notice (fill in SMTP,
 turn the channel on in Settings and run `peao run --notify`).
