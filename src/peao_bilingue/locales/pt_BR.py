@@ -412,27 +412,25 @@ MESSAGES: dict[str, str] = {
     "{years} years ago": "há {years} anos",
     # --- window: Jobs tab ---------------------------------------------------------
     "(none)": "(nenhum)",
-    "Search the title, company, location, skills and description (Enter to filter)": (
-        "Procurar no título, empresa, local, skills e descrição (Enter para filtrar)"
-    ),
     "fit ≥": "fit ≥",
     "Minimum fit": "Fit mínimo",
-    "Filter": "Filtrar",
     "Fit": "Fit",
     "Job": "Vaga",
-    "Found": "Encontrada",
     "Published": "Publicada",
-    "Location": "Local",
     "Analyze": "Analisar",
     "Open job": "Abrir vaga",
     "Mark as:": "Marcar como:",
-    "{count} job(s). Click one to see it or analyze it; tick the boxes to discard "
-    "several at once.": (
-        "{count} vaga(s). Clique em uma para ver ou analisar; marque as caixas para "
-        "descartar várias de uma vez."
+    "{count} job(s) · click one to open it; tick the boxes to act on several.": (
+        "{count} vaga(s) · clique em uma para abrir; marque as caixas para agir em "
+        "várias."
     ),
-    "Discard selected": "Descartar selecionadas",
-    "Clear selection": "Limpar seleção",
+    "found {when}": "encontrada {when}",
+    "Mark as…": "Marcar como…",
+    "Discard": "Descartar",
+    "Clear": "Limpar",
+    "Search the title, company, skills and description": (
+        "Buscar no título, empresa, skills e descrição"
+    ),
     "{count} selected": "{count} selecionada(s)",
     "Discard {count} job(s)?": "Descartar {count} vaga(s)?",
     "No keyword from the searches shows up in this job anymore.": (

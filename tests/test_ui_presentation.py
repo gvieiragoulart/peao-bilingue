@@ -41,7 +41,8 @@ def test_job_row_without_analysis_has_empty_fit() -> None:
     row = presentation.job_row(listed(), NOW)
     assert row[0] == ""
     assert row[1] == "Fullstack Staff Engineer"
-    assert row[5] == "vanhack" and row[6] == "New"
+    assert row[2] == "Toronto - Canada · VanHack · found today"
+    assert row[4] == "New"
 
 
 def test_job_row_shows_fit() -> None:
@@ -54,7 +55,7 @@ def test_job_row_shows_when_found_and_age_at_the_source() -> None:
     old = presentation.job_row(listed(published_at="3 mo ago"), later)
     unknown = presentation.job_row(listed(), later)
 
-    assert fresh[2] == "2 d ago"
+    assert fresh[2].endswith("found 2 d ago")
     assert fresh[3] == "● 3 d ago"  # new at the source when we found it
     assert old[3] == "3 months ago"
     assert unknown[3] == "?"
@@ -265,3 +266,31 @@ def test_last_run_line() -> None:
     assert (
         presentation.last_run_line(failed, now) == "Last: today, 08:02 · login required"
     )
+
+
+def test_blend_mixes_like_an_alpha() -> None:
+    assert presentation.blend("#ffffff", "#000000", 0.5) == "#808080"
+    assert presentation.blend("#1f6aa5", "#ffffff", 1) == "#1f6aa5"
+    assert presentation.blend("#1f6aa5", "#ffffff", 0) == "#ffffff"
+
+
+def test_soft_chip_tints_the_ground_and_deepens_the_text() -> None:
+    background, text = presentation.soft(("#1f6aa5", "#1f6aa5"), ("#ffffff", "#1f232a"))
+    assert background[0] == presentation.blend("#1f6aa5", "#ffffff", 0.16)
+    assert text[0] < "#1f6aa5"  # darker in light mode
+    assert text[1] > "#1f6aa5"  # lighter in dark mode
+
+
+@pytest.mark.parametrize(
+    ("score", "floor"), [(100, 75), (75, 75), (74, 50), (50, 50), (49, 0), (0, 0)]
+)
+def test_fit_color_by_range(score: int, floor: int) -> None:
+    assert presentation.fit_color(score) == dict(presentation.FIT_COLORS)[floor]
+
+
+@pytest.mark.parametrize(
+    ("name", "short"),
+    [("remotive", "Remotive"), ("hackernews", "Hacker News"), ("gone", "gone")],
+)
+def test_short_source_label(name: str, short: str) -> None:
+    assert presentation.short_source_label(name) == short

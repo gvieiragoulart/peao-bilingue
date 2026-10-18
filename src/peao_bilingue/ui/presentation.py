@@ -129,6 +129,12 @@ def source_label(name: str) -> str:
         return name
 
 
+def short_source_label(name: str) -> str:
+    """The display name without what follows it: "Remotive (public API, remote
+    jobs)" -> "Remotive", "Hacker News: Who is hiring? (...)" -> "Hacker News"."""
+    return source_label(name).split(" (")[0].split(":")[0]
+
+
 def source_features(cls: type[JobSource]) -> list[str]:
     """What a source needs and does, as short tags: the Sources tab's chips and the
     guide's hint."""
@@ -160,17 +166,63 @@ def status_from_label(label: str) -> JobStatus | None:
     return None
 
 
+def job_meta(item: ListedJob, now: datetime) -> str:
+    """The line under the job's title: where it is, where it came from, when."""
+    parts = [
+        item.job.company,
+        item.job.location,
+        short_source_label(item.job.source),
+        _("found {when}").format(when=ago(item.seen_at, now)),
+    ]
+    return " · ".join(part for part in parts if part)
+
+
 def job_row(item: ListedJob, now: datetime | None = None) -> tuple[str, ...]:
+    """(fit, title, the line under it, published, status)."""
     now = now or _now()
     return (
         "" if item.fit_score is None else str(item.fit_score),
         item.job.title,
-        ago(item.seen_at, now),
+        job_meta(item, now),
         published_label(item, now),
-        item.job.location or "",
-        item.job.source,
         job_status_labels()[item.status],
     )
+
+
+# The fit's color by range: good, worth a look, weak.
+FIT_COLORS: tuple[tuple[int, tuple[str, str]], ...] = (
+    (75, ("#2e7d32", "#3fae6a")),
+    (50, ("#b26a00", "#e0a43a")),
+    (0, ("#c62828", "#e05a6a")),
+)
+
+
+def fit_color(score: int) -> tuple[str, str]:
+    return next(color for floor, color in FIT_COLORS if score >= floor)
+
+
+def blend(color: str, ground: str, amount: float) -> str:
+    """`amount` of `color` over `ground`: what an alpha would show, which Tk lacks."""
+    mixed = (
+        round(
+            int(color[i : i + 2], 16) * amount
+            + int(ground[i : i + 2], 16) * (1 - amount)
+        )
+        for i in (1, 3, 5)
+    )
+    return "#" + "".join(f"{channel:02x}" for channel in mixed)
+
+
+def soft(
+    color: tuple[str, str], ground: tuple[str, str]
+) -> tuple[tuple[str, str], tuple[str, str]]:
+    """A chip's soft look from its base color: a tinted background over `ground` and
+    the text in a deeper (light mode) or lighter (dark mode) shade of the same color.
+    Returns (background, text), each a (light, dark) pair."""
+    light, dark = color
+    background = (blend(light, ground[0], 0.16), blend(dark, ground[1], 0.3))
+    text = (blend(light, "#000000", 0.78), blend(dark, "#ffffff", 0.55))
+    return background, text
 
 
 @dataclass(frozen=True)
@@ -206,8 +258,7 @@ def search_colors(names: list[str]) -> dict[str, tuple[str, str]]:
 
 def job_count(count: int) -> str:
     return _(
-        "{count} job(s). Click one to see it or analyze it; tick the boxes to discard "
-        "several at once."
+        "{count} job(s) · click one to open it; tick the boxes to act on several."
     ).format(count=count)
 
 
