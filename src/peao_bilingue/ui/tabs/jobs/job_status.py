@@ -25,5 +25,6 @@ class JobStatusButtons(ctk.CTkFrame):
                 width=96,
                 fg_color="transparent",
                 border_width=1,
+                border_color=status.color,
                 command=lambda s=status: on_change(s),
             ).pack(side="left", padx=(0, 6))

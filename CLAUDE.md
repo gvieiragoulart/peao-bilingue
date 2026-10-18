@@ -131,6 +131,12 @@ widgets per job took 45 s for 500 jobs (the Canvas: 0.24 s). A click opens the j
 the same reason as the guide), with the analysis, the LLM/profile pickers, Analyze, Open and the
 status buttons; Esc, ✕ or a click outside closes it. Generated mouse and key events don't reach
 the hidden test window: the tests call the click handler and check the Esc binding.
+**Selection and status colors (2026-10-18):** the first column is a box per row (the header's
+ticks every listed job); a click on the box only toggles it, elsewhere it opens the dialog. A
+refresh keeps the boxes of jobs still listed. "Descartar selecionadas" asks (`App.confirm`) and
+calls `JobRepository.change_statuses` (one transaction, all or none). Each `JobStatus` carries
+its display color (`JobStatus.color`, light/dark pair): the Status column draws it as a chip and
+the "Mark as" buttons use it as their border.
 
 **Dependency rule:** `domain` imports nothing from the project except `i18n` (a leaf utility for
 user-facing error messages); `application` only knows `domain`; adapters implement ports; only

@@ -2,6 +2,7 @@
 work they ask for (listing, marking, the per-job analysis). The components never touch
 the repository, the settings or an LLM."""
 
+import logging
 import webbrowser
 from typing import TYPE_CHECKING, Any
 
@@ -26,6 +27,8 @@ if TYPE_CHECKING:
 
 LIMIT = 500
 
+logger = logging.getLogger(__name__)
+
 
 class JobsTab(ctk.CTkFrame):
     def __init__(self, master: Any, app: "App") -> None:
@@ -41,9 +44,30 @@ class JobsTab(ctk.CTkFrame):
         self.count = Hint(self, text="", anchor="w")
         self.count.pack(fill="x", pady=(0, 4))
 
+        # What the ticked boxes are for.
+        bar = ctk.CTkFrame(self, fg_color="transparent")
+        bar.pack(fill="x", pady=(0, 4))
+        self.checked_count = Hint(bar, text="", anchor="w")
+        self.checked_count.pack(side="left", padx=(0, 12))
+        self.discard_checked = ctk.CTkButton(
+            bar, text=_("Discard selected"), width=150, command=self._discard_checked
+        )
+        self.discard_checked.pack(side="left", padx=(0, 6))
+        self.clear_checked = ctk.CTkButton(
+            bar,
+            text=_("Clear selection"),
+            width=120,
+            fg_color="transparent",
+            border_width=1,
+            command=self._clear_checked,
+        )
+        self.clear_checked.pack(side="left")
+
         self.table = JobTable(self)
         self.table.pack(fill="both", expand=True)
         self.table.on_click(self.open_job)
+        self.table.on_check_change(self._show_checked)
+        self._show_checked()
 
         # Created last, so it can cover the rest of the tab.
         self.dialog = JobDialog(
@@ -117,6 +141,32 @@ class JobsTab(ctk.CTkFrame):
         # The dialog stays open: the job may even have left the filtered list.
         self.refresh()
         self.table.select(key)
+
+    def _show_checked(self) -> None:
+        count = len(self.table.checked())
+        self.checked_count.configure(text=_("{count} selected").format(count=count))
+        state = "normal" if count else "disabled"
+        self.discard_checked.configure(state=state)
+        self.clear_checked.configure(state=state)
+
+    def _clear_checked(self) -> None:
+        self.table.clear_checked()
+
+    def _discard_checked(self) -> None:
+        keys = self.table.checked()
+        if not keys:
+            return
+        if not self.app.confirm(_("Discard {count} job(s)?").format(count=len(keys))):
+            return
+        self.app.repository.change_statuses(keys, JobStatus.discarded)
+        logger.info("Discarded %d job(s).", len(keys))
+        self.table.clear_checked()
+        self.refresh()
+        # The dialog stays open, showing the new status, like a single change.
+        current = self._current
+        if self.dialog.is_open and current and current.job.key in keys:
+            self._current = current.model_copy(update={"status": JobStatus.discarded})
+            self.open_job(current.job.key)
 
     def _analyze(self) -> None:
         item = self._current

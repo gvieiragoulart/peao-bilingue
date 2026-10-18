@@ -31,12 +31,18 @@ pytestmark = pytest.mark.integration
 
 
 def open_window(repository: SQLiteRepository, monkeypatch: pytest.MonkeyPatch) -> App:
-    notices: dict[str, list[str]] = {"errors": [], "infos": []}
+    notices: dict[str, list[str]] = {"errors": [], "infos": [], "questions": []}
     # A messagebox is modal: it would leave the suite waiting for a click.
     monkeypatch.setattr(
         App, "show_error", lambda self, f: notices["errors"].append(str(f))
     )
     monkeypatch.setattr(App, "inform", lambda self, m: notices["infos"].append(m))
+
+    def confirm(self: App, question: str) -> bool:
+        notices["questions"].append(question)
+        return True
+
+    monkeypatch.setattr(App, "confirm", confirm)
     # Fakes: the tests never touch Windows Task Scheduler or call GitHub.
     app = App(
         repository=repository,
@@ -71,6 +77,15 @@ def new_user_window(
     app.close()
     config.CONFIG_PATH.unlink(missing_ok=True)
     config.reload()
+
+
+def click_at(x: int, y: int) -> "tk.Event[tk.Canvas]":
+    # Generated mouse events don't reach the hidden test window, so the handlers get
+    # the event directly.
+    event: tk.Event[tk.Canvas] = tk.Event()
+    event.x = x
+    event.y = y
+    return event
 
 
 def with_analyzed_job(
@@ -125,11 +140,8 @@ def test_clicking_a_row_opens_the_dialog(
     tab.refresh()
     window.update()
 
-    # A click on the first row. Generated mouse events don't reach the hidden test
-    # window, so the handler gets the event directly.
-    click: tk.Event[tk.Canvas] = tk.Event()
-    click.y = 5
-    tab.table._click(click)
+    # A click on the first row's title (past the selection box).
+    tab.table._click(click_at(200, 5))
     window.update()
 
     assert tab.dialog.is_open
@@ -173,6 +185,76 @@ def test_status_filter_and_column_use_labels(
 
     assert tab.table.keys() == [new.key]
     assert tab.table.row(new.key)[6] == "Applied"
+
+
+def test_status_is_drawn_as_a_chip(window: App, repository: SQLiteRepository) -> None:
+    new = with_analyzed_job(repository)
+    repository.change_status(new.key, JobStatus.studying)
+    tab = window.panels["jobs"]
+    tab.refresh()
+
+    assert tab.table.status_chip(new.key) == "Studying"
+
+
+def test_ticking_boxes_selects_without_opening_the_dialog(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    first, second = tab.table.keys()
+    assert tab.discard_checked.cget("state") == "disabled"
+
+    tab.table._click(click_at(5, 5))  # the first row's box
+
+    assert tab.table.checked() == [first]
+    assert tab.table.box_ticked(first)
+    assert not tab.table.box_ticked(second)
+    assert not tab.dialog.is_open
+    assert tab.checked_count.cget("text") == "1 selected"
+    assert tab.discard_checked.cget("state") == "normal"
+
+    # The header's box ticks every job, then unticks them all.
+    tab.table._click_header(click_at(5, 5))
+    assert tab.table.checked() == [first, second]
+    tab.table._click_header(click_at(5, 5))
+    assert tab.table.checked() == []
+
+
+def test_discards_the_selected_jobs_at_once(
+    window: App, repository: SQLiteRepository
+) -> None:
+    for external_id in ("1", "2", "3"):
+        repository.save_job(job(external_id), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    tab.table.toggle("vanhack:1")
+    tab.table.toggle("vanhack:3")
+
+    tab._discard_checked()
+
+    assert window.notices["questions"] == ["Discard 2 job(s)?"]
+    discarded = repository.list_jobs(status=JobStatus.discarded)
+    assert sorted(item.job.key for item in discarded) == ["vanhack:1", "vanhack:3"]
+    assert tab.table.status_chip("vanhack:1") == "Discarded"
+    assert tab.table.checked() == []
+    assert tab.discard_checked.cget("state") == "disabled"
+
+
+def test_refresh_keeps_the_boxes_of_jobs_still_listed(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("1", "Backend Laravel"), ["PHP"])
+    repository.save_job(job("2", "Data Engineer"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    tab.table.toggle_all()
+
+    tab.filters.search_text.insert(0, "laravel")
+    tab.refresh()
+
+    assert tab.table.checked() == ["vanhack:1"]
 
 
 def test_invalid_min_fit_warns_without_crashing(window: App) -> None:

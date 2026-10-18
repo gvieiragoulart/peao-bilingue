@@ -216,3 +216,9 @@ def test_each_search_keeps_its_color() -> None:
     assert colors["search 0"] == presentation.SEARCH_COLORS[0]
     assert colors["search 1"] != colors["search 0"]
     assert colors[names[-1]] == presentation.SEARCH_COLORS[0]  # the palette cycles
+
+
+def test_every_status_has_its_own_color() -> None:
+    colors = [status.color for status in JobStatus]
+    assert all(len(pair) == 2 for pair in colors)
+    assert len(set(colors)) == len(JobStatus)

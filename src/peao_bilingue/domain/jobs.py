@@ -58,6 +58,20 @@ class JobStatus(StrEnum):
     applied = "applied"
     discarded = "discarded"
 
+    @property
+    def color(self) -> tuple[str, str]:
+        """The color the status is shown with, (light theme, dark theme), dark enough
+        for white text. Kept on the enum so every screen shows a status the same way."""
+        return _STATUS_COLORS[self]
+
+
+_STATUS_COLORS: dict[JobStatus, tuple[str, str]] = {
+    JobStatus.new: ("#1f6aa5", "#1f6aa5"),
+    JobStatus.studying: ("#b26a00", "#c77800"),
+    JobStatus.applied: ("#2e7d32", "#388e3c"),
+    JobStatus.discarded: ("#6d6d6d", "#5a5a5a"),
+}
+
 
 class Skill(BaseModel):
     name: str
@@ -191,3 +205,7 @@ class JobRepository(ABC):
 
     @abstractmethod
     def change_status(self, key: str, status: JobStatus) -> None: ...
+
+    @abstractmethod
+    def change_statuses(self, keys: list[str], status: JobStatus) -> None:
+        """Several jobs at once, all or none: an unknown key changes nothing."""

@@ -144,6 +144,28 @@ def test_changing_status_of_missing_job_raises(repository: SQLiteRepository) -> 
         repository.change_status("vanhack:999", JobStatus.applied)
 
 
+def test_changes_the_status_of_several_jobs_at_once(
+    repository: SQLiteRepository,
+) -> None:
+    first = _with_analysis(repository, "1")
+    second = _with_analysis(repository, "2")
+    _with_analysis(repository, "3")
+
+    repository.change_statuses([first.key, second.key], JobStatus.discarded)
+
+    discarded = repository.list_jobs(status=JobStatus.discarded)
+    assert sorted(item.job.key for item in discarded) == ["vanhack:1", "vanhack:2"]
+
+
+def test_changing_several_with_a_missing_job_changes_none(
+    repository: SQLiteRepository,
+) -> None:
+    first = _with_analysis(repository, "1")
+    with pytest.raises(LookupError):
+        repository.change_statuses([first.key, "vanhack:999"], JobStatus.discarded)
+    assert repository.list_jobs(status=JobStatus.discarded) == []
+
+
 def test_text_search_ignores_accents(
     repository: SQLiteRepository,
 ) -> None:
