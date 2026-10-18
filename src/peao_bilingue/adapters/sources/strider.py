@@ -71,11 +71,18 @@ _ID = re.compile(r"-([0-9a-f]{8})$")
 @sources.register("strider")
 class Strider(ApiSource):
     name = "strider"
-    label = _("Strider (public jobs page, remote in LATAM)")
+    label = "Strider"
     description = _(
-        "Long-term remote jobs at US companies, open to Latin America. Reads the "
+        "Remote jobs at US companies, 100% remote for Latin America. Reads the "
         "public jobs page; no account needed."
     )
+    about = _(
+        "Strider matches candidates itself and its app has no job list, so only the "
+        "public jobs page is read: once per collection, then each new job's page "
+        "with a 2-5 s pause. The company is never named. Each job keeps its Strider "
+        "link."
+    )
+    site = "https://www.onstrider.com/jobs"
     brand = "Strider"
     url = URL
     # Random pause before each job page, like a person reading one at a time.

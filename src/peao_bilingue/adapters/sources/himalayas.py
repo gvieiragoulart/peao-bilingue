@@ -12,7 +12,7 @@ filter, most are US-only (3 out of 18 fit, on 2026-10-07).
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 
@@ -40,11 +40,21 @@ def _periods() -> dict[str, str]:
 @sources.register("himalayas")
 class Himalayas(ApiSource):
     name = "himalayas"
-    label = _("Himalayas (public API, remote jobs)")
+    label = "Himalayas"
     description = _(
-        "Remote jobs open to Brazil or worldwide, searched once per keyword of "
-        "your searches."
+        "A leading remote job board; here, only the jobs open to Brazil or "
+        "worldwide. Public API, no account."
     )
+    about = _(
+        "Searched once per keyword of your searches (up to 20 jobs each), with a 2 "
+        "s pause between calls, each answer kept for 12 hours. The country is an "
+        "ISO code (BR); empty brings jobs for every country, US-only ones included. "
+        "Each job links back to Himalayas."
+    )
+    site = "https://himalayas.app"
+    fields: ClassVar[dict[str, str]] = {
+        "himalayas_country": _("Country (ISO code)"),
+    }
     brand = "Himalayas"
     url = URL
     validity_s = 12 * 3600

@@ -24,7 +24,7 @@ import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 
@@ -83,11 +83,23 @@ def parse_board(entry: str) -> Board:
 @sources.register("company_boards")
 class CompanyBoards(ApiSource):
     name = "company_boards"
-    label = _("Company job boards (Greenhouse, Lever, Ashby)")
+    label = _("Company job boards")
     description = _(
-        "Jobs straight from the boards of companies that hire in Brazil or remotely "
-        "in Latin America (Nubank, Stone, QuintoAndar...). Public APIs, no account."
+        "Jobs straight from the careers pages of companies that hire in Brazil or "
+        "remotely in Latin America (Nubank, Stone, QuintoAndar...), through the "
+        "Greenhouse, Lever and Ashby APIs. No account."
     )
+    about = _(
+        "One call per board per collection, with a 1 s pause, kept for 6 hours. One "
+        "board per line, as ats:board=Company: the system (greenhouse, lever or "
+        "ashby), the board's name as in its address and, if you like, the company's "
+        "name. A job stays only when its location names one of the places (one per "
+        "line, without accents); no place keeps them all."
+    )
+    fields: ClassVar[dict[str, str]] = {
+        "company_boards": _("Boards"),
+        "company_boards_places": _("Places"),
+    }
     brand = _("company boards")
     url = URLS["greenhouse"].format(board="vtex")
     pause_s = 1.0

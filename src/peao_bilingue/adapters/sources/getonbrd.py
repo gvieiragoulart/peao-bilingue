@@ -35,11 +35,18 @@ SECTIONS = (
 @sources.register("getonbrd")
 class GetOnBoard(ApiSource):
     name = "getonbrd"
-    label = _("Get on Board (public API, remote in LATAM)")
+    label = "Get on Board"
     description = _(
-        "Fully remote tech jobs from a Latin American job board, searched once per "
-        "keyword of your searches."
+        "The biggest tech and startup jobs community in Latin America; here, only "
+        "the fully remote jobs. Public API, no account."
     )
+    about = _(
+        "Searched once per keyword of your searches, with a 2 s pause between "
+        "calls, each answer kept for 12 hours. Most jobs there are on-site or "
+        "remote within one country (Chile, mostly): only the fully remote ones come "
+        "in."
+    )
+    site = "https://www.getonbrd.com"
     brand = "Get on Board"
     url = URL
     validity_s = 12 * 3600

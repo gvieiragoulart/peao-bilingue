@@ -89,8 +89,10 @@ def _overrides() -> dict[str, dict[str, Any]]:
         "CTkSwitch": {
             "fg_color": STRONG_BORDER,
             "progress_color": ACCENT,
-            "button_color": ("#FFFFFF", "#E8EBEF"),
-            "button_hover_color": ("#F4F5F7", "#FFFFFF"),
+            # A white knob vanished on a white card in light mode: the switch alone
+            # says on or off (no text next to it), so it must show in both modes.
+            "button_color": ("#4A525D", "#E8EBEF"),
+            "button_hover_color": ("#2F353D", "#FFFFFF"),
             "text_color": TEXT,
             "text_color_disabled": DISABLED_TEXT,
         },

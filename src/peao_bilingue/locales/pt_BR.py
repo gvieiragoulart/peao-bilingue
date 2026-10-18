@@ -126,88 +126,178 @@ MESSAGES: dict[str, str] = {
     "/hour": "/hora",
     "{count} countries": "{count} países",
     "{count} countries, including Brazil": "{count} países, inclui Brazil",
-    "Remotive (public API, remote jobs)": "Remotive (API pública, vagas remotas)",
-    "Remote OK (public API, remote jobs)": "Remote OK (API pública, vagas remotas)",
-    "Arbeitnow (public API, Germany with a visa)": (
-        "Arbeitnow (API pública, Alemanha com visto)"
+    # --- Each source: its card, its dialog and its settings -----------------------
+    "Senior tech jobs at companies that sponsor visas and relocation, plus remote "
+    "jobs with companies that hire internationally. Uses your account.": (
+        "Vagas sênior de tecnologia em empresas que patrocinam visto e mudança, e "
+        "vagas remotas em empresas que contratam de fora. Usa a sua conta."
     ),
-    "Himalayas (public API, remote jobs)": "Himalayas (API pública, vagas remotas)",
-    "We Work Remotely (public RSS, remote jobs)": (
-        "We Work Remotely (RSS público, vagas remotas)"
+    "The robot reads the jobs and your VanHack profile with the session saved when "
+    "you log in by hand: it never fills in the login form or solves a human check. "
+    "If the session expires, the collection stops and asks you to log in again.": (
+        "O robô lê as vagas e o seu perfil na VanHack com a sessão salva quando você "
+        "faz o login à mão: ele nunca preenche o formulário de login nem resolve uma "
+        "verificação humana. Se a sessão expirar, a coleta para e pede um novo login."
     ),
-    "Remote software development jobs, with data 24 h behind. One call per "
-    "collection, as its terms ask.": (
-        "Vagas remotas de desenvolvimento de software, com dados de 24 h atrás. Uma "
-        "chamada por coleta, como pedem os termos."
+    "Fully remote jobs from vetted companies, here in software development. Public "
+    "API, no account.": (
+        "Vagas 100% remotas de empresas verificadas, aqui em desenvolvimento de "
+        "software. API pública, sem conta."
     ),
-    "The ~100 latest remote jobs from every field, with a shortened description; the "
-    "full text is on the site.": (
-        "As ~100 vagas remotas mais recentes de todas as áreas, com a descrição "
-        "resumida; o texto completo fica no site."
+    "Remotive's free API has the jobs 24 h late and asks for no more than a few "
+    "calls a day, so the app makes one call per collection and keeps the answer for "
+    "6 hours. Each job links back to Remotive, as its terms ask.": (
+        "A API gratuita do Remotive traz as vagas com 24 h de atraso e pede poucas "
+        "chamadas por dia: o app faz uma chamada por coleta e guarda a resposta por 6 "
+        "horas. Cada vaga leva de volta ao Remotive, como pedem os termos."
     ),
-    "Jobs in Germany with visa sponsorship, a path to relocation. Many are written in "
-    "German.": (
-        "Vagas na Alemanha com patrocínio de visto, um caminho para a mudança. Muitas "
-        "estão em alemão."
+    "One of the biggest remote job boards, with open salaries: the ~100 latest "
+    "remote jobs from every field. Public API, no account.": (
+        "Um dos maiores sites de vagas remotas, com salários abertos: as ~100 vagas "
+        "remotas mais recentes de todas as áreas. API pública, sem conta."
     ),
-    "Remote jobs open to Brazil or worldwide, searched once per keyword of your "
-    "searches.": (
-        "Vagas remotas abertas ao Brasil ou ao mundo todo, buscadas uma vez por "
-        "palavra-chave das suas buscas."
+    "One call per collection, kept for 6 hours. The API brings a shortened "
+    "description; the full text is on the site. Each job links back to Remote OK, "
+    "as its terms ask.": (
+        "Uma chamada por coleta, guardada por 6 horas. A API traz a descrição "
+        "resumida; o texto completo fica no site. Cada vaga leva de volta ao Remote "
+        "OK, como pedem os termos."
     ),
-    "Remote back-end, full-stack and front-end jobs, from the site's RSS feeds.": (
-        "Vagas remotas de back-end, full-stack e front-end, dos feeds RSS do site."
+    "Jobs in Germany with visa sponsorship, many in English with no German "
+    "required: a path to relocation. Public API, no account.": (
+        "Vagas na Alemanha com patrocínio de visto, muitas em inglês e sem exigir "
+        "alemão: um caminho para a mudança. API pública, sem conta."
     ),
-    "Strider (public jobs page, remote in LATAM)": (
-        "Strider (página pública de vagas, remotas na América Latina)"
+    "Only jobs with visa sponsorship come in, in one call per collection, kept for "
+    "6 hours. Some are still written in German. Each job links back to Arbeitnow, "
+    "as its terms ask.": (
+        "Só entram as vagas com patrocínio de visto, numa chamada por coleta, "
+        "guardada por 6 horas. Algumas ainda estão em alemão. Cada vaga leva de volta "
+        "ao Arbeitnow, como pedem os termos."
     ),
-    "Long-term remote jobs at US companies, open to Latin America. Reads the "
-    "public jobs page; no account needed.": (
-        "Vagas remotas de longo prazo em empresas dos EUA, abertas à América Latina. "
-        "Lê a página pública de vagas; não precisa de conta."
+    "A leading remote job board; here, only the jobs open to Brazil or worldwide. "
+    "Public API, no account.": (
+        "Um dos principais sites de vagas remotas; aqui, só as vagas abertas ao "
+        "Brasil ou ao mundo todo. API pública, sem conta."
     ),
+    "Searched once per keyword of your searches (up to 20 jobs each), with a 2 s "
+    "pause between calls, each answer kept for 12 hours. The country is an ISO code "
+    "(BR); empty brings jobs for every country, US-only ones included. Each job "
+    "links back to Himalayas.": (
+        "Buscado uma vez por palavra-chave das suas buscas (até 20 vagas cada), com "
+        "uma pausa de 2 s entre as chamadas, cada resposta guardada por 12 horas. O "
+        "país é um código ISO (BR); vazio traz vagas de todos os países, inclusive as "
+        "só para os EUA. Cada vaga leva de volta à Himalayas."
+    ),
+    "The largest remote work community in the world, since 2013: back-end, "
+    "full-stack and front-end jobs from its RSS feeds. No account.": (
+        "A maior comunidade de trabalho remoto do mundo, desde 2013: vagas de "
+        "back-end, full-stack e front-end dos seus feeds RSS. Sem conta."
+    ),
+    "Three feeds per collection, one per category, with a 2 s pause, kept for 6 "
+    "hours. Each job links back to We Work Remotely, as the feed page asks.": (
+        "Três feeds por coleta, um por categoria, com uma pausa de 2 s, guardados por "
+        "6 horas. Cada vaga leva de volta ao We Work Remotely, como pede a página dos "
+        "feeds."
+    ),
+    "Remote jobs at US companies, 100% remote for Latin America. Reads the public "
+    "jobs page; no account needed.": (
+        "Vagas remotas em empresas dos EUA, 100% remotas para a América Latina. Lê a "
+        "página pública de vagas; não precisa de conta."
+    ),
+    "Strider matches candidates itself and its app has no job list, so only the "
+    "public jobs page is read: once per collection, then each new job's page with a "
+    "2-5 s pause. The company is never named. Each job keeps its Strider link.": (
+        "A Strider escolhe os candidatos ela mesma e o app dela não tem lista de "
+        "vagas, então só a página pública é lida: uma vez por coleta e depois a "
+        "página de cada vaga nova, com uma pausa de 2 a 5 s. A empresa nunca é "
+        "nomeada. Cada vaga guarda o seu link da Strider."
+    ),
+    "A global remote job board: jobs open to Brazil, Latin America or anywhere, "
+    "from the last 7 days. Public API, no account.": (
+        "Um site global de vagas remotas: vagas abertas ao Brasil, à América Latina "
+        "ou ao mundo todo, dos últimos 7 dias. API pública, sem conta."
+    ),
+    "One call per collection, kept for 6 hours. The region is Jobicy's geo filter: "
+    '"brazil" already includes the Latin America and anywhere jobs. Each job links '
+    "back to Jobicy, as its terms ask.": (
+        "Uma chamada por coleta, guardada por 6 horas. A região é o filtro geo do "
+        'Jobicy: "brazil" já inclui as vagas da América Latina e do mundo todo. Cada '
+        "vaga leva de volta ao Jobicy, como pedem os termos."
+    ),
+    "The biggest tech and startup jobs community in Latin America; here, only the "
+    "fully remote jobs. Public API, no account.": (
+        "A maior comunidade de vagas de tecnologia e startups da América Latina; "
+        "aqui, só as vagas 100% remotas. API pública, sem conta."
+    ),
+    "Searched once per keyword of your searches, with a 2 s pause between calls, "
+    "each answer kept for 12 hours. Most jobs there are on-site or remote within "
+    "one country (Chile, mostly): only the fully remote ones come in.": (
+        "Buscado uma vez por palavra-chave das suas buscas, com uma pausa de 2 s "
+        "entre as chamadas, cada resposta guardada por 12 horas. Lá, a maioria das "
+        "vagas é presencial ou remota dentro de um país (o Chile, quase sempre): só "
+        "entram as 100% remotas."
+    ),
+    "GitHub job repositories": "Vagas no GitHub",
+    "Brazilian developer communities that post jobs as GitHub issues, tagged by "
+    "seniority, contract and technology (backend-br/vagas and others). Public API, "
+    "no account.": (
+        "Comunidades brasileiras de desenvolvimento que publicam vagas como issues no "
+        "GitHub, com etiquetas de senioridade, contrato e tecnologia "
+        "(backend-br/vagas e outros). API pública, sem conta."
+    ),
+    "One call per repository per collection, with a 1 s pause, kept for 6 hours: "
+    "GitHub allows 60 calls an hour without an account. One repository per line, as "
+    "owner/repo. Recruiters' emails, phones and links are removed from each job.": (
+        "Uma chamada por repositório por coleta, com uma pausa de 1 s, guardada por 6 "
+        "horas: sem conta, o GitHub permite 60 chamadas por hora. Um repositório por "
+        "linha, como dono/repo. Os emails, telefones e links dos recrutadores são "
+        "tirados de cada vaga."
+    ),
+    "Company job boards": "Vagas direto das empresas",
+    "Jobs straight from the careers pages of companies that hire in Brazil or "
+    "remotely in Latin America (Nubank, Stone, QuintoAndar...), through the "
+    "Greenhouse, Lever and Ashby APIs. No account.": (
+        "Vagas direto das páginas de carreira de empresas que contratam no Brasil ou "
+        "remoto na América Latina (Nubank, Stone, QuintoAndar...), pelas APIs do "
+        "Greenhouse, do Lever e do Ashby. Sem conta."
+    ),
+    "One call per board per collection, with a 1 s pause, kept for 6 hours. One "
+    "board per line, as ats:board=Company: the system (greenhouse, lever or ashby), "
+    "the board's name as in its address and, if you like, the company's name. A "
+    "job stays only when its location names one of the places (one per line, "
+    "without accents); no place keeps them all.": (
+        "Uma chamada por página por coleta, com uma pausa de 1 s, guardada por 6 "
+        "horas. Uma página por linha, como ats:pagina=Empresa: o sistema (greenhouse, "
+        "lever ou ashby), o nome da página como no endereço e, se quiser, o nome da "
+        "empresa. Uma vaga só fica quando o local dela cita um dos lugares (um por "
+        "linha, sem acentos); sem nenhum lugar, ficam todas."
+    ),
+    "The monthly thread where companies post jobs on Hacker News; only posts open "
+    "to Brazil, Latin America or anywhere. No account.": (
+        "O tópico mensal em que empresas publicam vagas no Hacker News; só os "
+        "anúncios abertos ao Brasil, à América Latina ou ao mundo todo. Sem conta."
+    ),
+    "Two calls per collection, through the HN Search API by Algolia: one finds the "
+    "newest thread, the other brings it whole; kept for 12 hours. A post stays only "
+    "when it names one of the places (one per line, without accents). Not visa: as "
+    "many posts say they cannot sponsor one as offer it.": (
+        "Duas chamadas por coleta, pela HN Search API da Algolia: uma acha o tópico "
+        "mais recente, a outra o traz inteiro; guardadas por 12 horas. Um anúncio só "
+        "fica quando cita um dos lugares (um por linha, sem acentos). Sem visa: "
+        "tantos anúncios dizem que não patrocinam visto quanto os que oferecem."
+    ),
+    "Category": "Categoria",
+    "Country (ISO code)": "País (código ISO)",
+    "Region": "Região",
+    "Repositories": "Repositórios",
+    "Boards": "Páginas",
+    "Places": "Lugares",
     "the job's requirements": "os requisitos da vaga",
-    "GitHub job repositories (Brazilian communities)": (
-        "Repositórios de vagas no GitHub (comunidades brasileiras)"
-    ),
-    "Jobs posted as issues in Brazilian developer communities' repositories "
-    "(backend-br/vagas and others). Public API, no account.": (
-        "Vagas publicadas como issues nos repositórios das comunidades brasileiras de "
-        "desenvolvimento (backend-br/vagas e outros). API pública, sem conta."
-    ),
-    "Company job boards (Greenhouse, Lever, Ashby)": (
-        "Páginas de vagas das empresas (Greenhouse, Lever, Ashby)"
-    ),
-    "Jobs straight from the boards of companies that hire in Brazil or remotely "
-    "in Latin America (Nubank, Stone, QuintoAndar...). Public APIs, no account.": (
-        "Vagas direto das páginas das empresas que contratam no Brasil ou remoto na "
-        "América Latina (Nubank, Stone, QuintoAndar...). APIs públicas, sem conta."
-    ),
     "company boards": "páginas das empresas",
-    "Jobicy (public API, remote jobs)": "Jobicy (API pública, vagas remotas)",
-    "Get on Board (public API, remote in LATAM)": (
-        "Get on Board (API pública, remotas na América Latina)"
-    ),
-    "Fully remote tech jobs from a Latin American job board, searched once per "
-    "keyword of your searches.": (
-        "Vagas de tecnologia 100% remotas de um site de vagas da América Latina, "
-        "buscadas uma vez por palavra-chave das suas buscas."
-    ),
     "USD {amount}/month": "USD {amount}/mês",
-    "Hacker News: Who is hiring? (monthly thread)": (
-        "Hacker News: Who is hiring? (tópico mensal)"
-    ),
-    "The monthly thread where companies post jobs on Hacker News; only posts "
-    "open to Brazil, Latin America or anywhere.": (
-        "O tópico mensal em que empresas publicam vagas no Hacker News; só os anúncios "
-        "abertos ao Brasil, à América Latina ou ao mundo todo."
-    ),
     "Hacker News: no Who is hiring? thread found.": (
         "Hacker News: nenhum tópico Who is hiring? encontrado."
-    ),
-    "Remote jobs open to Brazil, Latin America or anywhere, from the last 7 days.": (
-        "Vagas remotas abertas ao Brasil, à América Latina ou ao mundo todo, dos "
-        "últimos 7 dias."
     ),
     "Invalid company board {entry!r}: use greenhouse:, lever: or ashby: followed by "
     "the board's name.": (
@@ -215,11 +305,6 @@ MESSAGES: dict[str, str] = {
         "seguido do nome da página."
     ),
     # --- VanHack ------------------------------------------------------------------
-    "Jobs abroad with relocation support. Uses your account: log in once by hand and "
-    "the robot reuses the saved session.": (
-        "Vagas no exterior com apoio à mudança. Usa a sua conta: faça o login uma vez, "
-        "à mão, e o robô reaproveita a sessão salva."
-    ),
     "Cloudflare rejected this browser (Security check could not complete)": (
         "Cloudflare recusou este navegador (Security check could not complete)"
     ),
@@ -469,8 +554,10 @@ MESSAGES: dict[str, str] = {
     "browser": "navegador",
     "reads your profile": "lê o seu perfil",
     "no account needed": "sem conta",
-    "On": "Ligada",
-    "Off": "Desligada",
+    "Configure": "Configurar",
+    "Open the site": "Abrir o site",
+    "Session": "Sessão",
+    "Close": "Fechar",
     "Check session": "Verificar sessão",
     "Log in": "Fazer login",
     "Valid session": "Sessão válida",
