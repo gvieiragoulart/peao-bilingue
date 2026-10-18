@@ -33,7 +33,7 @@ class Anthropic(LLMProvider):
     )
     about = _(
         "The app sends the job and your profile, without contact data, only when you "
-        "click Analyze on a job. The key stays in Windows Credential Manager."
+        "click Analyze on a job."
     )
     site = "https://console.anthropic.com"
     fields: ClassVar[dict[str, str]] = {
