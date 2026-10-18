@@ -25,6 +25,9 @@ ICONS = {
 }
 BRAND_ICON = ""  # World
 PLAY_ICON = ""
+# The light/dark button shows where a click goes: the moon in light mode, the sun in
+# dark (QuietHours, Brightness). Without an icon font, the Unicode symbols.
+MODE_ICONS = {"Light": ("", "☾"), "Dark": ("", "☀")}
 
 
 class NavItem(ctk.CTkFrame):
@@ -115,13 +118,26 @@ class Sidebar(ctk.CTkFrame):
         *,
         on_pick: Callable[[str], None],
         on_collect: Callable[[], None],
+        on_toggle_mode: Callable[[], None],
     ) -> None:
         """`sections`: (id, title), in order; the last one goes to the bottom."""
         super().__init__(master, width=WIDTH, corner_radius=0, fg_color=theme.SIDEBAR)
         self.pack_propagate(False)
 
         brand = ctk.CTkFrame(self, fg_color="transparent")
-        brand.pack(fill="x", padx=20, pady=(20, 18))
+        brand.pack(fill="x", padx=(20, 12), pady=(20, 18))
+        self.mode_button = ctk.CTkButton(
+            brand,
+            text="",
+            width=32,
+            height=32,
+            fg_color="transparent",
+            hover_color=theme.RAISED,
+            text_color=theme.MUTED,
+            command=on_toggle_mode,
+        )
+        self.mode_button.pack(side="right")
+        self.show_mode(ctk.get_appearance_mode())
         ctk.CTkLabel(
             brand,
             text=theme.icon(BRAND_ICON),
@@ -198,6 +214,14 @@ class Sidebar(ctk.CTkFrame):
 
     def show_last_run(self, text: str) -> None:
         self.last_run.configure(text=text)
+
+    def show_mode(self, mode: str) -> None:
+        """`mode`: CustomTkinter's current one, "Light" or "Dark"."""
+        glyph, symbol = MODE_ICONS.get(mode, MODE_ICONS["Light"])
+        if theme.icon(glyph):
+            self.mode_button.configure(text=glyph, font=theme.icons(16))
+        else:
+            self.mode_button.configure(text=symbol, font=ctk.CTkFont(size=16))
 
     def set_collecting(self, collecting: bool) -> None:
         self.collect_button.configure(
