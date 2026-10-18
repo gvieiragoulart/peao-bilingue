@@ -18,6 +18,16 @@ from peao_bilingue.i18n import _
 class OpenAI(LLMProvider):
     name = "openai"
     label = "OpenAI"
+    description = _(
+        "OpenAI's GPT models through its API. Paid per use: needs your API key and a "
+        "model name."
+    )
+    about = _(
+        "The app sends the job and your profile, without contact data, only when you "
+        "click Analyze on a job. There is no default model: the catalog changes, so "
+        "write the one your key can use."
+    )
+    site = "https://platform.openai.com"
     fields: ClassVar[dict[str, str]] = {
         "openai_model": _("Model (required)"),
         "openai_api_key": _("API key"),

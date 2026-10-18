@@ -28,6 +28,14 @@ BETA_FALLBACK = "server-side-fallback-2026-07-01"
 class Anthropic(LLMProvider):
     name = "anthropic"
     label = "Claude (Anthropic)"
+    description = _(
+        "Claude, Anthropic's models, through its API. Paid per use, with your API key."
+    )
+    about = _(
+        "The app sends the job and your profile, without contact data, only when you "
+        "click Analyze on a job."
+    )
+    site = "https://console.anthropic.com"
     fields: ClassVar[dict[str, str]] = {
         "anthropic_model": _("Model"),
         "anthropic_api_key": _("API key"),

@@ -199,6 +199,22 @@ there is no data file for the .exe), else a drawn monogram (`MONOGRAMS`): **Remo
 unknown source gets its first letter. Hacker News' "Y" is drawn by the script from its SVG's
 path. Drawn on the cards, the dialog, each row of the Jobs table (left of the title) and the
 job's panel. The light theme's switch knob is dark: a white one vanished on a white card.
+**Card modals** (`ui/modal.py`, `EntityDialog`): what the source and LLM modals share
+(placement, header with logo and ✕, scrolling body, Close/Save, Esc and grab); subclasses
+fill `body` and call `_finish(save=...)`. Cards reflow through `widgets.CardGrid`, and
+`widgets.clickable` makes a whole card open its modal.
+**LLMs tab (2026-10-18):** the same pattern as Sources, with no switch: one card per LLM
+(`ui/tabs/llms/llm_card.py`: official logo, the short name from
+`presentation.short_llm_label`, `LLMProvider.description`, chips for the cost and what is
+missing, `presentation.llm_features`/`llm_state`, a "Padrão" chip and accent border on the
+default) and its modal (`ui/tabs/llms/dialog.py`, `LLMDialog`: `about`, `site`, the
+adapter's form). **Save is only in the modal**; there is no Save on the tab. The LLMs'
+logos are `ui/llm_logos.py` (`packaging/source_icons.py --llms`, from the icons of
+claude.ai, openai.com, gemini.google.com and ollama.com), looked up by `source_icons` after
+the sources'. `LLMProvider.label` keeps its parentheses: the Jobs panel's picker and
+Settings show "Ollama (local, free)", the cost in plain view. **The default LLM**
+(`analysis_llm`, "Quem analisa") moved to Settings (`ui/tabs/settings/analysis.py`, a
+picker of labels mapped back to names); Settings' Save refreshes the other tabs.
 
 **Dependency rule:** `domain` imports nothing from the project except `i18n` (a leaf utility for
 user-facing error messages); `application` only knows `domain`; adapters implement ports; only

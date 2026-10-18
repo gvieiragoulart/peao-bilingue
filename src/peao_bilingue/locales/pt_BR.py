@@ -508,6 +508,59 @@ MESSAGES: dict[str, str] = {
     "{count} job(s) marked as {status}.": "{count} vaga(s) marcada(s) como {status}.",
     "Job discarded.": "Vaga descartada.",
     "Undo": "Desfazer",
+    # --- LLMs: cards and modal ---------------------------------------------------------
+    "Claude, Anthropic's models, through its API. Paid per use, with your API key.": (
+        "Claude, os modelos da Anthropic, pela API dela. Pago por uso, com a sua chave "
+        "de API."
+    ),
+    "The app sends the job and your profile, without contact data, only when you "
+    "click Analyze on a job.": (
+        "O app envia a vaga e o seu perfil, sem dados de contato, só quando você clica "
+        "em Analisar numa vaga."
+    ),
+    "OpenAI's GPT models through its API. Paid per use: needs your API key and a "
+    "model name.": (
+        "Os modelos GPT da OpenAI, pela API dela. Pago por uso: precisa da sua chave de "
+        "API e do nome de um modelo."
+    ),
+    "The app sends the job and your profile, without contact data, only when you "
+    "click Analyze on a job. There is no default model: the catalog changes, so "
+    "write the one your key can use.": (
+        "O app envia a vaga e o seu perfil, sem dados de contato, só quando você clica "
+        "em Analisar numa vaga. Não há modelo padrão: o catálogo muda, então escreva um "
+        "que a sua chave possa usar."
+    ),
+    "Google's Gemini models through the Gemini API. Needs your API key and a model "
+    "name.": (
+        "Os modelos Gemini do Google, pela API do Gemini. Precisa da sua chave de API e "
+        "do nome de um modelo."
+    ),
+    "Open models running on this PC through Ollama. Free, and nothing leaves the "
+    "computer.": (
+        "Modelos abertos rodando neste PC pelo Ollama. De graça, e nada sai do "
+        "computador."
+    ),
+    "Install Ollama, start it (ollama serve) and download a model (ollama pull). "
+    "On a 6 GB GPU, quantized 7–8B models fit. The app always sets the context "
+    "size: Ollama's small default would cut the prompt without saying so.": (
+        "Instale o Ollama, inicie (ollama serve) e baixe um modelo (ollama pull). Numa "
+        "GPU de 6 GB cabem modelos 7–8B quantizados. O app sempre define o tamanho do "
+        "contexto: o padrão pequeno do Ollama cortaria o prompt sem avisar."
+    ),
+    "paid, your API key": "pago, com sua chave de API",
+    "free, on your PC": "grátis, no seu PC",
+    "no API key yet": "sem chave de API",
+    "no model yet": "sem modelo",
+    "model {model}": "modelo {model}",
+    "Default": "Padrão",
+    "Configure the LLMs you want to use to analyze jobs; which one is picked by "
+    "default is in Settings.": (
+        "Configure os LLMs que você quer usar para analisar vagas; qual vem escolhido "
+        "por padrão fica em Configurações."
+    ),
+    "Each LLM's key and model are on the LLMs tab.": (
+        "A chave e o modelo de cada LLM ficam na aba LLMs."
+    ),
     "Good fit": "Bom encaixe",
     "Worth a look": "Vale olhar",
     "Weak fit": "Encaixe fraco",

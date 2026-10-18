@@ -2,7 +2,6 @@
 brings and what it needs. A click anywhere but the switch opens the source's dialog,
 where it is configured (and logged in, for those that need it)."""
 
-import tkinter as tk
 from collections.abc import Callable
 from typing import Any
 
@@ -14,7 +13,7 @@ from peao_bilingue.i18n import _
 from peao_bilingue.ui import theme
 from peao_bilingue.ui.presentation import source_features
 from peao_bilingue.ui.source_icons import SourceIcon
-from peao_bilingue.ui.widgets import Hint
+from peao_bilingue.ui.widgets import Hint, clickable
 
 PADDING = 16
 ICON_SIZE = 32
@@ -91,7 +90,8 @@ class SourceCard(ctk.CTkFrame):
         ctk.CTkLabel(
             footer, text=_("Configure"), font=theme.small(), text_color=theme.MUTED
         ).pack(side="right", padx=(0, 4))
-        self._clickable(self)
+        # A click anywhere but the switch opens the dialog.
+        clickable(self, self.open, skip=self.switch)
         self._show_state()
 
     @property
@@ -114,17 +114,6 @@ class SourceCard(ctk.CTkFrame):
     def paint(self) -> None:
         """Draws the logo again: a switch between light and dark changes its ground."""
         self.icon.paint()
-
-    def _clickable(self, widget: tk.Misc) -> None:
-        """A click anywhere but the switch opens the dialog. Bound on each Tk widget
-        with Tk's own `bind`: CustomTkinter's would bind its inner canvas a second
-        time, and a click doesn't reach the widget's parent anyway."""
-        if str(widget).startswith(str(self.switch)):
-            return
-        tk.Misc.bind(widget, "<Button-1>", lambda _event: self.open(), add="+")
-        widget.tk.call(str(widget), "configure", "-cursor", "hand2")
-        for child in widget.winfo_children():
-            self._clickable(child)
 
     def _show_state(self) -> None:
         """An enabled card gets the accent border."""
