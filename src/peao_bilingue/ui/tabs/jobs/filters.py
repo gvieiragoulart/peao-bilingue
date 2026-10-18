@@ -71,7 +71,8 @@ class JobFilters(ctk.CTkFrame):
             height=34,
             command=lambda _value: on_apply(),
         )
-        self.status.set(presentation.all_label())
+        # Starts on what's left to review.
+        self.status.set(presentation.job_status_labels()[JobStatus.new])
         self.status.pack(side="left", padx=(0, 16))
 
         everything = [presentation.all_label()]
