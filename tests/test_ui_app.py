@@ -8,6 +8,7 @@ from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 
+import customtkinter as ctk
 import pytest
 from builders import analysis, job, profile
 from fakes import FakeProvider, FakeReleaseFeed, FakeScheduler
@@ -461,6 +462,44 @@ def test_collect_picker_offers_only_enabled_sources(window: App) -> None:
     sources._save()
     assert tab.collect_bar.source.get() == "All enabled sources"
     assert tab.collect_bar.chosen_source() is None
+
+
+def test_source_card_shows_description_and_state(window: App) -> None:
+    card = window.panels["sources"].cards["remotive"]
+    assert card.title.cget("text") == REMOTIVE
+    assert card.description.cget("text").startswith("Remote software development")
+    accent = ctk.ThemeManager.theme["CTkButton"]["fg_color"]
+
+    card.set_enabled(True)
+    assert card.switch.cget("text") == "On"
+    assert card.cget("border_color") == accent
+
+    card.set_enabled(False)
+    assert card.switch.cget("text") == "Off"
+    assert card.cget("border_color") != accent
+
+    # Only sources with a manual login get the login buttons and status.
+    assert card.status is None
+    assert window.panels["sources"].cards["vanhack"].status is not None
+
+
+def test_source_cards_reflow_in_a_grid(window: App) -> None:
+    tab = window.panels["sources"]
+    names = list(tab.cards)
+
+    def place(name: str) -> tuple[int, int]:
+        info = tab.cards[name].grid_info()
+        return int(info["row"]), int(info["column"])
+
+    tab.arrange(3)
+    assert [place(name) for name in names[:4]] == [(0, 0), (0, 1), (0, 2), (1, 0)]
+    tab.arrange(1)
+    assert [place(name) for name in names[:2]] == [(0, 0), (1, 0)]
+    # Never more columns than the maximum, never fewer than one.
+    tab.arrange(9)
+    assert tab.columns == 3
+    tab.arrange(0)
+    assert tab.columns == 1
 
 
 @pytest.mark.parametrize(

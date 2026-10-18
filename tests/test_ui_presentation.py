@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from builders import analysis, job
 
+from peao_bilingue import factories
 from peao_bilingue.domain.analysis import SavedAnalysis
 from peao_bilingue.domain.collection import Run, RunStatus, Trigger
 from peao_bilingue.domain.jobs import JobStatus, ListedJob, Posting
@@ -222,3 +223,14 @@ def test_every_status_has_its_own_color() -> None:
     colors = [status.color for status in JobStatus]
     assert all(len(pair) == 2 for pair in colors)
     assert len(set(colors)) == len(JobStatus)
+
+
+def test_source_features() -> None:
+    vanhack = factories.sources.class_of("vanhack")
+    remotive = factories.sources.class_of("remotive")
+    assert presentation.source_features(vanhack) == [
+        "needs your login",
+        "browser",
+        "reads your profile",
+    ]
+    assert presentation.source_features(remotive) == ["no account needed"]

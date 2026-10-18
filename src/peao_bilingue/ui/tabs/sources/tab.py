@@ -13,6 +13,10 @@ from peao_bilingue.ui.tabs.sources.source_card import SourceCard
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
 
+# Below this width a card's description wraps into too many lines.
+CARD_MIN_WIDTH = 420
+MAX_COLUMNS = 3
+
 
 def session_status() -> dict[int, str]:
     return {
@@ -36,19 +40,49 @@ class SourcesTab(ctk.CTkScrollableFrame):
             ),
             wraplength=900,
             justify="left",
-        ).pack(anchor="w", pady=(0, 12))
+        ).pack(anchor="w", padx=6, pady=(0, 6))
 
+        # The cards in a grid that reflows with the tab's width.
+        self.grid_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.grid_frame.pack(fill="x")
         self.cards: dict[str, SourceCard] = {}
         for name in factories.sources.available():
-            card = SourceCard(
-                self,
+            self.cards[name] = SourceCard(
+                self.grid_frame,
                 name,
                 on_toggle=self._save,
                 on_login=self._login,
                 on_check=self._check,
             )
-            card.pack(fill="x", pady=4)
-            self.cards[name] = card
+        self.columns = 0
+        self.arrange(2)
+        # add="+": CustomTkinter's own binding keeps the scroll region in sync.
+        self.bind("<Configure>", self._on_resize, add="+")
+
+    def arrange(self, columns: int) -> None:
+        """Places the cards in `columns` columns of equal width (1 to MAX_COLUMNS)."""
+        columns = max(1, min(columns, MAX_COLUMNS))
+        if columns == self.columns:
+            return
+        self.columns = columns
+        for column in range(MAX_COLUMNS):
+            used = column < columns
+            self.grid_frame.grid_columnconfigure(
+                column, weight=int(used), uniform="card" if used else ""
+            )
+        for index, card in enumerate(self.cards.values()):
+            card.grid(
+                row=index // columns,
+                column=index % columns,
+                sticky="nsew",
+                padx=6,
+                pady=6,
+            )
+
+    def _on_resize(self, event: Any) -> None:
+        # The event's width is in screen pixels; the card's minimum isn't scaled.
+        width = event.width / self._get_widget_scaling()
+        self.arrange(int(width // CARD_MIN_WIDTH))
 
     def refresh(self) -> None:
         for name, card in self.cards.items():

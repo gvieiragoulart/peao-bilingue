@@ -20,7 +20,6 @@ from peao_bilingue.adapters.documents import read_document
 from peao_bilingue.application.profile import manual_profile
 from peao_bilingue.config import settings
 from peao_bilingue.domain.collection import ManualSession
-from peao_bilingue.domain.profile import ProfileSource
 from peao_bilingue.domain.repository import Repository
 from peao_bilingue.domain.schedule import check_time
 from peao_bilingue.domain.searches import Search
@@ -246,15 +245,14 @@ class Onboarding(ctk.CTkFrame):
             if name in settings.enabled_sources:
                 box.select()
             self.source_boxes[name] = box
-            features = []
-            if issubclass(cls, ManualSession):
-                features.append(_("needs your login"))
-            if issubclass(cls, ProfileSource):
-                features.append(_("reads your profile"))
-            if features:
-                ctk.CTkLabel(page, text=" · ".join(features), text_color="gray55").pack(
-                    anchor="w", padx=(30, 0)
-                )
+            features = " · ".join(presentation.source_features(cls))
+            ctk.CTkLabel(
+                page,
+                text=f"{cls.description}\n{features}",
+                text_color="gray55",
+                wraplength=WRAP - 30,
+                justify="left",
+            ).pack(anchor="w", padx=(30, 0))
         return page
 
     def _profile(self) -> Any:

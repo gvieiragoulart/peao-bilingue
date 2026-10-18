@@ -45,6 +45,10 @@ class VanHack(JobSource, ProfileSource, ManualSession):
 
     name = "vanhack"
     label = "VanHack"
+    description = _(
+        "Jobs abroad with relocation support. Uses your account: log in once by "
+        "hand and the robot reuses the saved session."
+    )
     needs_browser = True
 
     @classmethod

@@ -14,6 +14,12 @@ def test_real_adapters_are_registered() -> None:
     assert {"email", "whatsapp"} <= set(factories.notifiers.available())
 
 
+def test_every_source_describes_itself() -> None:
+    # The Sources tab's cards show it.
+    for name in factories.sources.available():
+        assert factories.sources.class_of(name).description, name
+
+
 def test_creates_by_name_with_config() -> None:
     source = factories.sources.create("vanhack", headless=False)
     assert isinstance(source, VanHack) and source.headless is False

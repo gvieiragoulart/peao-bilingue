@@ -135,7 +135,35 @@ MESSAGES: dict[str, str] = {
     "We Work Remotely (public RSS, remote jobs)": (
         "We Work Remotely (RSS público, vagas remotas)"
     ),
+    "Remote software development jobs, with data 24 h behind. One call per "
+    "collection, as its terms ask.": (
+        "Vagas remotas de desenvolvimento de software, com dados de 24 h atrás. Uma "
+        "chamada por coleta, como pedem os termos."
+    ),
+    "The ~100 latest remote jobs from every field, with a shortened description; the "
+    "full text is on the site.": (
+        "As ~100 vagas remotas mais recentes de todas as áreas, com a descrição "
+        "resumida; o texto completo fica no site."
+    ),
+    "Jobs in Germany with visa sponsorship, a path to relocation. Many are written in "
+    "German.": (
+        "Vagas na Alemanha com patrocínio de visto, um caminho para a mudança. Muitas "
+        "estão em alemão."
+    ),
+    "Remote jobs open to Brazil or worldwide, searched once per keyword of your "
+    "searches.": (
+        "Vagas remotas abertas ao Brasil ou ao mundo todo, buscadas uma vez por "
+        "palavra-chave das suas buscas."
+    ),
+    "Remote back-end, full-stack and front-end jobs, from the site's RSS feeds.": (
+        "Vagas remotas de back-end, full-stack e front-end, dos feeds RSS do site."
+    ),
     # --- VanHack ------------------------------------------------------------------
+    "Jobs abroad with relocation support. Uses your account: log in once by hand and "
+    "the robot reuses the saved session.": (
+        "Vagas no exterior com apoio à mudança. Usa a sua conta: faça o login uma vez, "
+        "à mão, e o robô reaproveita a sessão salva."
+    ),
     "Cloudflare rejected this browser (Security check could not complete)": (
         "Cloudflare recusou este navegador (Security check could not complete)"
     ),
@@ -383,6 +411,9 @@ MESSAGES: dict[str, str] = {
     ),
     "browser": "navegador",
     "reads your profile": "lê o seu perfil",
+    "no account needed": "sem conta",
+    "On": "Ligada",
+    "Off": "Desligada",
     "Check session": "Verificar sessão",
     "Log in": "Fazer login",
     "Valid session": "Sessão válida",
