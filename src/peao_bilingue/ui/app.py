@@ -11,7 +11,7 @@ from typing import Any
 
 import customtkinter as ctk
 
-from peao_bilingue import APP_NAME, __version__
+from peao_bilingue import APP_NAME, __version__, config
 from peao_bilingue.application.updates import newer_release
 from peao_bilingue.composition import (
     build_release_feed,
@@ -112,6 +112,7 @@ class App(ctk.CTk):
             [(identifier, title) for identifier, title, _cls in sections],
             on_pick=self.show,
             on_collect=self.collect_now,
+            on_toggle_mode=self.toggle_mode,
         )
         self.content = ctk.CTkFrame(self.body, fg_color="transparent", corner_radius=0)
         self.page_title = ctk.CTkLabel(
@@ -241,10 +242,19 @@ class App(ctk.CTk):
         self.show("runs")
         self.on_change()
 
+    def toggle_mode(self) -> None:
+        """The sidebar's button: light to dark and back, saved like Settings' choice
+        (which then reads "Light" or "Dark" instead of "Same as Windows")."""
+        mode = "light" if ctk.get_appearance_mode() == "Dark" else "dark"
+        config.save({"appearance": mode})
+        ctk.set_appearance_mode(mode)
+
     def _set_appearance_mode(self, mode_string: str) -> None:
         # CustomTkinter calls it on every light/dark switch: the title bar follows.
         super()._set_appearance_mode(mode_string)
         chrome.paint_title_bar(self)
+        if hasattr(self, "sidebar"):
+            self.sidebar.show_mode(ctk.get_appearance_mode())
         # What isn't a CustomTkinter widget (the Canvas tables, ttk) repaints on
         # refresh. Called by CustomTkinter's own init too, before the panels exist.
         if hasattr(self, "panels"):

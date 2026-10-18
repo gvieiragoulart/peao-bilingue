@@ -135,7 +135,9 @@ color in the tabs**: use the tokens (`theme.MUTED` for hints...). Tk has no alph
 mixed colors (`presentation.soft`/`blend`). `ui/chrome.py` paints the title bar in the ground
 color (`DwmSetWindowAttribute` 35/36; CustomTkinter already does dark/light), again on every
 mode switch (`App._set_appearance_mode`, which also refreshes the panels: the Canvas and ttk
-tables repaint on refresh). Settings → "Aparência" (`appearance`: system/light/dark).
+tables repaint on refresh). Settings → "Aparência" (`appearance`: system/light/dark);
+the sun/moon button at the top of the sidebar (`App.toggle_mode`) flips light and dark and
+saves the same setting.
 **Sidebar** (`ui/navigation.py`) instead of a `CTkTabview`: `App.show(id)` swaps the section,
 the Jobs item shows a badge with the jobs still `new` (99+), and a card shows the daily
 collection, the last run and "Coletar agora" (`App.collect_now` → `RunsTab.collect`).
