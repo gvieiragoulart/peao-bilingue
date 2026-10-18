@@ -1,6 +1,7 @@
 """Reusable widgets: headings and hints, cards, a themed table, an in-window notice and
 forms bound to Settings."""
 
+import tkinter as tk
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from tkinter import ttk
@@ -77,6 +78,60 @@ class Card(ctk.CTkFrame):
         kwargs.setdefault("border_width", 1)
         kwargs.setdefault("border_color", theme.BORDER)
         super().__init__(master, **kwargs)
+
+
+# Below this width a card's description wraps into too many lines.
+CARD_MIN_WIDTH = 420
+MAX_COLUMNS = 3
+
+
+class CardGrid(ctk.CTkFrame):
+    """Cards (created with this frame as master, then listed in `cards`) in columns of
+    equal width that reflow with the page's: as many as fit, 1 to MAX_COLUMNS."""
+
+    def __init__(self, master: Any) -> None:
+        super().__init__(master, fg_color="transparent")
+        self.cards: list[Any] = []
+        self.columns = 0
+
+    def arrange(self, columns: int) -> None:
+        columns = max(1, min(columns, MAX_COLUMNS))
+        if columns == self.columns:
+            return
+        self.columns = columns
+        for column in range(MAX_COLUMNS):
+            used = column < columns
+            self.grid_columnconfigure(
+                column, weight=int(used), uniform="card" if used else ""
+            )
+        for index, card in enumerate(self.cards):
+            card.grid(
+                row=index // columns,
+                column=index % columns,
+                sticky="nsew",
+                padx=6,
+                pady=6,
+            )
+
+    def fit(self, event: Any) -> None:
+        """A <Configure> of the page: as many columns as its width holds."""
+        # The event's width is in screen pixels; the card's minimum isn't scaled.
+        width = event.width / self._get_widget_scaling()
+        self.arrange(int(width // CARD_MIN_WIDTH))
+
+
+def clickable(
+    widget: tk.Misc, action: Callable[[], None], skip: tk.Misc | None = None
+) -> None:
+    """A click on `widget` or anything inside it (but `skip`) runs `action`. Bound on
+    each Tk widget with Tk's own `bind`: CustomTkinter's would bind its inner canvas a
+    second time, and a click doesn't reach the widget's parent anyway."""
+    if skip is not None and str(widget).startswith(str(skip)):
+        return
+    tk.Misc.bind(widget, "<Button-1>", lambda _event: action(), add="+")
+    widget.tk.call(str(widget), "configure", "-cursor", "hand2")
+    for child in widget.winfo_children():
+        clickable(child, action, skip)
 
 
 def section_card(master: Any) -> Card:

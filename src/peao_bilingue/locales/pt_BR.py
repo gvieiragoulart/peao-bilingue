@@ -513,9 +513,9 @@ MESSAGES: dict[str, str] = {
         "de API."
     ),
     "The app sends the job and your profile, without contact data, only when you "
-    "click Analyze on a job. The key stays in Windows Credential Manager.": (
+    "click Analyze on a job.": (
         "O app envia a vaga e o seu perfil, sem dados de contato, só quando você clica "
-        "em Analisar numa vaga. A chave fica no Gerenciador de Credenciais do Windows."
+        "em Analisar numa vaga."
     ),
     "OpenAI's GPT models through its API. Paid per use: needs your API key and a "
     "model name.": (
@@ -551,6 +551,15 @@ MESSAGES: dict[str, str] = {
     "no API key yet": "sem chave de API",
     "no model yet": "sem modelo",
     "model {model}": "modelo {model}",
+    "Default": "Padrão",
+    "Configure the LLMs you want to use to analyze jobs; which one is picked by "
+    "default is in Settings.": (
+        "Configure os LLMs que você quer usar para analisar vagas; qual vem escolhido "
+        "por padrão fica em Configurações."
+    ),
+    "Each LLM's key and model are on the LLMs tab.": (
+        "A chave e o modelo de cada LLM ficam na aba LLMs."
+    ),
     "Good fit": "Bom encaixe",
     "Worth a look": "Vale olhar",
     "Weak fit": "Encaixe fraco",

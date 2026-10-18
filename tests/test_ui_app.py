@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import customtkinter as ctk
+import keyring
 import pytest
 from builders import analysis, job, profile
 from fakes import FakeProvider, FakeReleaseFeed, FakeScheduler
@@ -341,18 +342,79 @@ def test_search_without_keyword_warns(
     assert window.notices["errors"]
 
 
-def test_saves_llm_settings(window: App) -> None:
-    tab = window.panels["llms"]
-    tab.default_llm.form._widgets["analysis_llm"].set("ollama")
+def test_the_default_llm_is_picked_in_settings(window: App) -> None:
+    tab = window.panels["settings"]
+    assert tab.analysis.llm.get() == "Claude (Anthropic)"
+    tab.analysis.llm.set("Ollama (local, free)")
     tab._save()
 
     recorded = json.loads(config.CONFIG_PATH.read_text(encoding="utf-8"))
     assert recorded["analysis_llm"] == "ollama"
     assert settings.analysis_llm == "ollama"
-    # the key goes to the vault, never to the file
-    assert "anthropic_api_key" not in recorded
-    # the Jobs tab's picker now shows the new default
+    # the Jobs tab's picker and the LLMs tab's Default follow it
     assert window.panels["jobs"].preview.llm.get() == "Ollama (local, free)"
+    cards = window.panels["llms"].cards
+    assert cards["ollama"].is_default
+    assert not cards["anthropic"].is_default
+
+
+def test_llm_cards_have_short_titles_and_no_save_button(window: App) -> None:
+    tab = window.panels["llms"]
+    titles = {name: card.title.cget("text") for name, card in tab.cards.items()}
+    assert titles == {
+        "anthropic": "Claude",
+        "gemini": "Gemini",
+        "ollama": "Ollama",
+        "openai": "OpenAI",
+    }
+    buttons = [
+        child for child in tab.winfo_children() if isinstance(child, ctk.CTkButton)
+    ]
+    assert buttons == []  # Save lives in each LLM's modal
+
+
+def test_the_llm_modal_saves_its_settings(window: App) -> None:
+    tab = window.panels["llms"]
+    tab.open("ollama")
+    assert tab.dialog is not None
+    model = tab.dialog.form._widgets["ollama_model"]
+    model.delete(0, "end")
+    model.insert(0, "llama3.1:8b")
+    tab.dialog.save()
+
+    assert settings.ollama_model == "llama3.1:8b"
+    assert tab.dialog is None  # saved: closed
+    assert window.notices["infos"] == ["LLM settings saved."]
+    assert tab.cards["ollama"].state.cget("text") == "model llama3.1:8b"
+
+
+def test_an_llm_key_goes_to_the_vault_not_the_file(window: App) -> None:
+    tab = window.panels["llms"]
+    tab.open("anthropic")
+    assert tab.dialog is not None
+    tab.dialog.form._widgets["anthropic_api_key"].insert(0, "sk-test")
+    tab.dialog.save()
+
+    recorded = json.loads(config.CONFIG_PATH.read_text(encoding="utf-8"))
+    assert "anthropic_api_key" not in recorded
+    assert keyring.get_password(config.KEYRING_SERVICE, "anthropic_api_key") == (
+        "sk-test"
+    )
+    keyring.delete_password(config.KEYRING_SERVICE, "anthropic_api_key")
+
+
+def test_an_invalid_number_keeps_the_llm_modal_open(window: App) -> None:
+    tab = window.panels["llms"]
+    tab.open("ollama")
+    assert tab.dialog is not None
+    context = tab.dialog.form._widgets["ollama_context"]
+    context.delete(0, "end")
+    context.insert(0, "lots")
+    tab.dialog.save()
+
+    assert tab.dialog is not None
+    assert any("whole number" in error for error in window.notices["errors"])
+    tab.dialog.close()
 
 
 def test_invalid_integer_in_settings_is_not_saved(window: App) -> None:
