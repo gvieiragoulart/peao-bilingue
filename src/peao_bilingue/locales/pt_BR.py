@@ -506,6 +506,7 @@ MESSAGES: dict[str, str] = {
     "found {when}": "encontrada {when}",
     "Mark as…": "Marcar como…",
     "{count} job(s) marked as {status}.": "{count} vaga(s) marcada(s) como {status}.",
+    "Job discarded.": "Vaga descartada.",
     "Undo": "Desfazer",
     "Good fit": "Bom encaixe",
     "Worth a look": "Vale olhar",
