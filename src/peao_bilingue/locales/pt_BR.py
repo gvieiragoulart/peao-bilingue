@@ -587,6 +587,10 @@ MESSAGES: dict[str, str] = {
         "vencida. Ligue só os que já estiverem preenchidos."
     ),
     "Settings saved.": "Configurações salvas.",
+    "Appearance": "Aparência",
+    "Same as Windows": "Igual ao Windows",
+    "Light": "Claro",
+    "Dark": "Escuro",
     "About and support": "Sobre e suporte",
     "Version {version}": "Versão {version}",
     "Check for a new version when the app opens": (

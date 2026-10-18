@@ -67,4 +67,5 @@ class SettingsTab(ctk.CTkScrollableFrame):
             self.app.show_error(failure)
             return
         config.save(changes)
+        ctk.set_appearance_mode(settings.appearance)
         self.app.inform(_("Settings saved."))

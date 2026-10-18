@@ -818,3 +818,20 @@ def test_the_guide_opens_again_from_settings(window: App) -> None:
     window.open_onboarding()
     the_guide(window).skip()
     assert window.onboarding is None
+
+
+def test_appearance_is_saved_and_applied(
+    window: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    applied: list[str] = []
+    # The mode is process-wide: recorded, not changed, so other tests keep theirs.
+    monkeypatch.setattr(ctk, "set_appearance_mode", applied.append)
+    tab = window.panels["settings"]
+    assert tab.about.appearance.get() == "Same as Windows"
+
+    tab.about.appearance.set("Dark")
+    tab._save()
+
+    recorded = json.loads(config.CONFIG_PATH.read_text(encoding="utf-8"))
+    assert recorded["appearance"] == "dark"
+    assert applied == ["dark"]
