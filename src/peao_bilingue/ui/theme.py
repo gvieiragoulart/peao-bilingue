@@ -39,9 +39,11 @@ DISABLED_TEXT: Pair = ("#9AA3AE", "#59616C")
 TEXT_FAMILIES = ("Segoe UI Variable Text", "Segoe UI")
 DISPLAY_FAMILIES = ("Segoe UI Variable Display", "Segoe UI")
 MONO_FAMILIES = ("Cascadia Mono", "Consolas", "Courier New")
+# Windows 11 has Fluent Icons; Windows 10, the same code points in MDL2 Assets.
+ICON_FAMILIES = ("Segoe Fluent Icons", "Segoe MDL2 Assets")
 BASE_SIZE = 13
 
-_families = {"text": "", "display": "", "mono": ""}
+_families = {"text": "", "display": "", "mono": "", "icons": ""}
 
 
 def _overrides() -> dict[str, dict[str, Any]]:
@@ -189,6 +191,8 @@ def choose_fonts(root: tk.Misc) -> None:
     _families["text"] = first(TEXT_FAMILIES)
     _families["display"] = first(DISPLAY_FAMILIES)
     _families["mono"] = first(MONO_FAMILIES)
+    # No fallback: a text font would draw the private-use code points as boxes.
+    _families["icons"] = next((f for f in ICON_FAMILIES if f in available), "")
     ctk.ThemeManager.theme["CTkFont"]["family"] = _families["text"]
 
 
@@ -221,6 +225,15 @@ def small() -> ctk.CTkFont:
 
 def mono() -> ctk.CTkFont:
     return ctk.CTkFont(family=_families["mono"] or None, size=12)
+
+
+def icon(glyph: str) -> str:
+    """The glyph when the system has an icon font; nothing otherwise."""
+    return glyph if _families["icons"] else ""
+
+
+def icons(size: int = 16) -> ctk.CTkFont:
+    return ctk.CTkFont(family=_families["icons"] or None, size=size)
 
 
 def pick(pair: Pair) -> str:

@@ -19,6 +19,7 @@ from peao_bilingue.domain.errors import UnknownName
 from peao_bilingue.domain.jobs import NEW_AT_SOURCE, Job, JobStatus, ListedJob, Posting
 from peao_bilingue.domain.privacy import Removed
 from peao_bilingue.domain.profile import ProfileSource
+from peao_bilingue.domain.schedule import ScheduleStatus
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
 
@@ -302,6 +303,36 @@ def job_detail(
         ).format(source=analysis.profile_source)
     text = analysis_text(item.job, analysis.analysis, item.also_on, dates)
     return f"{text}\n\n{footer}"
+
+
+def schedule_line(status: ScheduleStatus | None) -> str:
+    """The sidebar's short version of the schedule."""
+    if status is None:
+        return _("No daily collection")
+    return _("Daily collection at {time}").format(time=status.time)
+
+
+def last_run_line(run: Run | None, now: datetime | None = None) -> str:
+    if run is None:
+        return _("No collection yet")
+    zone = ZoneInfo(settings.timezone)
+    when = (
+        f"{ago(run.started_at, now or _now())}, {run.started_at.astimezone(zone):%H:%M}"
+    )
+    if run.status is RunStatus.running:
+        return _("Collecting since {when}").format(when=when)
+    if run.status is not RunStatus.ok:
+        return _("Last: {when} · {status}").format(
+            when=when, status=run_status_labels()[run.status]
+        )
+    return _("Last: {when} · {count} new").format(when=when, count=run.new_jobs)
+
+
+def badge(count: int) -> str:
+    """A count in a small badge: empty for none, capped so it stays small."""
+    if count <= 0:
+        return ""
+    return str(count) if count < 100 else "99+"
 
 
 def search_row(search: Search) -> tuple[str, ...]:

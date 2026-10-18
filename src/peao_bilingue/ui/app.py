@@ -19,13 +19,15 @@ from peao_bilingue.composition import (
     build_scheduler,
 )
 from peao_bilingue.config import settings
+from peao_bilingue.domain.jobs import JobStatus
 from peao_bilingue.domain.repository import Repository
 from peao_bilingue.domain.schedule import Scheduler
 from peao_bilingue.domain.updates import Release, ReleaseFeed
 from peao_bilingue.i18n import _
 from peao_bilingue.logs import log_to_file, record_uncaught_exceptions
-from peao_bilingue.ui import chrome, theme
+from peao_bilingue.ui import chrome, presentation, theme
 from peao_bilingue.ui.executor import AsyncExecutor, LogQueue, track
+from peao_bilingue.ui.navigation import Sidebar
 from peao_bilingue.ui.onboarding import Onboarding, needs_onboarding
 from peao_bilingue.ui.tabs.jobs import JobsTab
 from peao_bilingue.ui.tabs.llms import LLMsTab
@@ -37,6 +39,9 @@ from peao_bilingue.ui.tabs.sources import SourcesTab
 from peao_bilingue.ui.widgets import OutlineButton
 
 LOG_INTERVAL_MS = 200
+PAGE_PADDING = 24
+# The badge says 99+ past that: no need to load more jobs to count them.
+BADGE_LIMIT = 100
 logger = logging.getLogger(__name__)
 
 
@@ -96,17 +101,29 @@ class App(ctk.CTk):
             command=self.update_banner.pack_forget,
         ).pack(side="right", padx=6)
 
-        # The tabs, or the first-run guide in their place.
-        self.body = ctk.CTkFrame(self, fg_color="transparent")
+        # The sidebar and the section shown, or the first-run guide in their place.
+        self.body = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
         self.body.pack(fill="both", expand=True)
         self.onboarding: Onboarding | None = None
-        self.tabs = ctk.CTkTabview(self.body)
-        self.tabs.pack(fill="both", expand=True, padx=12, pady=12)
-        self.panels: dict[str, Any] = {}
-        for identifier, title, cls in tabs():
-            panel = cls(self.tabs.add(title), self)
-            panel.pack(fill="both", expand=True)
-            self.panels[identifier] = panel
+        sections = tabs()
+        self._titles = {identifier: title for identifier, title, _cls in sections}
+        self.sidebar = Sidebar(
+            self.body,
+            [(identifier, title) for identifier, title, _cls in sections],
+            on_pick=self.show,
+            on_collect=self.collect_now,
+        )
+        self.content = ctk.CTkFrame(self.body, fg_color="transparent", corner_radius=0)
+        self.page_title = ctk.CTkLabel(
+            self.content, text="", font=theme.title(), anchor="w"
+        )
+        self.page_title.pack(fill="x", padx=PAGE_PADDING, pady=(18, 10))
+        self._pack_sections()
+        self.panels: dict[str, Any] = {
+            identifier: cls(self.content, self) for identifier, _title, cls in sections
+        }
+        self.current: str | None = None
+        self.show("jobs")
 
         self.on_change()
         if needs_onboarding(self.repository):
@@ -117,6 +134,26 @@ class App(ctk.CTk):
         self._upgrade_legacy_task()
         if settings.check_for_updates:
             self._check_for_updates()
+
+    def _pack_sections(self) -> None:
+        self.sidebar.pack(side="left", fill="y")
+        self.content.pack(side="left", fill="both", expand=True)
+
+    def show(self, identifier: str) -> None:
+        """Shows one section in the content area, the way a tab did."""
+        if self.current is not None:
+            self.panels[self.current].pack_forget()
+        self.panels[identifier].pack(
+            fill="both", expand=True, padx=PAGE_PADDING, pady=(0, PAGE_PADDING)
+        )
+        self.current = identifier
+        self.page_title.configure(text=self._titles[identifier])
+        self.sidebar.set_active(identifier)
+
+    def collect_now(self) -> None:
+        """The sidebar's button: the Runs section, where the log shows the collection."""
+        self.show("runs")
+        self.panels["runs"].collect()
 
     def run(
         self,
@@ -190,7 +227,8 @@ class App(ctk.CTk):
     def open_onboarding(self) -> None:
         if self.onboarding is not None:
             return
-        self.tabs.pack_forget()
+        self.sidebar.pack_forget()
+        self.content.pack_forget()
         self.onboarding = Onboarding(self.body, self, on_close=self._close_onboarding)
         self.onboarding.pack(fill="both", expand=True, padx=12, pady=12)
 
@@ -198,8 +236,8 @@ class App(ctk.CTk):
         if self.onboarding is not None:
             self.onboarding.destroy()
             self.onboarding = None
-        self.tabs.pack(fill="both", expand=True, padx=12, pady=12)
-        self.tabs.set(_("Runs"))
+        self._pack_sections()
+        self.show("runs")
         self.on_change()
 
     def _set_appearance_mode(self, mode_string: str) -> None:
@@ -210,6 +248,12 @@ class App(ctk.CTk):
     def on_change(self) -> None:
         for panel in self.panels.values():
             panel.refresh()
+        to_review = self.repository.list_jobs(status=JobStatus.new, limit=BADGE_LIMIT)
+        self.sidebar.items["jobs"].set_badge(presentation.badge(len(to_review)))
+        runs = self.repository.list_runs(1)
+        self.sidebar.show_last_run(
+            presentation.last_run_line(runs[0] if runs else None)
+        )
 
     def show_error(self, failure: BaseException) -> None:
         # In the log too: what the user saw is what support will ask about.

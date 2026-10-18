@@ -530,7 +530,7 @@ def test_collect_now_runs_the_chosen_source(
     if choice:
         tab.collect_bar.source.set(choice)
 
-    tab._collect()
+    tab.collect()
 
     assert built == [expected]
     assert tab.collect_bar.button.cget("state") == "disabled"
@@ -565,12 +565,12 @@ def test_collect_with_screenshots_opens_their_folder(
     monkeypatch.setattr(os, "startfile", opened.append, raising=False)
     tab = window.panels["runs"]
 
-    tab._collect()  # unchecked: no screenshots
+    tab.collect()  # unchecked: no screenshots
     assert process_until(
         window, lambda: tab.collect_bar.button.cget("state") == "normal"
     )
     tab.collect_bar.screenshots.select()
-    tab._collect()
+    tab.collect()
     assert process_until(
         window, lambda: tab.collect_bar.button.cget("state") == "normal"
     )
@@ -733,7 +733,7 @@ def the_guide(window: App) -> Onboarding:
 def test_a_new_user_gets_the_guide_in_place_of_the_tabs(new_user_window: App) -> None:
     guide = the_guide(new_user_window)
     assert guide.winfo_manager() == "pack"
-    assert not new_user_window.tabs.winfo_manager()
+    assert not new_user_window.content.winfo_manager()
 
 
 def test_the_guide_saves_everything_at_the_end(
@@ -753,7 +753,7 @@ def test_the_guide_saves_everything_at_the_end(
         guide.next()
 
     assert new_user_window.onboarding is None
-    assert new_user_window.tabs.winfo_manager() == "pack"
+    assert new_user_window.content.winfo_manager() == "pack"
     [search] = repository.list_searches()
     assert (search.name, search.keywords, search.exclude) == (
         "python, django",
@@ -835,3 +835,44 @@ def test_appearance_is_saved_and_applied(
     recorded = json.loads(config.CONFIG_PATH.read_text(encoding="utf-8"))
     assert recorded["appearance"] == "dark"
     assert applied == ["dark"]
+
+
+# --- the sidebar ------------------------------------------------------------------------
+
+
+def test_the_sidebar_switches_sections(window: App) -> None:
+    assert window.current == "jobs"
+    assert window.panels["jobs"].winfo_manager() == "pack"
+
+    window.sidebar.items["runs"].invoke()
+
+    assert window.current == "runs"
+    assert window.panels["runs"].winfo_manager() == "pack"
+    assert not window.panels["jobs"].winfo_manager()
+    assert window.sidebar.active() == "runs"
+    assert window.page_title.cget("text") == "Runs"
+
+
+def test_the_sidebar_counts_the_jobs_to_review(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2"), ["Python"])
+    window.on_change()
+    assert window.sidebar.items["jobs"].badge.cget("text").strip() == "2"
+
+    repository.change_statuses(["vanhack:1", "vanhack:2"], JobStatus.discarded)
+    window.on_change()
+    assert not window.sidebar.items["jobs"].badge.winfo_manager()
+
+
+def test_collect_now_from_the_sidebar_opens_runs(
+    window: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    started: list[bool] = []
+    monkeypatch.setattr(window.panels["runs"], "collect", lambda: started.append(True))
+
+    window.sidebar.collect_button.invoke()
+
+    assert started == [True]
+    assert window.current == "runs"
