@@ -26,6 +26,10 @@ URL = "https://remotive.com/api/remote-jobs"
 class Remotive(ApiSource):
     name = "remotive"
     label = _("Remotive (public API, remote jobs)")
+    description = _(
+        "Remote software development jobs, with data 24 h behind. One call per "
+        "collection, as its terms ask."
+    )
     brand = "Remotive"
     url = URL
 

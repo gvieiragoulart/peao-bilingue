@@ -99,7 +99,8 @@ src/peao_bilingue/
 ├── i18n.py            # `_()` and the locale; locales/pt_BR.py has the translations
 ├── texts.py           # user-facing text shared by the CLI and the window
 ├── launcher.py        # the .exe's entry point: window or CLI
-├── ui/                # CustomTkinter: app, async executor, tabs, widgets, presentation,
+├── ui/                # CustomTkinter: app, theme, chrome (title bar), navigation (the
+│                      #   sidebar), async executor, tabs, widgets, presentation,
 │                      #   onboarding (the first-run guide)
 └── cli.py             # peao login | check | run | searches | schedule | adapters
 ```
@@ -119,24 +120,57 @@ thread**: callbacks coming from the worker (e.g. the login's `report`) only queu
 Windows: Playwright works on that thread (Proactor loop) without freezing the window. The LLM and
 notice forms are built from the `fields` each adapter declares, with the widget type inferred
 from `Settings` itself. Sources with a manual login implement the `ManualSession` port and get
-login/check buttons automatically. Tabs have an internal id (`jobs`, `runs`...) and a translated
-title. `peao-ui` is a gui-script: it opens with no console.
+login/check buttons automatically. Sections ("tabs" in the code) have an internal id (`jobs`,
+`runs`...) and a translated title. `peao-ui` is a gui-script: it opens with no console.
 
-**Jobs tab (2026-10-17):** the table fills the tab and shows, as colored chips (one color per
-search, `presentation.search_colors`), the keywords of the job's searches that show up in it
-(`filters.matched_keywords`); no description. It is **drawn on a `tk.Canvas`**
-(`ui/tabs/jobs/table.py`): a `ttk.Treeview` only colors whole rows, and a row of CustomTkinter
-widgets per job took 45 s for 500 jobs (the Canvas: 0.24 s). A click opens the job's dialog
-(`ui/tabs/jobs/dialog.py`) **inside the window**, placed over the tab (not a `CTkToplevel`, for
-the same reason as the guide), with the analysis, the LLM/profile pickers, Analyze, Open and the
-status buttons; Esc, ✕ or a click outside closes it. Generated mouse and key events don't reach
-the hidden test window: the tests call the click handler and check the Esc binding.
+**Look (2026-10-18; the mockups are on the canvas https://claude.ai/artifact/VeFksEHsMQmuFT2Py6STZo):**
+everything comes from CustomTkinter 6 + `tk.Canvas` + `ctypes`, **no new dependency** (Pillow
+isn't installed; icons are glyphs of the Segoe Fluent Icons font, MDL2 Assets on Windows 10,
+none elsewhere: `theme.icon()` returns "" then). `ui/theme.py` holds the color tokens as
+(light, dark) pairs and builds the CustomTkinter theme over the built-in "blue" one
+(`theme.install()`, called by every `App` before CustomTkinter reads its colors; no JSON file,
+so nothing for the .exe to carry); `theme.choose_fonts(root)` picks Segoe UI Variable /
+Cascadia Mono when the system has them. Accent amber `#F2B33D` with dark text on it. **No raw
+color in the tabs**: use the tokens (`theme.MUTED` for hints...). Tk has no alpha: soft chips are
+mixed colors (`presentation.soft`/`blend`). `ui/chrome.py` paints the title bar in the ground
+color (`DwmSetWindowAttribute` 35/36; CustomTkinter already does dark/light), again on every
+mode switch (`App._set_appearance_mode`, which also refreshes the panels: the Canvas and ttk
+tables repaint on refresh). Settings → "Aparência" (`appearance`: system/light/dark).
+**Sidebar** (`ui/navigation.py`) instead of a `CTkTabview`: `App.show(id)` swaps the section,
+the Jobs item shows a badge with the jobs still `new` (99+), and a card shows the daily
+collection, the last run and "Coletar agora" (`App.collect_now` → `RunsTab.collect`).
+`App.inform` is an in-window `Toast` (no click needed); `App.notify(message, (label, action))`
+adds an action, e.g. Undo; errors and confirmations stay modal. `widgets.Card` /
+`section_card` for page sections; `widgets.Table` (ttk) is a card restyled on every fill.
+Screenshots of the real window: `PrintWindow` on the window's HWND, from a script that opens
+`App` with the test fakes (`FakeScheduler`, `FakeReleaseFeed`) and `PEAO_DATA_DIR` pointing at a
+copy of `data/`.
+
+**Jobs tab (2026-10-17, redesigned 2026-10-18):** a card with the table; each row is two lines
+(the title over `presentation.job_meta`: company · place · short source name · found when) and
+columns ☐ / Fit / Job / Keywords / Published / Status. The fit, the keywords (one color per
+search, `presentation.search_colors`; `filters.matched_keywords`) and the status are soft chips;
+the fit's color by range (`presentation.fit_color`: ≥75, 50–74, <50). It is **drawn on a
+`tk.Canvas`** (`ui/tabs/jobs/table.py`): a `ttk.Treeview` only colors whole rows, and a row of
+CustomTkinter widgets per job took 45 s for 500 jobs (the Canvas: 0.24 s). The filters apply on
+every change (status as a `CTkSegmentedButton`; Enter in the search box, Ctrl+F focuses it).
+A click opens the job's **side panel** (`ui/tabs/jobs/dialog.py`, still `JobDialog`) **inside the
+window**, placed on the right (`WIDTH` of the tab; not a `CTkToplevel`, for the same reason as
+the guide); the table stays usable and a click on another row shows that job. It shows
+`presentation.job_panel` (a `JobPanel`): status chip, facts, the fit as a ring (`FitRing`, a
+Canvas arc) with its label and summary, the analysis in parts behind a segmented button
+(`preview.pick_section("questions")`...), the outdated-profile banner, and a footer with the
+LLM/profile pickers, Analyze, Open and the status pills. Esc or ✕ closes it. Generated mouse
+and key events don't reach the hidden test window: the tests call the click handler and check
+the Esc binding.
 **Selection and status colors (2026-10-18):** the first column is a box per row (the header's
-ticks every listed job); a click on the box only toggles it, elsewhere it opens the dialog. A
-refresh keeps the boxes of jobs still listed. "Descartar selecionadas" asks (`App.confirm`) and
-calls `JobRepository.change_statuses` (one transaction, all or none). Each `JobStatus` carries
-its display color (`JobStatus.color`, light/dark pair): the Status column draws it as a chip and
-the "Mark as" buttons use it as their border. A click on the Published header cycles ↕ (the
+ticks every listed job); a click on the box only toggles it, elsewhere it opens the panel. A
+refresh keeps the boxes of jobs still listed. While boxes are ticked, a selection bar shows
+"Marcar como…" (any status), Descartar (asks first, `App.confirm`) and Limpar; both call
+`JobRepository.change_statuses` (one transaction, all or none) and offer Undo in the toast,
+which gives each job back its own old status. Each `JobStatus` carries its base color
+(`JobStatus.color`, light/dark pair): the Status chip and the status pills use its soft tones.
+A click on the Published header cycles ↕ (the
 repository's order, newest found first) → ▼ newest at the source → ▲ oldest → ↕, sorted in the
 table (`JobTable.sort_by_published`), kept across refreshes; jobs with no date go last.
 
@@ -537,6 +571,103 @@ was missing 38 of the 57 programming jobs), so it's the back-end, full-stack and
 User-Agent) gets a 200: no disguise. XML through the stdlib's `ElementTree` (Python's expat
 already guards against entity expansion).
 
+**Strider** (`adapters/sources/strider.py`, added 2026-10-18; the public page
+`https://www.onstrider.com/jobs`). The logged-in area (`app.onstrider.com`) has **no job list**:
+Strider matches candidates itself, and its invitations only come through its internal API, so
+there's no login and no Playwright. The public page has no API or feed, so it is read as HTML
+with honest access (our User-Agent gets a 200), over `ApiSource` (`decode` parses the cards; a
+listing with no card is an error, not a silent zero): **one listing call per collection** with
+the 6 h cache (14 jobs on 2026-10-18, all in one page, all "LATAM (100% Remote)"), each term
+filtered locally against the card's title and skill tags, then **one page per new job** with a
+random **2-5 s pause** before each (`detail` overrides the base's, through `_get`). The job page
+carries a schema.org `JobPosting` (JSON-LD: `datePosted`, the countries, contract types) and
+the sections that become the description ("What you will work on", "Must-haves", "What makes you
+stand out", "Nice-to-haves") plus the header's facts (Seniority, Commitment, Industry, English
+level); without the sections, the JSON-LD's description is the fallback. The **company is never
+named** (`company` is None, like VanHack). `robots.txt` allows `/jobs`. **Terms:** the Terms of
+Use (On Strider, Inc., 2022-08-26) aren't public: they are accepted inside the app. Their start
+forbids access by competitors and "for purposes of monitoring their availability, performance or
+functionality"; **Gabriel read the full text and approved this source** (2026-10-18). Each job
+keeps its Strider link. The fixtures are the real pages trimmed to the JSON-LD and `<main>`
+(`tests/fixtures/strider/README.md`).
+
+**GitHub job repositories** (`adapters/sources/github.py`, source `github`, added 2026-10-18;
+`GET https://api.github.com/repos/<owner/repo>/issues?state=open&per_page=100`). Brazilian
+communities post jobs as issues from a template, tagged with labels (seniority, CLT/PJ,
+Remoto, technologies). backend-br/vagas is MIT and its README points at an outside aggregator
+(openings.dev) that links back to each issue, as this one does. The repositories are the
+`github_job_repositories` setting (default backend-br, phpdevbr, nodejsdevbr, frontendbr; on
+2026-10-18 laravelbrasil, python-brasil, golang-br and devopsbr had no such repository).
+Unauthenticated, GitHub allows 60 calls an hour per IP: **one call per repository per
+collection**, a 1 s pause, the 6 h cache. Pull requests come in the same list and are skipped.
+The title is "[place] role na Company" (or "@"/"at"): the place in brackets becomes the
+location and the last "na X" the company (a trailing "(PJ, LATAM)" dropped); otherwise no
+company, since " - X" is as often a technology. Labels are compared without accents (the code
+can't have them): seniority and contract go to `extras`, the rest are skills; the work mode
+comes from a label or, without one, from the title. The body loses the template's HTML
+comments and goes through `remove_contact_data` (recruiters' emails, phones and links; the
+issue link stays). Fixtures: real responses trimmed to the fields read, with emails and
+phones swapped for documentation values (`tests/fixtures/github/README.md`).
+
+**Company job boards** (`adapters/sources/company_boards.py`, source `company_boards`, added
+2026-10-18). The public APIs of three applicant tracking systems: Greenhouse
+(`boards-api.greenhouse.io/v1/boards/<board>/jobs?content=true`; its docs: "Job Board data is
+publicly available, so authentication is not required for any GET endpoints"), Lever
+(`api.lever.co/v0/postings/<board>?mode=json`, "designed to help you create a job site") and
+Ashby (`api.ashbyhq.com/posting-api/job-board/<board>`). The boards are the `company_boards`
+setting, "ats:board[=Company]" (Nubank on Ashby; Stone, QuintoAndar, Wellhub (`gympass`), VTEX,
+EBANX, Clara and Canonical on Greenhouse; Toptal and dLocal on Lever: probed on 2026-10-18 for
+jobs in Brazil/LATAM; GitLab and Okta had none). Greenhouse names the company (oddly, sometimes:
+"Stone - Linkedin"), Lever and Ashby don't: "=Company" wins. **One call per board per
+collection** (the whole board, descriptions included: ~19 MB for the ten, 919 jobs kept), a 1 s
+pause, the 6 h cache. `decode` wraps each response with its board, so the cache knows it too.
+These companies hire everywhere, so a job stays only when its location (Greenhouse's
+location and offices, Lever's `allLocations`, Ashby's location, secondary locations and
+address country) names one of `company_boards_places` (Brazil, Brazilian cities, "remoto",
+LATAM, the Americas, worldwide, anywhere), without accents; an empty list keeps all. Greenhouse's
+`content` comes HTML-escaped (`html.unescape` before `html_to_text`). A bad entry raises a
+`CollectionError` when the source searches (not in `__init__`), so only this source fails.
+Fixtures: three real boards trimmed to a few jobs chosen by location, contact data swapped (the
+fixture script's first phone pattern also ate the long ids in URLs: a phone pattern must
+require a separator or an area code in parentheses).
+
+**Jobicy** (`GET https://jobicy.com/api/v2/remote-jobs?count=100&geo=brazil`, source `jobicy`,
+added 2026-10-18). Terms (the API page and every response's `friendlyNotice`): credit Jobicy
+with a direct link, application buttons go to the original job URL, don't present the jobs as
+your own; no key; a sync pass at most once an hour, with caching. `geo=brazil` (`JOBICY_GEO`)
+already includes the LATAM and "Anywhere" jobs (61 on 2026-10-18; `geo=latam` only added jobs
+for other countries), so it's **one call per collection** with the 6 h cache. The feed has only
+the last 7 days. Slugs come from `?get=locations`; `industry=dev` turned out to be
+`engineering`, and isn't used: the searches filter. `jobGeo` has double spaces
+("Argentina,  Brazil"); the salary comes as strings or numbers, 0 = not given.
+
+**Get on Board** (`GET https://www.getonbrd.com/api/v0/search/jobs?query=<term>&remote=true&
+per_page=100&expand=["company"]`, source `getonbrd`, added 2026-10-18). A Latin American tech
+job board. Its help page on the API says the public API needs no setup and can be used to
+"Display published jobs on another site" and to "Build a custom job search or job board using
+public listings"; its Terms and Conditions (v1.1, 2026-09-17) are the contract with the
+companies that post (they mention throttling API calls). Most jobs are on-site, hybrid or
+remote within one country (Chile, mostly: `remote_modality: remote_local`), so it asks only for
+**fully remote** ones (`remote=true` returns only `fully_remote`), **per term** like Himalayas:
+one call per keyword, a 2 s pause, a 12 h cache per term. The text comes in parts with their
+own headings (functions, description, desirable, benefits), joined in that order;
+`published_at` is epoch; salaries are USD a month. The API docs page (`api-doc.getonbrd.com`)
+renders with JavaScript: the shape was read from real responses.
+
+**Hacker News "Who is hiring?"** (source `hackernews`, added 2026-10-18). The monthly thread where
+companies post jobs, one top-level comment each, read through the HN Search API by Algolia (the
+search HN links to): `search_by_date?tags=story,author_whoishiring` finds the newest thread
+whose title starts with "Ask HN: Who is hiring?" (the same account posts "Who wants to be
+hired?" at the same second), then `items/<id>` brings it whole (~270 posts, ~0.5 MB): **two
+calls per collection**, a 12 h cache. The official Firebase API would take one call per post.
+`search` overrides the base's only to find the thread first (`_query_raw`, cached), then lets
+the base filter. Posts are free text: the first paragraph is the header ("Company | Role |
+Place | REMOTE"), which becomes the title (up to 140 characters) and, up to the first `|`,
+dash, `(` or link, the company. A post stays only when it names one of `hackernews_places`
+(Brazil, LATAM, the Americas, worldwide, anywhere; 23 of 266 on 2026-10-18). **Not "visa"**:
+the fixture's own post says "We're not able to sponsor visas". The text goes through
+`remove_contact_data`; usernames aren't kept (not even in the fixture).
+
 ---
 
 ## Brazilian sites (Phase 6): what the terms allow
@@ -586,6 +717,16 @@ commit and push.
 - [x] **Launch items requested on 2026-10-17:** manual profile + notes in the app (2), a guided
       first run (3), native Windows notifications (4), version + update check (7), an app log +
       "open the logs folder" (8).
+
+- [x] **More sources for Brazil and LATAM** (2026-10-18, branch `add-job-sources`): Strider
+      (public page), GitHub job repositories, company boards (Greenhouse/Lever/Ashby), Jobicy,
+      Get on Board, Hacker News "Who is hiring?". All off by default, like the other APIs.
+      **Adzuna** waits for Gabriel: its API needs a free `app_id`/`app_key` (developer.adzuna.com;
+      terms allow "Personal research", 250 calls a day, descriptions are only a snippet), and
+      the adapter needs a real response as its fixture first.
+- [x] **A more modern look** (2026-10-18, branch `modern-ui`, on top of `add-job-sources`): own
+      theme and fonts, title bar in the app's color, sidebar, the Jobs table and side panel
+      redesigned, toasts with Undo, cards on the other sections (see "Look" above).
 
 Waiting on Gabriel (costs money or needs him): the first real analysis with the Analyze button
 (Claude spends credit; Ollama is free but needs installing), a real email notice (fill in SMTP,

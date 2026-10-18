@@ -10,7 +10,7 @@ import os
 import sys
 from contextlib import suppress
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import keyring
 from keyring.errors import PasswordDeleteError
@@ -182,6 +182,63 @@ class Settings(BaseSettings):
     # Himalayas (public API): only jobs open to candidates from this country (ISO code)
     # or worldwide; empty = no filter, including US-only jobs.
     himalayas_country: str = "BR"
+    # Jobicy (public API): its `geo` filter; "brazil" includes LATAM and anywhere jobs.
+    jobicy_geo: str = "brazil"
+    # Hacker News "Who is hiring?": only posts naming one of these (without accents).
+    # Not "visa": posts say they can't sponsor one as often as they offer it.
+    hackernews_places: list[str] = [
+        "brazil",
+        "brasil",
+        "latam",
+        "latin america",
+        "south america",
+        "americas",
+        "worldwide",
+        "anywhere",
+    ]
+    # GitHub job repositories (public API): "owner/repo" of each community's board.
+    github_job_repositories: list[str] = [
+        "backend-br/vagas",
+        "phpdevbr/vagas",
+        "nodejsdevbr/vagas",
+        "frontendbr/vagas",
+    ]
+    # Company job boards (public ATS APIs): "ats:board[=Company]", the board's name as
+    # in its URL; "=Company" names it (Lever and Ashby don't, Greenhouse sometimes oddly).
+    company_boards: list[str] = [
+        "ashby:nubank=Nubank",
+        "greenhouse:stone=Stone",
+        "greenhouse:quintoandar=QuintoAndar",
+        "greenhouse:gympass=Wellhub",
+        "greenhouse:vtex",
+        "greenhouse:ebanx",
+        "greenhouse:clara=Clara",
+        "greenhouse:canonical",
+        "lever:toptal=Toptal",
+        "lever:dlocal=dLocal",
+    ]
+    # Only jobs whose location names one of these (without accents); empty = all.
+    company_boards_places: list[str] = [
+        "brazil",
+        "brasil",
+        "sao paulo",
+        "rio de janeiro",
+        "belo horizonte",
+        "curitiba",
+        "porto alegre",
+        "florianopolis",
+        "campinas",
+        "recife",
+        "osasco",
+        "barueri",
+        "remoto",
+        "latam",
+        "latin america",
+        "south america",
+        "americas",
+        "worldwide",
+        "anywhere",
+    ]
 
     timezone: str = "America/Sao_Paulo"
     collection_time: str = "08:00"
@@ -203,6 +260,9 @@ class Settings(BaseSettings):
 
     # The first-run guide: shown until finished or skipped (see ui/onboarding.py).
     onboarding_done: bool = False
+
+    # The window: follow Windows' light/dark mode, or force one.
+    appearance: Literal["system", "light", "dark"] = "system"
 
     # Updates: when the app opens, ask GitHub Releases whether there's a newer version.
     check_for_updates: bool = True

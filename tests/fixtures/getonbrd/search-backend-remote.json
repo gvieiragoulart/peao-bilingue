@@ -1,0 +1,490 @@
+{
+ "data": [
+  {
+   "id": "technical-lead-backend-hubspot-integrations-migrations-wendt-partners-remote",
+   "type": "job",
+   "attributes": {
+    "title": "Technical Lead (Back-end Hubspot Integrations & Migrations)",
+    "description_headline": "What you bring",
+    "description": "<p>We expect you to bring strong backend engineering skills and proven leadership experience in delivery. You’ll work directly with our team on HubSpot API-driven solutions and take responsibility for end-to-end outcomes—from technical design through tested releases.</p><ul><li><strong>Years</strong> of backend development using Node.js, Python, PHP, or similar technologies.</li><li><strong>Hands-on HubSpot experience</strong> with the API, integrations, or migration projects.</li><li><strong>Leadership</strong>: experience leading developers and managing projects end to end (planning, execution, quality, and delivery).</li><li><strong>Communication</strong>: fluent in<strong> English</strong>, with the ability to explain technical status in plain language.</li><li><strong>Collaboration &amp; time zone fit</strong>: Daily overlap with <strong>US Eastern</strong> business hours.</li><li><strong>Quality mindset</strong>: you take testing seriously and ensure releases are safe, documented, and approved.</li></ul><p>We also value practical ownership and calm execution: you keep teams aligned, make progress visible, and handle technical trade-offs with clarity.</p>",
+    "projects": "<p>In this role, we’re building and leading delivery for clients who need end-to-end HubSpot work: designing integration flows, migrating existing CRM data into HubSpot, and implementing custom backend functionality that connects HubSpot to their internal tools and external services. As the Technical Lead, we’ll rely on you to set the technical direction, ensure solid engineering practices, and coordinate a small development team so that migrations and integrations land on time, meet quality standards, and are communicated clearly to stakeholders.</p>",
+    "functions_headline": "What you’ll do",
+    "functions": "<p>We’re looking for a HubSpot Technical Lead who can both lead and build. You’ll guide a small team of developers delivering HubSpot integrations, migrations, and custom builds while also working hands-on on backend services.</p><ul><li>Lead a small team of developers working on HubSpot integrations, migrations, and custom builds.</li><li>Plan delivery: define work for each project, assign tasks, and confirm hours weekly.</li><li>Own scheduling and delivery momentum, keeping work on track and surfacing risks early.</li><li>Guarantee quality: run QA and ensure nothing goes live until it’s tested and signed off.</li><li>Write and review backend code, APIs, and data migration logic yourself.</li><li>Act as the technical point of contact for clients, translating progress into clear, plain-language updates.</li><li>Coordinate technical decisions across the team to keep implementations consistent and maintainable.</li></ul>",
+    "benefits_headline": "Benefits",
+    "benefits": "<ul><li><strong>Fully remote.</strong> Work from anywhere, with a team spread across several countries.</li><li><strong>Paid time off.</strong> Company holidays and year-end closure.</li><li><strong>Employee Assistance Program.</strong> Confidential financial and mental health support.</li><li><strong>Real leadership.</strong> You lead the development team and own delivery from start to finish, instead of being one developer among many.</li><li><strong>HubSpot Elite Solutions Partner.</strong> You work on enterprise HubSpot projects with complex integrations, migrations and custom builds.</li><li><strong>International clients</strong> in North America, the UK and Europe, and Australia and Asia-Pacific.</li><li><strong>Continuous learning support.</strong> Access to Udemy, plus financial grants for further education where relevant to your role.</li><li><strong>Room to grow.</strong> A lean team where strong delivery is noticed and rewarded.</li></ul>",
+    "desirable_headline": "Desirable",
+    "desirable": "<ul><li><p>Experience with data migration strategies for CRMs (validation, reconciliation, rollback planning, and post-migration checks).</p></li><li><p>Working knowledge of API design, authentication patterns, rate limits, and webhook/event-driven integrations.</p></li><li><p>Familiarity with CI/CD workflows, automated testing, and code review processes in a production environment.</p></li><li><p>Experience partnering with client stakeholders to translate requirements into engineering deliverables.</p></li></ul>",
+    "remote": true,
+    "remote_modality": "fully_remote",
+    "remote_zone": null,
+    "countries": [
+     "Remote"
+    ],
+    "lang": "en",
+    "category_name": "Programming",
+    "perks": [
+     "remote_full",
+     "flexible_hours",
+     "informal_dresscode"
+    ],
+    "min_salary": 3000,
+    "max_salary": 5000,
+    "published_at": 1792273431,
+    "response_time_in_days": {
+     "min": null,
+     "max": null
+    },
+    "applications_count": 4,
+    "location_regions": {
+     "data": []
+    },
+    "location_tenants": {
+     "data": []
+    },
+    "location_cities": {
+     "data": []
+    },
+    "modality": {
+     "data": {
+      "id": 1,
+      "type": "modality"
+     }
+    },
+    "seniority": {
+     "data": {
+      "id": 5,
+      "type": "seniority"
+     }
+    },
+    "tags": {
+     "data": [
+      {
+       "id": 36857,
+       "type": "tag"
+      },
+      {
+       "id": 58,
+       "type": "tag"
+      },
+      {
+       "id": 18,
+       "type": "tag"
+      },
+      {
+       "id": 22,
+       "type": "tag"
+      },
+      {
+       "id": 446,
+       "type": "tag"
+      },
+      {
+       "id": 1512,
+       "type": "tag"
+      },
+      {
+       "id": 37284,
+       "type": "tag"
+      },
+      {
+       "id": 874,
+       "type": "tag"
+      },
+      {
+       "id": 3794,
+       "type": "tag"
+      }
+     ]
+    },
+    "company": {
+     "data": {
+      "id": "wendt-partners",
+      "type": "company",
+      "attributes": {
+       "name": "Wendt Partners",
+       "description": "Wendt Partners is a HubSpot consultancy helping businesses implement, migrate, and integrate their CRM systems reliably and safely. ",
+       "long_description": "",
+       "projects": null,
+       "benefits": "<ul><li><strong>Fully remote.</strong> Work from anywhere, with a team spread across several countries.</li><li><strong>Paid time off.</strong> Company holidays and year-end closure.</li><li><strong>Real leadership.</strong> You lead the development team and own delivery from start to finish, instead of being one developer among many.</li><li><strong>HubSpot Elite Solutions Partner.</strong> You work on enterprise HubSpot projects with complex integrations, migrations and custom builds.</li><li><strong>International clients</strong> in North America, the UK and Europe, and Australia and Asia-Pacific.</li><li><strong>Continuous learning support.</strong> Access to Udemy, plus company grants for further education where relevant to your role.</li><li><strong>Room to grow.</strong> A lean team where strong delivery is noticed and rewarded.</li></ul>",
+       "web": "http://wendtpartners.com",
+       "twitter": null,
+       "github": null,
+       "facebook": null,
+       "angellist": null,
+       "country": "US",
+       "response_time_in_days": {
+        "min": null,
+        "max": null
+       }
+      }
+     }
+    }
+   },
+   "links": {
+    "public_url": "https://www.getonbrd.com/jobs/technical-lead-backend-hubspot-integrations-migrations-wendt-partners-remote"
+   }
+  },
+  {
+   "id": "senior-full-stack-engineer-ai-native-bnamericas-remote",
+   "type": "job",
+   "attributes": {
+    "title": "Senior Full-Stack Engineer AI Native",
+    "description_headline": "Requirements",
+    "description": "<ul><li>8+ years building and operating production web applications end to end, backend-weighted, with a track record of owning systems rather than tickets.</li><li>Strong Python in production. FastAPI is what we use; Django, Flask or similar is fine if you can move across.</li><li>Solid relational data modelling and migrations against live data.</li><li>Real frontend experience, and the ability to ship usable UI without a design team. Whichever framework you come from, what matters is that you work comfortably on both sides of the line.</li><li>Hands-on experience getting LLM-backed systems into production: agent or graph orchestration, RAG, prompt and context design, and evaluating model output rather than trusting it.</li><li>Fluent daily use of Claude Code or an equivalent agentic coding tool, with a clear view of where it helps and where it doesn't.</li><li>Production experience on a major cloud. We are on AWS: containers, background jobs, secrets, logs, and debugging things that only break in prod.</li><li>Autonomy. You'll get context and a goal, not a decomposed backlog.</li><li>Documentation creation that let someone else pick the work up.</li><li>Professional English</li><li>Connection during LATAM (Chile) Business hours</li></ul><p>STACK:</p><figure class=\"lexxy-content__table-wrapper\"><table><tbody><tr><td><p><strong>Layer</strong></p></td><td><p><strong>Technologies</strong></p></td></tr><tr><td><p>Backend</p></td><td><p>Python, FastAPI, SQLAlchemy, PostgreSQL (incl. JSONB), schema migrations</p></td></tr><tr><td><p>Frontend</p></td><td><p>Server-rendered Python templates, lightweight JavaScript, Tailwind CSS</p></td></tr><tr><td><p>AI / agents</p></td><td><p>LangGraph multi-agent pipeline, Gemini and Claude, grounded search (serper.dev), Jina extraction, Pinecone for PDF RAG, vision-model OCR</p></td></tr><tr><td><p>Infra</p></td><td><p>AWS: ECS services and tasks, S3, Secrets Manager, CloudWatch, RDS. Docker, Terraform</p></td></tr><tr><td><p>Ways of working</p></td><td><p>Claude Code as a daily tool, Git branch flow, Jira</p></td></tr></tbody></table></figure>",
+    "projects": "BNamericas operates the leading business intelligence platform for Latin America’s infrastructure, mining, and energy projects. At the core of everything we publish is a research operation supported by large-scale internal systems: continuous data collection from public and private sources, validation by our team, and delivery into content production for publication. We are rebuilding this platform end-to-end, and AI is embedded across the workflow—so the product is not an add-on, but part of the system’s foundation. As a senior engineer, you’ll help turn expert know-how into resilient product capabilities the team can scale.",
+    "functions_headline": "The role",
+    "functions": "<p>Behind BNamericas is an internal platform that continuously collects data from hundreds of public and private sources, routes it to our research team for verification, and moves it through to publication.</p><p>We are rebuilding that platform with AI at its core. You'll own features end to end, from schema to interface, and help turn knowledge held by a few people into a system the whole team can carry. Small team, no ticket factory, and real internal users on what you ship within days.</p><p>Product and platform</p><ul><li>Forms and validation: rich, API-integrated data entry for structured content, and the validation rules that keep ittrustworthy.</li><li>Workflow: task assignment, draft to review to publish state machines, and admin tooling that lets the businesschange the rules without a deploy.</li><li>Dashboards and reporting: progress, throughput, and quality visibility for team leads and leadership.</li><li>APIs and integrations: the services connecting this platform to the rest of our systems.</li><li>Auth and access control: roles and permissions across an internal product used by several teams.</li><li>The data layer: schema design, migrations against live data, and keeping queries fast as volume grows.</li></ul><p>AI systems</p><ul><li>Multi-agent extraction pipelines: agent graphs that collect, extract and reconcile data from public sources atscale, including retrieval, prompt and context design, model selection, rate limiting and cost.</li><li>Human-in-the-loop review tooling: interfaces where a reviewer sees what the AI proposed, the alternatives itrejected, the evidence behind each, and can override the machine with a justification that gets recorded and kept.</li><li>Audit and provenance: append-only decision trails, so every value can be traced back to a source and to whoeveraccepted it.</li><li>Data-quality gating: the checks between what a model produces and what reaches a customer, so nothing AI originated lands unchecked.</li><li>Source onboarding: new collectors and per-source parsers, the business rules that go with them, and the admin tooling behind them.</li></ul>",
+    "benefits_headline": "Context",
+    "benefits": "<p>At BNamericas we promote inclusive selection processes and are committed to equal opportunities. This job offer is framed within Chilean Law No. 21.015, which encourages the inclusion of people with disabilities in the workforce. If you require any reasonable accommodation to participate in the process, please let us know.</p>",
+    "desirable_headline": "Desirable",
+    "desirable": "<ul><li>Large-scale scraping or data-extraction pipelines, including third-party scraping platforms.</li><li>Data reconciliation, data quality, or human-in-the-loop review tooling.</li><li>Infrastructure as code.</li><li>Data-heavy B2B products: market intelligence, research or finance.</li><li>Mobile app development, particularly an app you built with Claude or similar AI tooling carrying a real part of the work.</li><li>Spanish or Portuguese at Intermediate Level</li></ul>",
+    "remote": true,
+    "remote_modality": "fully_remote",
+    "remote_zone": null,
+    "countries": [
+     "Remote"
+    ],
+    "lang": "en",
+    "category_name": "Programming",
+    "perks": [
+     "remote_full"
+    ],
+    "min_salary": null,
+    "max_salary": null,
+    "published_at": 1791296453,
+    "response_time_in_days": {
+     "min": null,
+     "max": null
+    },
+    "applications_count": 259,
+    "location_regions": {
+     "data": []
+    },
+    "location_tenants": {
+     "data": []
+    },
+    "location_cities": {
+     "data": []
+    },
+    "modality": {
+     "data": {
+      "id": 1,
+      "type": "modality"
+     }
+    },
+    "seniority": {
+     "data": {
+      "id": 4,
+      "type": "seniority"
+     }
+    },
+    "tags": {
+     "data": [
+      {
+       "id": 18,
+       "type": "tag"
+      },
+      {
+       "id": 829,
+       "type": "tag"
+      },
+      {
+       "id": 225,
+       "type": "tag"
+      },
+      {
+       "id": 86587,
+       "type": "tag"
+      },
+      {
+       "id": 73587,
+       "type": "tag"
+      },
+      {
+       "id": 887,
+       "type": "tag"
+      }
+     ]
+    },
+    "company": {
+     "data": {
+      "id": "bnamericas",
+      "type": "company",
+      "attributes": {
+       "name": "BNamericas",
+       "description": "¡Únete a nuestro equipo y forma parte de la empresa líder en Inteligencia de Negocios de Latam!",
+       "long_description": "<h3><h3><strong>¿Quienes Somos​? </strong></h3></h3><p>Somos una plataforma de inteligencia de negocios líder de América Latina que lleva 28 años de experiencia aportando noticias, actualización de proyectos, personas y compañías, para que nuestros clientes que provienen de rubros estratégicos como Energía Eléctrica, Infraestructura, Minería y Metales, Petróleo y Gas, TIC, entre otros, puedan disponer de esta información de alto valor y tomar las mejores decisiones de negocio. </p><h3><h3><strong>Identidad BNamerican@s</strong></h3></h3><p><strong>Junt@s confiamos y crecemos:</strong><br>Valoramos el aprendizaje, la mejora contínua y la innovación. Reconocemos las fortalezas en las diferencias de cada un@. Generamos espacios para apoyarnos, escucharnos e intercambiar opiniones. </p><p><strong>Nunca nos rendimos: <br></strong>Somos resilientes y comprometid@s con nuestro trabajo, y asumimos los desafíos con entusiasmo y optimismo. </p><p><strong>Establecemos altos estándares:</strong><br>Definimos metas ambiciosas para entregar productos, servicios y procedimientos de excelencia. </p><p><strong>Amamos la diversidad: <br></strong>Integramos culturas, nacionalidades y agregamos valor con nuestras diferencias. Nos aceptamos y podemos expresarnos como somos. </p><p><strong>Disfrutamos el trabajo con equilibrio:</strong> Nos cuidamos y mantenemos el equilibrio entre la vida personal y laboral. Compartimos y disfrutamos en equipo. </p><p><strong>Somos apasionad@s y empoderad@s: </strong>Trabajamos para generar un ambiente inspirador, en el que sea posible desarrollar talentos, asumir protagonismo y enfrentar los desafíos con optimismo y energía. </p><h3><h3><strong>¡Únete a nuestro equipo y disfruta de increíbles beneficios laborales!</strong></h3></h3><p>En BNAmericas nos enorgullecemos de ofrecer una cultura de trabajo inclusiva y amigable. Te invitamos a ser parte de nuestro equipo y disfrutar de estos múltiples beneficios. ​</p><p><strong>Ambiente Multicultural: <br></strong>​Respetamos, Valoramos y Celebramos la diversidad cultural de nuestro equipo. </p><p><strong>Bono por referidos:</strong> ​<br>Existen pagos adicionales por recomendar a clientes y/o nuevos colaboradores que se integren a la empresa.</p><p><strong>Salidas anticipadas:</strong> ​<br>Terminamos antes nuestras jornadas laborales en fiestas patrias, navidad y año nuevo para poder celebrar en familia.</p><p><strong>Oportunidades de crecimiento:</strong> ​<br>Ofrecemos oportunidades de aprendizaje y desarrollo profesional para que avances en tu carrera.</p><p><strong>2 interferiados al año: </strong>​<br>Entregamos dos días hábiles al año para descansar.</p><p><strong>Dress code informal:</strong> ​<br>Viste como te sientas más cómodo, sin la necesidad de usar ropa formal.</p><p><strong>Formación continua: </strong>​<br>Ofrecemos constante capacitación para que adquieras nuevas habilidades y conocimientos.</p><p><strong>Medio día libre el día de tu cumpleaños: <br></strong>​Si es día hábil, tendrás la opción de salir temprano para celebrarlo. </p>",
+       "projects": "<p>BNamericas es la principal plataforma de inteligencia de negocios enfocada en América Latina. A través de nuestro modelo SaaS entregamos noticias, datos y análisis estratégicos en sectores clave como energía, minería, infraestructura, telecomunicaciones y servicios financieros.&nbsp;<br>Estamos fortaleciendo nuestro equipo comercial y buscamos un/a SDR, altamente disciplinado/a y orientado/a a resultados para apoyar la generación de nuevas oportunidades de negocio. Buscamos un perfil con mentalidad moderna y orientado a la eficiencia, capaz de utilizar herramientas de inteligencia artificial para optimizar la prospección, personalizar mensajes y mejorar su productividad comercial.<br><br></p>",
+       "benefits": "<div>En BNamericas fomentamos un ambiente laboral inclusivo, diverso, creativo y altamente colaborativo. Nuestro equipo es dinámico, comprometido y siempre dispuesto a apoyarse mutuamente, generando un clima agradable y motivador.</div><div>Ofrecemos múltiples beneficios, tales como bono por referidos para la incorporación de nuevos talentos recomendados, salidas anticipadas en fechas especiales como fiestas patrias y Navidad, oportunidades de formación continua y desarrollo profesional, y un dress code informal que permite autenticidad y comodidad en el trabajo.</div><div>Te invitamos a formar parte de una empresa que valora la diversidad y el equilibrio entre la vida personal y laboral, y que promueve un trabajo orientado a objetivos, empoderado y apasionado. ¡Únete a nosotros!</div>",
+       "web": "https://www.bnamericas.com",
+       "twitter": "",
+       "github": "",
+       "facebook": "",
+       "angellist": "",
+       "country": "CL",
+       "response_time_in_days": {
+        "min": 11,
+        "max": 23
+       }
+      }
+     }
+    }
+   },
+   "links": {
+    "public_url": "https://www.getonbrd.com/jobs/senior-full-stack-engineer-ai-native-bnamericas-remote"
+   }
+  },
+  {
+   "id": "desarrollador-full-stack-ai-native-the-clearpoint-ai-remote-1fee",
+   "type": "job",
+   "attributes": {
+    "title": "Desarrollador Full-Stack AI Native",
+    "description_headline": "Requerimientos del cargo",
+    "description": "<ul><li>Experiencia real desarrollando producto full stack, frontend y backend.</li><li>Método para trabajar con IA de forma eficiente: saber dar buen contexto, iterar con criterio y no quemar recursos a base de prueba y error. Buscamos a alguien que piense antes de pedir a la IA que desarrolle, no que dispare peticiones a ciegas.</li><li>Entender el sistema a fondo, no tratar la IA como una caja negra. Hay que comprender cómo encajan las piezas de un proyecto y cómo se conectan entre sí, para que, cuando aparezca un error, sepas dónde mirar y por qué — y no dependas de que la IA lo adivine por ti.</li><li>Soltura con JavaScript/TypeScript (idealmente Next.js/React) y bases de datos SQL.</li><li>APIs REST, webhooks e integraciones con sistemas de terceros.</li><li>Saber integrar IA en el producto cuando el proyecto lo pide: consumir APIs de modelos de lenguaje, salidas estructuradas y function calling, con criterio para revisar lo que generan.</li><li>Autonomía para coger una solución ya diseñada y llevarla a producción tú solo.</li><li>Git y buenas prácticas de código.</li><li>Disponibilidad para solapar varias horas al día (80%) con el horario de España (CET), para coordinarnos.</li></ul>",
+    "projects": "<p>Buscamos la primera incorporación técnica de Clearpoint: alguien que construya, con IA, el software a medida que montamos para empresas. Actualmente estamos operando en España.</p><p>Por dentro somos un equipo pequeño y muy técnico. No hacemos software de catálogo: cada cliente llega con un problema distinto. Primero auditamos su empresa, diseñamos la solución, la construimos, la implementamos y nos aseguramos de su correcto funcionamiento. Trabajamos con IA de forma nativa (Cursor), cuidando siempre la seguridad y las leyes de protección de datos.</p><p>Buscamos a alguien con experiencia desarrollando software, con conocimiento de frontend y backend, cuya prioridad sea entregar producto con agilidad usando herramientas como Cursor.</p>",
+    "functions_headline": "Funciones del cargo",
+    "functions": "<p>Trabajarás mano a mano con el fundador técnico. El proyecto llega ya auditado, diseñado y cerrado con el cliente; a partir de ahí, lo construyes tú. Cada cliente es distinto: lo mismo montas un CRM complejo, que un SaaS, que un chatbot con IA, que las tres cosas conectadas entre sí con agentes.</p><p>En el día a día:</p><ul><li>Construyes en Cursor las soluciones ya diseñadas: las montas, las iteras y las dejas listas en producción.</li><li>Integras las piezas que pida cada proyecto: bases de datos, autenticación, ERPs, pasarelas de pago, mensajería y las APIs externas que hagan falta. El stack cambia según el cliente.</li><li>Cuando el proyecto lo pide, añades capa de IA: chatbots, asistentes y agentes que conectan con las herramientas del cliente y automatizan procesos de varios pasos.</li><li>Revisas el código que genera la IA antes de darlo por bueno: que haga lo que debe, que esté limpio, que no deje agujeros, y cazas y corriges los bugs.</li><li>Cuidas la seguridad y la protección de datos de lo que construyes, según lo que requiera cada proyecto.</li><li>Pruebas los flujos, los dejas funcionando en el cliente y los pules hasta que queden finos.</li></ul>",
+    "benefits_headline": "Condiciones",
+    "benefits": "<ul><li><strong>100% remoto</strong>, desde cualquier país de LATAM.</li><li><strong>Pago en USD</strong>, mensual y puntual, gestionado a través de una plataforma de pagos internacional (contrato y facturación incluidos).</li><li><strong>Relación como contractor</strong>: facturas por tus servicios, con total transparencia.</li><li><strong>Horario flexible</strong> dentro del solape con España.</li><li><strong>Proyectos variados y reales</strong>: cada cliente es un problema distinto: un CRM, un SaaS, un sistema de predicción de stock, un chatbot con IA… no te vas a aburrir montando lo mismo.</li><li><strong>Recorrido real según lo que demuestres</strong>: entras como primera incorporación técnica, trabajando mano a mano con el fundador técnico. Si destacas, ampliamos tu rol y tu responsabilidad — con la subida de sueldo que lo acompaña.</li><li><strong>Trabajo con IA de forma nativa</strong>: usamos las mejores herramientas del mercado, no vas a pelearte con procesos anticuados.</li></ul>",
+    "desirable_headline": "Opcionales",
+    "desirable": "<ul><li>Experiencia construyendo agentes de IA o sistemas multi-agente.</li><li>Bases de datos vectoriales y RAG.</li><li>Python para piezas de IA o automatización.</li><li>Experiencia con bases de datos y backend como servicio (tipo Supabase/Firebase).</li><li>Integraciones con ERP o software de facturación, y con e-commerce.</li><li>Automatizaciones y conexión de herramientas (webhooks, APIs, flujos entre sistemas).</li><li>Nociones de protección de datos (RGPD) y seguridad aplicada.</li><li>Experiencia en entornos multi-tenant (un mismo sistema para varios clientes).</li><li>Bots y mensajería (WhatsApp, Telegram y similares).</li><li>Haber trabajado con clientes B2B o en proyectos a medida.</li></ul>",
+    "remote": true,
+    "remote_modality": "fully_remote",
+    "remote_zone": null,
+    "countries": [
+     "Remote"
+    ],
+    "lang": "es",
+    "category_name": "Machine Learning & AI",
+    "perks": [
+     "remote_full",
+     "flexible_hours",
+     "informal_dresscode",
+     "vacation_on_birthday"
+    ],
+    "min_salary": 2200,
+    "max_salary": 3000,
+    "published_at": 1791331569,
+    "response_time_in_days": {
+     "min": null,
+     "max": null
+    },
+    "applications_count": 484,
+    "location_regions": {
+     "data": []
+    },
+    "location_tenants": {
+     "data": []
+    },
+    "location_cities": {
+     "data": []
+    },
+    "modality": {
+     "data": {
+      "id": 1,
+      "type": "modality"
+     }
+    },
+    "seniority": {
+     "data": {
+      "id": 4,
+      "type": "seniority"
+     }
+    },
+    "tags": {
+     "data": [
+      {
+       "id": 1,
+       "type": "tag"
+      },
+      {
+       "id": 259,
+       "type": "tag"
+      },
+      {
+       "id": 123,
+       "type": "tag"
+      },
+      {
+       "id": 762,
+       "type": "tag"
+      },
+      {
+       "id": 64,
+       "type": "tag"
+      },
+      {
+       "id": 3450,
+       "type": "tag"
+      },
+      {
+       "id": 53,
+       "type": "tag"
+      },
+      {
+       "id": 54,
+       "type": "tag"
+      },
+      {
+       "id": 1605,
+       "type": "tag"
+      },
+      {
+       "id": 966,
+       "type": "tag"
+      }
+     ]
+    },
+    "company": {
+     "data": {
+      "id": "the-clearpoint-ai",
+      "type": "company",
+      "attributes": {
+       "name": "THE CLEARPOINT AI",
+       "description": "Clearpoint es una consultora B2B: auditamos los procesos de empresas, los optimizamos y desarrollamos la solución de software, potenciado con IA, que optimiza dichos procesos.",
+       "long_description": "",
+       "projects": null,
+       "benefits": "<ul><li><strong>100% remoto</strong>, desde cualquier país de LATAM.</li><li><strong>Pago en USD</strong>, mensual y puntual, gestionado a través de una plataforma de pagos internacional (contrato y facturación incluidos).</li><li><strong>Relación como contractor</strong>: facturas por tus servicios, con total transparencia.</li><li><strong>Horario flexible</strong> dentro del solape con España.</li><li><strong>Proyectos variados y reales</strong>: cada cliente es un problema distinto: un CRM, un SaaS, un sistema de predicción de stock, un chatbot con IA… no te vas a aburrir montando lo mismo.</li><li><strong>Recorrido real según lo que demuestres</strong>: entras como primera incorporación técnica, trabajando mano a mano con el fundador técnico. Si destacas, ampliamos tu rol y tu responsabilidad — con la subida de sueldo que lo acompaña.</li><li><strong>Trabajo con IA de forma nativa</strong>: usamos las mejores herramientas del mercado, no vas a pelearte con procesos anticuados.</li></ul>",
+       "web": "https://www.theclearpoint.ai",
+       "twitter": null,
+       "github": null,
+       "facebook": null,
+       "angellist": null,
+       "country": "AE",
+       "response_time_in_days": {
+        "min": null,
+        "max": null
+       }
+      }
+     }
+    }
+   },
+   "links": {
+    "public_url": "https://www.getonbrd.com/jobs/desarrollador-full-stack-ai-native-the-clearpoint-ai-remote-1fee"
+   }
+  },
+  {
+   "id": "senior-software-engineer-siteguard-remote",
+   "type": "job",
+   "attributes": {
+    "title": "Senior Software Engineer",
+    "description_headline": "What we are looking for",
+    "description": "<p>We are hiring a Senior Software Engineer who can operate both independently and as a force-multiplier for the team at Siteguard. You should bring strong software engineering fundamentals, proven experience delivering production systems, and a mindset focused on quality, security, and continuous improvement.</p><p><b>Required experience and skills</b></p><ul><li>Hands-on experience building backend systems (APIs and services) in production environments.</li><li>Strong understanding of software design principles, data modeling, and scalable architecture.</li><li>Proficiency with modern programming languages and engineering practices, including testing, code reviews, and CI/CD.</li><li>Experience working with databases and designing efficient queries and data flows.</li><li>Competence with debugging and troubleshooting using logs, metrics, and system behavior.</li><li>Clear understanding of security fundamentals and how to apply them during development and review.</li></ul><p><b>Collaborative and leadership traits</b></p><ul><li>Ability to mentor engineers through constructive reviews and practical guidance.</li><li>Strong communication skills—able to translate technical details for different audiences.</li><li>Ownership mindset: we expect you to take responsibility for outcomes, not just tasks.</li><li>Pragmatic problem-solving and willingness to improve existing systems.</li><li>Comfort working in an agile environment and adapting to changing priorities.</li></ul><p>If you enjoy building reliable software, improving engineering standards, and taking ownership of complex components, we’d like to hear from you.</p>",
+    "projects": "At Siteguard, we build and operate software that helps protect systems and users through reliable engineering, strong security practices, and scalable platforms. As a Senior Software Engineer, you will work on core product features and infrastructure components that support our day-to-day operations and growth. Your work will span multiple layers—from designing service interfaces and implementing production-ready backend functionality to improving performance, reliability, and observability. We focus on delivering secure, maintainable solutions, so you’ll contribute to architectural decisions, code quality standards, and engineering practices that help the team move fast without compromising safety. You’ll collaborate closely with product, security-minded stakeholders, and other engineers to turn technical requirements into dependable software that performs under real-world conditions.",
+    "functions_headline": "What you will do",
+    "functions": "<ul><li>Lead the design and implementation of backend services and APIs, from requirements to production rollout.</li><li>Own critical parts of the codebase end-to-end, including development, testing, deployment, and operational support.</li><li>Improve system reliability and performance by analyzing logs/metrics, identifying bottlenecks, and driving fixes.</li><li>Collaborate on architecture and technical direction, providing thoughtful trade-offs around scalability, security, and maintainability.</li><li>Write clean, well-tested code and set quality standards through reviews, mentoring, and shared best practices.</li><li>Build or enhance observability (logging, monitoring, alerting) so issues can be detected and resolved quickly.</li><li>Partner with cross-functional teams to clarify requirements, estimate work, and ensure delivered outcomes match business needs.</li><li>Contribute to CI/CD and engineering workflows to streamline delivery and reduce risk.</li></ul>",
+    "benefits_headline": "Benefits",
+    "benefits": "<p>We believe good work needs good support. While the specific benefits are not detailed in this posting, we aim to provide a collaborative environment, clear engineering standards, and a culture that values quality, ownership, and continuous improvement. During the hiring process, we will share the complete compensation and benefits package, including work arrangements and any company-specific perks relevant to the role.</p><p>We also prioritize teamwork, thoughtful code reviews, and practical engineering practices that make it easier to deliver reliably—together.</p>",
+    "desirable_headline": "Nice to have",
+    "desirable": "<ul><li>Experience working in security- or reliability-focused products where threat modeling and defensive engineering are important.</li><li>Familiarity with cloud platforms and containerization (e.g., Docker) and production deployment patterns.</li><li>Experience with observability stacks (metrics/logging/tracing) and operational runbooks.</li><li>Prior leadership on technical initiatives such as refactoring, migrations, or performance improvements.</li><li>Knowledge of modern backend frameworks and API design best practices.</li><li>Experience mentoring junior or mid-level engineers and improving team delivery processes.</li></ul>",
+    "remote": true,
+    "remote_modality": "fully_remote",
+    "remote_zone": null,
+    "countries": [
+     "Remote"
+    ],
+    "lang": "en",
+    "category_name": "Programming",
+    "perks": [
+     "remote_full"
+    ],
+    "min_salary": 3500,
+    "max_salary": 5000,
+    "published_at": 1791939872,
+    "response_time_in_days": {
+     "min": null,
+     "max": null
+    },
+    "applications_count": 305,
+    "location_regions": {
+     "data": []
+    },
+    "location_tenants": {
+     "data": []
+    },
+    "location_cities": {
+     "data": []
+    },
+    "modality": {
+     "data": {
+      "id": 1,
+      "type": "modality"
+     }
+    },
+    "seniority": {
+     "data": {
+      "id": 4,
+      "type": "seniority"
+     }
+    },
+    "tags": {
+     "data": [
+      {
+       "id": 36857,
+       "type": "tag"
+      },
+      {
+       "id": 1471,
+       "type": "tag"
+      },
+      {
+       "id": 44633,
+       "type": "tag"
+      },
+      {
+       "id": 1691,
+       "type": "tag"
+      },
+      {
+       "id": 47233,
+       "type": "tag"
+      },
+      {
+       "id": 37284,
+       "type": "tag"
+      },
+      {
+       "id": 422,
+       "type": "tag"
+      },
+      {
+       "id": 2938,
+       "type": "tag"
+      }
+     ]
+    },
+    "company": {
+     "data": {
+      "id": "siteguard",
+      "type": "company",
+      "attributes": {
+       "name": "Siteguard",
+       "description": "Build exciting software!  Maintain current stack.",
+       "long_description": "",
+       "projects": null,
+       "benefits": "<p>We believe good work needs good support. While the specific benefits are not detailed in this posting, we aim to provide a collaborative environment, clear engineering standards, and a culture that values quality, ownership, and continuous improvement. During the hiring process, we will share the complete compensation and benefits package, including work arrangements and any company-specific perks relevant to the role.</p><p>We also prioritize teamwork, thoughtful code reviews, and practical engineering practices that make it easier to deliver reliably—together.</p>",
+       "web": "http://www.siteguard.net.au",
+       "twitter": null,
+       "github": null,
+       "facebook": null,
+       "angellist": null,
+       "country": "AU",
+       "response_time_in_days": {
+        "min": null,
+        "max": null
+       }
+      }
+     }
+    }
+   },
+   "links": {
+    "public_url": "https://www.getonbrd.com/jobs/senior-software-engineer-siteguard-remote"
+   }
+  }
+ ],
+ "meta": {
+  "page": 1,
+  "per_page": 100,
+  "total_pages": 1
+ }
+}

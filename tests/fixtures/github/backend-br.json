@@ -1,0 +1,117 @@
+[
+ {
+  "number": 12472,
+  "title": "[Remoto] Full Stack Developer Pleno - Rotha IA",
+  "html_url": "https://github.com/backend-br/vagas/issues/12472",
+  "state": "open",
+  "created_at": "2026-10-17T18:46:04Z",
+  "labels": [
+   {
+    "name": "PJ"
+   },
+   {
+    "name": "Pleno"
+   },
+   {
+    "name": "Júnior"
+   },
+   {
+    "name": "Remoto"
+   },
+   {
+    "name": "Testes automatizados"
+   },
+   {
+    "name": "TypeScript"
+   },
+   {
+    "name": "PostgreSQL"
+   },
+   {
+    "name": "Git"
+   }
+  ],
+  "body": "## Nossa empresa\n\nA Rotha IA cria sistemas de gestão sob medida (CRMs e ERPs) para empresas de diferentes setores, com React, TypeScript e Supabase.\n\n## Descrição da vaga\n\nProfissional para desenvolver, evoluir e sustentar de ponta a ponta os sistemas de gestão web dos nossos clientes, com autonomia para decidir como resolver cada problema.\n\n- Desenvolver e evoluir aplicações com React, TypeScript e Next.js, do front-end ao banco de dados.\n- Modelar o banco no Supabase (PostgreSQL): tabelas, RLS, funções, gatilhos e migrations sem derrubar a produção.\n- Projetar integrações com serviços externos (nota fiscal, pagamentos, WhatsApp), tratando webhooks, novas tentativas e duplicidade.\n- Publicar versões e aplicar mudanças de banco em produção com autonomia.\n- Resolver problemas de desempenho, consultas lentas e inconsistência de dados.\n- Receber pedidos dos clientes, propor a solução técnica e estimar o prazo.\n- Escrever testes automatizados e cuidar da qualidade do build e da publicação.\n- Revisar código e apoiar pessoas com menos experiência.\n- Documentar decisões técnicas, padrões e rotinas críticas.\n\n## Local\n\nRemoto (100%), Brasil.\n\n## Requisitos\n\n**Obrigatórios:**\n- Ensino superior completo ou em andamento em Computação, Sistemas de Informação, Engenharia de Software, ADS ou área relacionada.\n- Pelo menos 3 anos com desenvolvimento web, com pelo menos um sistema em produção usado por clientes.\n- Domínio de React e TypeScript, com experiência em Next.js.\n- PostgreSQL além do básico: modelagem, índices, consultas complexas e migrations.\n- Supabase (Auth, RLS e Edge Functions) ou stack equivalente.\n- APIs REST e webhooks.\n- Testes automatizados e Git com revisão de código.\n- Autonomia e IA: usar IA (Claude Code, Cursor ou similar) para ganhar produtividade, revisando e sabendo explicar tudo o que entrega.\n\n**Diferenciais:**\n- Integração com APIs fiscais (NF-e, NFC-e, NFS-e) já em produção.\n- Gateway de pagamento (Asaas, Mercado Pago ou similar).\n- Meta for Developers e API oficial do WhatsApp.\n- Sistemas multiempresa (várias empresas no mesmo banco).\n- Segurança de aplicações (OWASP) e LGPD.\n- Publicação na Cloudflare e esteira de deploy.\n- Já ter orientado ou revisado o código de desenvolvedores júnior.\n\n## Benefícios\n\n- 100% remoto.\n- Autonomia para decidir e publicar.\n\n## Contratação\n\nPJ, R$ 8.000 por mês. Início a combinar.\n\n## Como se candidatar\n\nPelo formulário (uns 10 minutos): https://docs.google.com/forms/d/e/1FAIpQLSdYPm2pPvY8wZLFWQ-OytAXk0twbpCoHluOzSWEwVOzjPBYGg/viewform\n\nPágina da vaga: https://vagas.rothaia.com.br/pleno/\n\n## Tempo médio de feedbacks\n\nRespondemos as candidaturas pelo e-mail ou WhatsApp informado no formulário. Dúvidas: vagas@example.com\n\n## Labels\n\n### Nível\n\n- Pleno\n\n### Regime\n\n- PJ\n\n### Alocação\n\n- Remoto\n"
+ },
+ {
+  "number": 12470,
+  "title": "[Remoto] Engenheiro (a) de Software-Github /Micro 1",
+  "html_url": "https://github.com/backend-br/vagas/issues/12470",
+  "state": "open",
+  "created_at": "2026-10-15T14:33:24Z",
+  "labels": [
+   {
+    "name": "Python"
+   },
+   {
+    "name": "Java"
+   },
+   {
+    "name": "Remoto"
+   }
+  ],
+  "body": "🌎 VAGA INTERNACIONAL | ENGENHEIRO(A) DE SOFTWARE | GITHUB\n\n💰 US$ 50 a US$ 100 por hora!\n\nVocê trabalha com desenvolvimento de software e domina linguagens como Python, Java ou Rust? Esta oportunidade internacional pode ser o próximo passo da sua carreira!\n\nUma vaga para profissionais de tecnologia interessados em desafios de engenharia de software e no ecossistema de desenvolvimento colaborativo.\n\nHabilidades necessárias:\n\n- Python 3\n- Java\n- Rust\n- +9 habilidades adicionais descritas no anúncio oficial\n\n🌍 Oportunidade internacional: consulte os critérios de elegibilidade para o seu país diretamente na plataforma.\n\n💵 Remuneração anunciada: US$ 50 a US$ 100 por hora.\n\n🚀 COMO SE CANDIDATAR?\n\nAcesse o link abaixo para conferir os requisitos completos e realizar sua candidatura:\n\n🔗 https://jobs.micro1.ai/post/168285a8-8063-447f-b55b-222c1da4c7c2?referralCode=4bab295f-cd81-448b-8077-e039a64f9a2c&utm_source=referral&utm_medium=share&utm_campaign=job_referral\n\n📢 Conhece alguém que trabalha com Python, Java ou Rust? Compartilhe esta oportunidade com sua rede e ajude a conectar talentos ao mercado internacional!\n\n#VagasInternacionais #EngenhariaDeSoftware #SoftwareEngineer #GitHub #Python #Java #Rust #DesenvolvimentoDeSoftware #VagasDeTI #TechJobs #RemoteJobs #SalarioEmDolar #CarreiraInternacional #Tecnologia"
+ },
+ {
+  "number": 12460,
+  "title": "[Belo Horizonte ou São Paulo, Brasil] Early Career Software Engineer, People with Disabilities na Google",
+  "html_url": "https://github.com/backend-br/vagas/issues/12460",
+  "state": "open",
+  "created_at": "2026-10-14T20:44:39Z",
+  "labels": [
+   {
+    "name": "JavaScript"
+   },
+   {
+    "name": "Python"
+   },
+   {
+    "name": "Java"
+   }
+  ],
+  "body": "## Descrição da vaga: \nEsta é uma vaga de um parceiro da plataforma Coodesh, ao candidatar-se você terá acesso as informações completas sobre a empresa e benefícios.\n\n\nFique atento ao redirecionamento que vai te levar para uma url [https://coodesh.com](https://coodesh.com/jobs/early-career-software-engineer-people-with-disabilities-181722150?utm_source=github&utm_medium=backend-br-vagas&modal=open) para realizar a candidatura. 👋\n<p>Google is proud to be an equal opportunity workplace and promotes affirmative actions as an employer. </p><p>This requisition is a pipeline effort to generate the People with Disabilities community interest in opportunities at Google. All candidates with disabilities will be evaluated for this role in compliance with the provisions of Article 93 Federal Labor Law 8.213/91. Please provide documentation that attest your disability. Please merge it in your resume PDF.</p><p>O Google tem orgulho em ser um local de trabalho inclusivo.<br><br>Somente as candidaturas de Pessoas com Deficiência (PcD) serão avaliadas para essa vaga, em conformidade com o disposto no artigo 93 da Lei Federal do Trabalho de número 8.213/91.<br><br>Pedimos, por gentileza, que a pessoa candidata envie o currículo em inglês, e forneça documentação que comprove sua deficiência. A documentação pode ser enviada junto ao currículo, no mesmo PDF.<br><br>Please submit your resume in English - we can only consider applications submitted in this language.</p><p>In most instances, this position requires in-person interviews as part of the hiring process.<br></p><br>Note: By applying to this position you will have an opportunity to share your preferred working location from the following: <b>Belo Horizonte, State of Minas Gerais, Brazil; São Paulo, State of São Paulo, Brazil</b>.<h3>Minimum qualifications:</h3><ul>\n<li>\n\nBachelor's degree in Computer Science or related technical field, or equivalent practical experience.\n</li>\n<li>1 year of experience with software development in one or more programming languages (e.g., Python, C, C++, Java, JavaScript)</li>\n</ul><br><h3>Preferred qualifications:</h3><ul>\n<li>1 year of experience in machine learning technology.<br></li>\n</ul><div><h2>About the job</h2><p>Google's software engineers develop the next-generation technologies that change how billions of users connect, explore, and interact with information and one another. Our products need to handle information at massive scale, and extend well beyond web search. We're looking for engineers who bring fresh ideas from all areas, including information retrieval, distributed computing, large-scale system design, networking and data storage, security, artificial intelligence, natural language processing, UI design and mobile; the list goes on and is growing every day. As a software engineer, you will work on a specific project critical to Google’s needs with opportunities to switch teams and projects as you and our fast-paced business grow and evolve. We need our engineers to be versatile, display leadership qualities and be enthusiastic to take on new problems across the full-stack as we continue to push technology forward.</p><p>Google is an engineering company at heart. We hire people with a broad set of technical skills who are ready to take on some of technology's greatest challenges and make an impact on users around the world. At Google, engineers not only revolutionize search, they routinely work on scalability and storage solutions, large-scale applications and entirely new platforms for developers around the world. From Google Ads to Chrome, Android to YouTube, social to local, Google engineers are changing the world one technological achievement after another.</p></div><div><h2>Responsibilities</h2><ul>\n<li>Establish and follow software development best practices and a robust engineering culture.<br></li>\n</ul></div>Google is proud to be an equal opportunity workplace and is an affirmative action employer. We are committed to equal employment opportunity regardless of race, color, ancestry, religion, sex, national origin, sexual orientation, age, citizenship, marital status, disability, gender identity or Veteran status. We also consider qualified applicants regardless of criminal histories, consistent with legal requirements. See also <a href=\"https://careers.google.com/eeo/\">Google's EEO Policy</a> and <a href=\"/jobs/dist/legal/OFCCP_EEO_Post.pdf\">EEO is the Law.</a> If you have a disability or special need that requires accommodation, please let us know by completing our <a href=\"https://goo.gl/forms/aBt6Pu71i1kzpLHe2\">Accommodations for Applicants form</a>.\n## Google: \n A problem isn't truly solved until it's solved for all. Googlers build products that help create opportunities for everyone, whether down the street or across the globe. Bring your insight, imagination and a healthy disregard for the impossible. Bring everything that makes you unique. Together, we can build for everyone. \n\n\n\n## Local: \n Belo Horizonte, Brasil\n\n\n\n## Como se candidatar:\nCandidatar-se exclusivamente através da plataforma Coodesh no link a seguir: [Early Career Software Engineer, People with Disabilities na Google](https://coodesh.com/jobs/early-career-software-engineer-people-with-disabilities-181722150?utm_source=github&utm_medium=backend-br-vagas&modal=open)\n\n\nApós candidatar-se via plataforma Coodesh e validar o seu login, você poderá acompanhar e receber todas as interações do processo por lá. Utilize a opção **Pedir Feedback** entre uma etapa e outra na vaga que se candidatou. Isso fará com que a pessoa **Recruiter** responsável pelo processo na empresa receba a notificação.\n## Labels\n#### Alocação\nAlocado\n#### Categoria\nBack-End"
+ },
+ {
+  "number": 12445,
+  "title": "[REMOTO] Desenvolvedor Fullstack Pleno - Java & Angular - DB1",
+  "html_url": "https://github.com/backend-br/vagas/issues/12445",
+  "state": "open",
+  "created_at": "2026-10-13T19:54:17Z",
+  "labels": [
+   {
+    "name": "CLT"
+   },
+   {
+    "name": "Pleno"
+   },
+   {
+    "name": "Java"
+   },
+   {
+    "name": "Remoto"
+   },
+   {
+    "name": "AWS"
+   },
+   {
+    "name": "MongoDB"
+   },
+   {
+    "name": "PostgreSQL"
+   },
+   {
+    "name": "RabbitMQ"
+   },
+   {
+    "name": "Docker"
+   },
+   {
+    "name": "Kubernetes"
+   },
+   {
+    "name": "CI/CD"
+   }
+  ],
+  "body": "<!-- Por favor, poste apenas vagas para backend. -->\n\n## Nossa empresa\n\nNa DB1, cada linha de código, teste ou insight é uma chance de criar impacto real. Somos movidos pela curiosidade e pelo desejo de transformar problemas complexos em soluções que simplificam a vida das pessoas. Gostamos de experimentar, aprender e inovar, e por isso esse é o lugar para colocar seu talento à prova.\n\nSe você combina inteligência com uma vontade incansável de aprender e evoluir, e tem uma postura resiliente moldado por superações, já carrega muito da essência DB1. Aqui, cada desafio é oportunidade de crescimento, cada erro é uma lição para voltar mais forte e cada vitória é combustível para seguir adiante com uma missão clara e valores sólidos que dão sentido a cada passo. Na DB1, superação não é exceção e sim parte da jornada.\n## Descrição da vaga\n\nNo Anymarket, você vai construir o coração das nossas integrações, sistemas robustos, escaláveis e que atravessam times diferentes, do backend ao frontend. Sua missão começa pela imersão: entender o que existe, como funciona e por quê foi construído assim. A partir daí, você vai ganhar autonomia para evoluir essas soluções e habilitar a escala que o produto precisa para crescer.\n\nNo dia a dia, você vai trabalhar com times multidisciplinares de tecnologia, negócio e design, sempre com IA como aliada no fluxo de desenvolvimento, geração e revisão de código, análise de logs, automação de tarefas e spec-driven development fazem parte da rotina. Você vai escrever código que resiste ao tempo, do tipo que nasce forte desde o primeiro commit e continua de pé anos depois.\n## Local\n\nRemoto\n\n## Requisitos\n\nPerfil que buscamos:\n\n- Experiência sólida em Java com Spring Boot e/ou Quarkus, não só domínio do framework, mas entendimento do que acontece por trás dele\n- Domínio de Angular para construção de interfaces administrativas e dashboards\n- Experiência com PostgreSQL ou banco relacional equivalente\n- Vivência com Redis ou similar para caching\n- Experiência com mensageria assíncrona: Kafka, RabbitMQ, ActiveMQ ou similar\n- Conhecimento do ciclo completo de deploy: Docker, Kubernetes e CI/CD\n- Vivência real com arquitetura de microsserviços\n- Experiência com monitoramento em tempo real: Datadog, Grafana, ELK ou similar\n- IA incorporada ao fluxo de trabalho: geração e revisão de código, RAG, spec-driven development (SDD)\n- Quando trava num problema, busca ativamente a solução, questiona colegas, pesquisa, decompõe em partes menores\n- Assume responsabilidade pelos próprios erros e colabora genuinamente em equipe\n\nVai ser incrível se você souber ou tiver vontade de aprender:\n\n- MongoDB ou outro banco não-relacional\n- AWS em nível intermediário\n- Análise de performance em produção\n- Ferramentas de análise estática de código (Sonar/SAST)\n- Fluxos de autenticação OAuth2/PKCE\n\n## Benefícios\n\nCartão de benefícios flexíveis (Alimentação, Mobilidade, Qualidade de Vida, entre outras categorias);\nPlano de Saúde Unimed;\nSeguro de Vida;\nPlano odontológico (opcional);\nCrédito Consignado com as melhores taxas (Mixtra);\nGift Aniversário;\nBem-estar: parceria com plataforma de acesso a academias e outras atividades físicas, parceria para atendimento psicológico;\nEvolução de carreira: Parceria com plataformas e instituições de ensino, tanto para idiomas quanto para graduação, pós-graduação e cursos livres, Plano de Desenvolvimento Individual (PDI), feedbacks constantes, Programa de Mentoria, eventos internos, subsídio para treinamentos, universidade corporativa e muito mais;\nProgramas de recompensa: bônus para indicação de novos colaboradores e bônus anual atrelado a metas;\nEspaço para assumir desafios e se desenvolver.\n## Contratação\n\nCLT\n## Como se candidatar\n\nhttps://db1.inhire.app/vagas/22573662-ab2c-4201-93d1-be107c5ded02/desenvolvedor-fullstack-pleno-java-and-angular?r=43941dbb-f183-4c7c-a931-f64828e11cf7\n## Labels\n\n<!-- Retire os labels que não fazem sentido à vaga. -->\n\n### Nível\n- Pleno\n\n\n### Regime\n\n- CLT\n\n### Alocação\n\n- Remoto\n\n"
+ }
+]

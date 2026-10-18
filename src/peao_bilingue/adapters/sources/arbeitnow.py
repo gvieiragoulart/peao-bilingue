@@ -27,6 +27,10 @@ URL = "https://www.arbeitnow.com/api/job-board-api"
 class Arbeitnow(ApiSource):
     name = "arbeitnow"
     label = _("Arbeitnow (public API, Germany with a visa)")
+    description = _(
+        "Jobs in Germany with visa sponsorship, a path to relocation. Many are "
+        "written in German."
+    )
     brand = "Arbeitnow"
     url = URL
 

@@ -41,6 +41,10 @@ INLINE_IMAGE = re.compile(r"<img\b[^>]*>?")
 class RemoteOK(ApiSource):
     name = "remoteok"
     label = _("Remote OK (public API, remote jobs)")
+    description = _(
+        "The ~100 latest remote jobs from every field, with a shortened "
+        "description; the full text is on the site."
+    )
     brand = "Remote OK"
     url = URL
 
