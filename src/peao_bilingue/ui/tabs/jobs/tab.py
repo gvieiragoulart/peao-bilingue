@@ -1,6 +1,6 @@
-"""The Jobs tab: puts the filters, the table and the preview together and does the work
-they ask for (listing, marking, the per-job analysis). The components never touch the
-repository, the settings or an LLM."""
+"""The Jobs tab: puts the filters, the table and the job's dialog together and does the
+work they ask for (listing, marking, the per-job analysis). The components never touch
+the repository, the settings or an LLM."""
 
 import webbrowser
 from typing import TYPE_CHECKING, Any
@@ -12,11 +12,14 @@ from peao_bilingue.application.analysis import analyze_job
 from peao_bilingue.composition import build_llm, read_profile_notes
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import JobAnalysis
-from peao_bilingue.domain.jobs import JobStatus
+from peao_bilingue.domain.jobs import JobStatus, ListedJob
 from peao_bilingue.i18n import _
+from peao_bilingue.ui import presentation
+from peao_bilingue.ui.presentation import KeywordGroup
+from peao_bilingue.ui.tabs.jobs.dialog import JobDialog
 from peao_bilingue.ui.tabs.jobs.filters import JobFilters
-from peao_bilingue.ui.tabs.jobs.preview import JobPreview
 from peao_bilingue.ui.tabs.jobs.table import JobTable
+from peao_bilingue.ui.widgets import Hint
 
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
@@ -28,33 +31,35 @@ class JobsTab(ctk.CTkFrame):
     def __init__(self, master: Any, app: "App") -> None:
         super().__init__(master, fg_color="transparent")
         self.app = app
+        # The job open in the dialog: what Analyze, Open and the status buttons act on.
+        self._current: ListedJob | None = None
+        self._keywords: dict[str, list[KeywordGroup]] = {}
+        self._colors: dict[str, tuple[str, str]] = {}
 
         self.filters = JobFilters(self, on_apply=self.refresh)
-        self.filters.pack(fill="x", pady=(0, 8))
+        self.filters.pack(fill="x", pady=(0, 4))
+        self.count = Hint(self, text="", anchor="w")
+        self.count.pack(fill="x", pady=(0, 4))
 
-        body = ctk.CTkFrame(self, fg_color="transparent")
-        body.pack(fill="both", expand=True)
-        body.grid_columnconfigure(0, weight=3)
-        body.grid_columnconfigure(1, weight=2)
-        body.grid_rowconfigure(0, weight=1)
+        self.table = JobTable(self)
+        self.table.pack(fill="both", expand=True)
+        self.table.on_click(self.open_job)
 
-        self.table = JobTable(body)
-        self.table.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
-        self.table.on_select(self._show_detail)
-
-        self.preview = JobPreview(
-            body,
+        # Created last, so it can cover the rest of the tab.
+        self.dialog = JobDialog(
+            self,
             on_analyze=self._analyze,
             on_open=self._open,
             on_change_status=self._change_status,
             on_pick_llm=self._remember_llm,
         )
-        self.preview.grid(row=0, column=1, sticky="nsew")
+        self.preview = self.dialog.preview
 
     def refresh(self) -> None:
         repository = self.app.repository
+        searches = repository.list_searches()
         self.filters.set_options(
-            [search.name for search in repository.list_searches()],
+            [search.name for search in searches],
             factories.sources.available(),
         )
         self.preview.set_profiles(repository.sources_with_profile())
@@ -74,40 +79,47 @@ class JobsTab(ctk.CTkFrame):
             search_text=chosen.search_text,
             limit=LIMIT,
         )
-        self.table.show(jobs)
-        self.preview.show_text(
-            _("{count} job(s). Pick one to see its analysis or to analyze it.").format(
-                count=len(jobs)
-            )
+        self._keywords = {
+            item.job.key: presentation.job_keywords(item, searches) for item in jobs
+        }
+        self._colors = presentation.search_colors([search.name for search in searches])
+        self.table.show(jobs, self._keywords, self._colors)
+        self.count.configure(text=presentation.job_count(len(jobs)))
+
+    def open_job(self, key: str) -> None:
+        """Opens the job's dialog (a click on its row)."""
+        item = self.table.job(key)
+        if item is None and self._current and self._current.job.key == key:
+            item = self._current  # left the filtered list, but still open
+        if item is None:
+            return
+        self._current = item
+        self.dialog.show(
+            item,
+            self.app.repository.current_analysis(key),
+            self._keywords.get(key, []),
+            self._colors,
         )
 
     def _remember_llm(self, name: str) -> None:
         # The last one picked becomes the default next time.
         config.save({"analysis_llm": name})
 
-    def _show_detail(self) -> None:
-        item = self.table.selected_job()
-        if item is None:
-            return
-        analysis = self.app.repository.current_analysis(item.job.key)
-        self.preview.show_job(item, analysis)
-
     def _open(self) -> None:
-        item = self.table.selected_job()
-        if item is not None:
-            webbrowser.open(item.job.url)
+        if self._current is not None:
+            webbrowser.open(self._current.job.url)
 
     def _change_status(self, status: JobStatus) -> None:
-        item = self.table.selected_job()
-        if item is None:
+        if self._current is None:
             return
-        key = item.job.key
+        key = self._current.job.key
         self.app.repository.change_status(key, status)
+        # The dialog stays open: the job may even have left the filtered list.
         self.refresh()
         self.table.select(key)
 
     def _analyze(self) -> None:
-        item = self.table.selected_job()
+        item = self._current
         if item is None:
             self.app.show_error(ValueError(_("Pick a job to analyze.")))
             return
@@ -135,6 +147,10 @@ class JobsTab(ctk.CTkFrame):
             )
             self.refresh()
             self.table.select(job.key)
+            # Shows the analysis, unless the dialog was closed or moved to another job.
+            current = self._current
+            if self.dialog.is_open and current and current.job.key == job.key:
+                self.open_job(job.key)
 
         def fail(failure: BaseException) -> None:
             self.preview.set_busy(False)

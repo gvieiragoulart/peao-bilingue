@@ -1,4 +1,4 @@
-"""The Jobs tab, split into components: filters, table and preview."""
+"""The Jobs tab, split into components: filters, table and the job's dialog."""
 
 from peao_bilingue.ui.tabs.jobs.tab import JobsTab
 

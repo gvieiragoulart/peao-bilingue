@@ -2,6 +2,7 @@
 
 import json
 import time
+import tkinter as tk
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from peao_bilingue import config
 from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
 from peao_bilingue.config import settings
 from peao_bilingue.domain.jobs import Job, JobStatus
+from peao_bilingue.domain.searches import Search
 from peao_bilingue.domain.updates import Release
 from peao_bilingue.ui.app import App, tabs
 from peao_bilingue.ui.onboarding import Onboarding
@@ -88,10 +90,54 @@ def test_jobs_show_and_detail_has_analysis(
     tab = window.panels["jobs"]
     tab.refresh()
 
-    assert tab.table.tree.item(new.key)["values"][0] == 82
-    tab.table.tree.selection_set(new.key)
+    assert tab.table.row(new.key)[0] == "82"
+    tab.open_job(new.key)
     window.update()
+    assert tab.dialog.is_open
     assert "INTERVIEW QUESTIONS (20)" in tab.preview.detail.get("1.0", "end")
+
+
+def test_table_shows_keywords_found_as_chips(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_search(Search(name="Python", keywords=["python", "react", "go"]))
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2", description="Nothing in common."), ["Other"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+
+    assert tab.table.chips("vanhack:1") == ["python", "react"]
+    assert tab.table.chips("vanhack:2") == []
+    assert tab.count.cget("text").startswith("2 job(s).")
+
+
+def test_clicking_a_row_opens_the_dialog(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_search(Search(name="Python", keywords=["python"]))
+    repository.save_job(job("1"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    window.update()
+
+    # A click on the first row. Generated mouse events don't reach the hidden test
+    # window, so the handler gets the event directly.
+    click: tk.Event[tk.Canvas] = tk.Event()
+    click.y = 5
+    tab.table._click(click)
+    window.update()
+
+    assert tab.dialog.is_open
+    assert tab.table.selected() == "vanhack:1"
+    assert tab.dialog.heading.cget("text") == "Fullstack Staff Engineer"
+    assert tab.dialog.keyword_chips() == ["python"]
+    assert "Not analyzed yet" in tab.preview.detail.get("1.0", "end")
+
+    # Esc is bound while it's open (the key itself can't reach the hidden window).
+    assert window.bind("<Escape>")
+    tab.dialog.close()
+    assert not tab.dialog.is_open
+    assert not window.bind("<Escape>")
 
 
 def test_search_text_filters_the_list(
@@ -104,7 +150,7 @@ def test_search_text_filters_the_list(
     tab.filters.search_text.insert(0, "laravel")
     tab.refresh()
 
-    assert tab.table.tree.get_children() == ("vanhack:1",)
+    assert tab.table.keys() == ["vanhack:1"]
     # Enter filters. The binding sits on the Tk Entry inside the CTkEntry; the key
     # itself can't be simulated: the test window doesn't get the system's focus.
     assert tab.filters.search_text._entry.bind("<Return>")
@@ -120,8 +166,8 @@ def test_status_filter_and_column_use_labels(
     tab.filters.status.set("Applied")
     tab.refresh()
 
-    assert tab.table.tree.get_children() == (new.key,)
-    assert tab.table.tree.item(new.key)["values"][6] == "Applied"
+    assert tab.table.keys() == [new.key]
+    assert tab.table.row(new.key)[6] == "Applied"
 
 
 def test_invalid_min_fit_warns_without_crashing(window: App) -> None:
@@ -137,13 +183,14 @@ def test_marking_status_saves_and_keeps_selection(
     new = with_analyzed_job(repository)
     tab = window.panels["jobs"]
     tab.refresh()
-    tab.table.tree.selection_set(new.key)
+    tab.open_job(new.key)
     window.update()
 
     tab._change_status(JobStatus.applied)
 
     assert repository.list_jobs(status=JobStatus.applied)[0].job.key == new.key
     assert tab.table.selected() == new.key
+    assert tab.dialog.is_open
 
 
 def test_creates_search_from_screen(window: App, repository: SQLiteRepository) -> None:
@@ -288,7 +335,7 @@ def requested_llms(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 def select(window: App, key: str) -> jobs_tab.JobsTab:
     tab: jobs_tab.JobsTab = window.panels["jobs"]
     tab.refresh()
-    tab.table.tree.selection_set(key)
+    tab.open_job(key)
     window.update()
     return tab
 

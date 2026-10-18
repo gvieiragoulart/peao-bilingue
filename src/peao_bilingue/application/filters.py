@@ -17,7 +17,24 @@ def matches(job: Job, search: Search) -> bool:
     text = job.searchable_text()
     if any(term.lower() in text for term in search.exclude):
         return False
-    return any(term.lower() in text for term in search.keywords)
+    return bool(_found(text, search.keywords))
+
+
+def matched_keywords(job: Job, search: Search) -> list[str]:
+    """The search's keywords that show up in the job, in the search's order, each
+    once whatever its case."""
+    return _found(job.searchable_text(), search.keywords)
+
+
+def _found(text: str, terms: list[str]) -> list[str]:
+    found: list[str] = []
+    seen: set[str] = set()
+    for term in terms:
+        lowered = term.lower()
+        if lowered in text and lowered not in seen:
+            seen.add(lowered)
+            found.append(term)
+    return found
 
 
 def matching_searches(job: Job, searches: list[Search]) -> list[str]:

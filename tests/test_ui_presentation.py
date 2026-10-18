@@ -124,7 +124,8 @@ def test_detail_of_unanalyzed_job_explains_how_to_analyze() -> None:
     text = presentation.job_detail(listed(), None)
     assert "Not analyzed yet" in text
     assert "Analyze" in text
-    assert "DESCRIPTION" in text
+    # Only the keywords: the description reads better on the job's site.
+    assert "commissions platform" not in text
 
 
 def test_search_row() -> None:
@@ -177,3 +178,29 @@ def test_detail_shows_where_else_job_was_posted() -> None:
     )
     assert "Also on himalayas: https://h/1" in presentation.job_detail(item, None)
     assert "Also on himalayas" in presentation.job_detail(item, saved())
+
+
+def test_job_keywords_by_search_the_job_was_found_by() -> None:
+    item = listed().model_copy(update={"searches": ["Python", "Frontend", "Gone"]})
+    searches = [
+        Search(name="Python", keywords=["Django", "python", "cobol"]),
+        Search(name="Frontend", keywords=["react", "vue"]),
+        Search(name="Go", keywords=["python"]),  # the job wasn't found by it
+    ]
+    assert presentation.job_keywords(item, searches) == [
+        presentation.KeywordGroup("Python", ["python"]),
+        presentation.KeywordGroup("Frontend", ["react"]),
+    ]
+
+
+def test_job_keywords_leave_out_a_search_with_none_left() -> None:
+    searches = [Search(name="Python", keywords=["cobol"])]
+    assert presentation.job_keywords(listed(), searches) == []
+
+
+def test_each_search_keeps_its_color() -> None:
+    names = [f"search {n}" for n in range(len(presentation.SEARCH_COLORS) + 1)]
+    colors = presentation.search_colors(names)
+    assert colors["search 0"] == presentation.SEARCH_COLORS[0]
+    assert colors["search 1"] != colors["search 0"]
+    assert colors[names[-1]] == presentation.SEARCH_COLORS[0]  # the palette cycles
