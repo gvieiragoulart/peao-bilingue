@@ -20,7 +20,7 @@ kept.
 import asyncio
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 
@@ -46,11 +46,21 @@ _COMPANY_END = re.compile(r"\s*(?:\||—|–| - |\(|<|https?://)")
 @sources.register("hackernews")
 class HackerNews(ApiSource):
     name = "hackernews"
-    label = _("Hacker News: Who is hiring? (monthly thread)")
+    label = "Hacker News: Who is hiring?"
     description = _(
         "The monthly thread where companies post jobs on Hacker News; only posts "
-        "open to Brazil, Latin America or anywhere."
+        "open to Brazil, Latin America or anywhere. No account."
     )
+    about = _(
+        "Two calls per collection, through the HN Search API by Algolia: one finds "
+        "the newest thread, the other brings it whole; kept for 12 hours. A post "
+        "stays only when it names one of the places (one per line, without "
+        "accents). Not visa: as many posts say they cannot sponsor one as offer it."
+    )
+    site = "https://news.ycombinator.com/submitted?id=whoishiring"
+    fields: ClassVar[dict[str, str]] = {
+        "hackernews_places": _("Places"),
+    }
     brand = "Hacker News"
     url = SEARCH_URL
     validity_s = 12 * 3600

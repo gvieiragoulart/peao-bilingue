@@ -18,7 +18,7 @@ issue anyway.
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 
@@ -45,11 +45,22 @@ _COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 @sources.register("github")
 class GitHubJobs(ApiSource):
     name = "github"
-    label = _("GitHub job repositories (Brazilian communities)")
+    label = _("GitHub job repositories")
     description = _(
-        "Jobs posted as issues in Brazilian developer communities' repositories "
-        "(backend-br/vagas and others). Public API, no account."
+        "Brazilian developer communities that post jobs as GitHub issues, tagged by "
+        "seniority, contract and technology (backend-br/vagas and others). Public "
+        "API, no account."
     )
+    about = _(
+        "One call per repository per collection, with a 1 s pause, kept for 6 "
+        "hours: GitHub allows 60 calls an hour without an account. One repository "
+        "per line, as owner/repo. Recruiters' emails, phones and links are removed "
+        "from each job."
+    )
+    site = "https://github.com/backend-br/vagas"
+    fields: ClassVar[dict[str, str]] = {
+        "github_job_repositories": _("Repositories"),
+    }
     brand = "GitHub"
     url = f"{API}backend-br/vagas/issues"
     pause_s = 1.0

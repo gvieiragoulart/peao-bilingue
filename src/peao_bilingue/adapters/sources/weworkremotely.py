@@ -32,10 +32,16 @@ CATEGORIES = (
 @sources.register("weworkremotely")
 class WeWorkRemotely(ApiSource):
     name = "weworkremotely"
-    label = _("We Work Remotely (public RSS, remote jobs)")
+    label = "We Work Remotely"
     description = _(
-        "Remote back-end, full-stack and front-end jobs, from the site's RSS feeds."
+        "The largest remote work community in the world, since 2013: back-end, "
+        "full-stack and front-end jobs from its RSS feeds. No account."
     )
+    about = _(
+        "Three feeds per collection, one per category, with a 2 s pause, kept for 6 "
+        "hours. Each job links back to We Work Remotely, as the feed page asks."
+    )
+    site = "https://weworkremotely.com"
     brand = "We Work Remotely"
     url = f"{URL_BASE}{CATEGORIES[0]}.rss"
     pause_s = 2.0

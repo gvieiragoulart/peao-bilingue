@@ -10,11 +10,14 @@ import customtkinter as ctk
 
 from peao_bilingue.config import SECRETS, Settings
 from peao_bilingue.domain.analysis import LLMProvider
+from peao_bilingue.domain.collection import JobSource
 from peao_bilingue.domain.notifications import Notifier
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import theme
 
-FieldKind = Literal["text", "integer", "boolean", "secret", "options"]
+FieldKind = Literal["text", "integer", "boolean", "secret", "options", "list"]
+# A list field's box grows with its items, up to this many lines.
+LIST_LINES = (3, 8)
 
 
 def field_type(name: str) -> FieldKind:
@@ -26,6 +29,8 @@ def field_type(name: str) -> FieldKind:
         return "boolean"
     if annotation is int:
         return "integer"
+    if annotation == list[str]:
+        return "list"
     return "text"
 
 
@@ -258,7 +263,9 @@ class Field:
     options: list[str] = field(default_factory=list)
 
 
-def adapter_fields(cls: type[LLMProvider] | type[Notifier]) -> list[Field]:
+def adapter_fields(
+    cls: type[LLMProvider] | type[Notifier] | type[JobSource],
+) -> list[Field]:
     """An adapter's form, from what it declares in `fields`."""
     return [Field(name, label, field_type(name)) for name, label in cls.fields.items()]
 
@@ -272,8 +279,13 @@ class Form(ctk.CTkFrame):
         self._widgets: dict[str, Any] = {}
         self.grid_columnconfigure(1, weight=1)
         for row, form_field in enumerate(fields):
+            # A list's box is taller: its label stays by the first line.
             ctk.CTkLabel(self, text=form_field.label, anchor="w").grid(
-                row=row, column=0, sticky="w", padx=(8, 12), pady=4
+                row=row,
+                column=0,
+                sticky="nw" if form_field.kind == "list" else "w",
+                padx=(8, 12),
+                pady=4,
             )
             self._widgets[form_field.name] = self._create(form_field)
             self._widgets[form_field.name].grid(
@@ -286,6 +298,10 @@ class Form(ctk.CTkFrame):
             return ctk.CTkSwitch(self, text="")
         if form_field.kind == "options":
             return ctk.CTkOptionMenu(self, values=form_field.options)
+        if form_field.kind == "list":
+            return ctk.CTkTextbox(
+                self, wrap="none", height=_lines_height(LIST_LINES[0])
+            )
         return ctk.CTkEntry(self, show="•" if form_field.kind == "secret" else "")
 
     def load(self, current: Settings) -> None:
@@ -296,6 +312,11 @@ class Form(ctk.CTkFrame):
                 widget.select() if value else widget.deselect()
             elif form_field.kind == "options":
                 widget.set(str(value) if value else form_field.options[0])
+            elif form_field.kind == "list":
+                lines = max(LIST_LINES[0], min(len(value) + 1, LIST_LINES[1]))
+                widget.configure(height=_lines_height(lines))
+                widget.delete("1.0", "end")
+                widget.insert("1.0", "\n".join(value))
             else:
                 widget.delete(0, "end")
                 widget.insert(0, "" if value is None else str(value))
@@ -318,6 +339,17 @@ class Form(ctk.CTkFrame):
                             field=form_field.label
                         )
                     ) from None
+            elif form_field.kind == "list":
+                # One item per line; blank lines are dropped.
+                text = widget.get("1.0", "end")
+                values[form_field.name] = [
+                    line.strip() for line in text.splitlines() if line.strip()
+                ]
             else:
                 values[form_field.name] = widget.get().strip()
         return values
+
+
+def _lines_height(lines: int) -> int:
+    """A text box's height for `lines` lines of the base font, in unscaled pixels."""
+    return lines * 20 + 12

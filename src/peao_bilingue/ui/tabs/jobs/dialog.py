@@ -15,10 +15,12 @@ from peao_bilingue.domain.jobs import JobStatus, ListedJob
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.presentation import SEARCH_COLORS, KeywordGroup
+from peao_bilingue.ui.source_icons import SourceIcon
 from peao_bilingue.ui.tabs.jobs.preview import JobPreview
 
 WIDTH = 0.56  # of the tab: room for the footer's two rows
 PADDING = 20
+ICON_SIZE = 20  # the source's, before the status
 
 
 def soft_chip(master: Any, text: str, color: tuple[str, str]) -> ctk.CTkLabel:
@@ -70,6 +72,8 @@ class JobDialog(ctk.CTkFrame):
         info.pack(side="left", fill="x", expand=True)
         top = ctk.CTkFrame(info, fg_color="transparent")
         top.pack(fill="x")
+        self.source_icon = SourceIcon(top, "", ICON_SIZE)
+        self.source_icon.pack(side="left", padx=(0, 8))
         self.status_chip = soft_chip(top, "", JobStatus.new.color)
         self.status_chip.pack(side="left", padx=(0, 8))
         self.facts = ctk.CTkLabel(
@@ -113,6 +117,7 @@ class JobDialog(ctk.CTkFrame):
         self.status_chip.configure(
             text=panel.status, fg_color=background, text_color=foreground
         )
+        self.source_icon.show(item.job.source)
         self.facts.configure(text=panel.facts)
         self.heading.configure(text=item.job.title)
         self.details.configure(text=panel.details)

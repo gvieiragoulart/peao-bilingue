@@ -26,11 +26,17 @@ URL = "https://www.arbeitnow.com/api/job-board-api"
 @sources.register("arbeitnow")
 class Arbeitnow(ApiSource):
     name = "arbeitnow"
-    label = _("Arbeitnow (public API, Germany with a visa)")
+    label = "Arbeitnow"
     description = _(
-        "Jobs in Germany with visa sponsorship, a path to relocation. Many are "
-        "written in German."
+        "Jobs in Germany with visa sponsorship, many in English with no German "
+        "required: a path to relocation. Public API, no account."
     )
+    about = _(
+        "Only jobs with visa sponsorship come in, in one call per collection, kept "
+        "for 6 hours. Some are still written in German. Each job links back to "
+        "Arbeitnow, as its terms ask."
+    )
+    site = "https://www.arbeitnow.com"
     brand = "Arbeitnow"
     url = URL
 

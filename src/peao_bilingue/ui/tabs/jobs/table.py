@@ -1,5 +1,5 @@
-"""The Jobs tab's table: one row per job, its title over a line with the company, place,
-source and when it was found; the fit, the keywords found and the status as soft
+"""The Jobs tab's table: one row per job, the source's icon by its title over a line with
+the company, place, source and when it was found; the fit, the keywords found and the status as soft
 chips; and a box per row to select several jobs at once. A click on the Published
 header sorts by the date at the source.
 
@@ -17,7 +17,7 @@ import customtkinter as ctk
 
 from peao_bilingue.domain.jobs import ListedJob
 from peao_bilingue.i18n import _
-from peao_bilingue.ui import presentation, theme
+from peao_bilingue.ui import presentation, source_icons, theme
 from peao_bilingue.ui.presentation import KeywordGroup
 from peao_bilingue.ui.widgets import theme_color
 
@@ -26,6 +26,8 @@ HEADER_HEIGHT = 40
 CHIP_HEIGHT = 22
 CHIP_PADDING = 9  # on each side of the chip's text
 CHIP_GAP = 4
+ICON_SIZE = 26  # the source's, left of the title
+ICON_GAP = 10
 CELL_PADDING = 10
 FIT_WIDTH = 40
 TITLE_MIN_WIDTH = 160
@@ -247,6 +249,10 @@ class JobTable(ctk.CTkFrame):
         [item] = self.header.find_withtag(f"header{identifier}")
         return str(self.header.itemcget(item, "text"))  # type: ignore[no-untyped-call]
 
+    def icon_items(self, key: str) -> int:
+        """How many canvas items the row's source icon took (one for a logo)."""
+        return len(self.canvas.find_withtag(f"icon{self._keys.index(key)}"))
+
     def box_ticked(self, key: str) -> bool:
         return bool(self.canvas.find_withtag(f"tick{self._keys.index(key)}"))
 
@@ -295,12 +301,16 @@ class JobTable(ctk.CTkFrame):
                 continue
             title = column.title
             color = pick(theme.MUTED)
+            # "Job" over the titles, past the icons.
+            shift = (
+                self._px(ICON_SIZE + ICON_GAP) if column.identifier == "title" else 0
+            )
             if column.identifier == "published":
                 title = f"{title} {ORDER_ARROWS[self._order]}"
                 if self._order is not None:
                     color = text
             self.header.create_text(
-                x + self._px(CELL_PADDING),
+                x + self._px(CELL_PADDING) + shift,
                 header_height // 2,
                 text=self._fit(title, width, self._header_font),
                 anchor="w",
@@ -350,14 +360,24 @@ class JobTable(ctk.CTkFrame):
                 else:
                     self._text(index, x + padding, middle, "—", pick(theme.MUTED))
             elif column.identifier == "title":
+                icon = self._px(ICON_SIZE)
+                source_icons.draw(
+                    self.canvas,
+                    self._jobs[key].job.source,
+                    x + padding,
+                    top + (row_height - icon) // 2,
+                    icon,
+                    ("icon", f"icon{index}"),
+                )
+                shift = icon + self._px(ICON_GAP)
                 for line, y, font, ink in (
                     (title, 0.36, self._title_font, text),
                     (meta, 0.68, self._meta_font, pick(theme.MUTED)),
                 ):
                     self.canvas.create_text(
-                        x + padding,
+                        x + padding + shift,
                         top + round(row_height * y),
-                        text=self._fit(line, width, font),
+                        text=self._fit(line, width - shift, font),
                         anchor="w",
                         fill=ink,
                         font=font,
