@@ -372,13 +372,7 @@ MESSAGES: dict[str, str] = {
     "'{field}' must be a whole number.": "'{field}' precisa ser um número inteiro.",
     # --- window: job detail -------------------------------------------------------
     "Also on {source}: {url}": "Também em {source}: {url}",
-    "Fit: {score}/100": "Fit: {score}/100",
-    "SUMMARY": "RESUMO",
-    "PREPARATION": "PREPARAÇÃO",
-    "INTERVIEW QUESTIONS ({count})": "PERGUNTAS DE ENTREVISTA ({count})",
-    "GAPS": "GAPS",
     "(none found)": "(nenhum identificado)",
-    "WHAT TO IMPROVE IN THE PROFILE": "O QUE MELHORAR NO PERFIL",
     "Not analyzed yet: pick the LLM and the profile, then click Analyze.": (
         "Ainda não analisada: escolha o LLM e o perfil e clique em Analisar."
     ),
@@ -426,6 +420,13 @@ MESSAGES: dict[str, str] = {
     ),
     "found {when}": "encontrada {when}",
     "Mark as…": "Marcar como…",
+    "Good fit": "Bom encaixe",
+    "Worth a look": "Vale olhar",
+    "Weak fit": "Encaixe fraco",
+    "Preparation": "Preparação",
+    "Questions ({count})": "Perguntas ({count})",
+    "Gaps ({count})": "Lacunas ({count})",
+    "Improve the profile": "Melhorar o perfil",
     "Discard": "Descartar",
     "Clear": "Limpar",
     "Search the title, company, skills and description": (
