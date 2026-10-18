@@ -6,7 +6,7 @@ import random
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager, suppress
 from pathlib import Path
-from typing import Any, Self, TypeVar
+from typing import Any, ClassVar, Self, TypeVar
 
 from playwright.async_api import BrowserContext, Page
 
@@ -46,9 +46,20 @@ class VanHack(JobSource, ProfileSource, ManualSession):
     name = "vanhack"
     label = "VanHack"
     description = _(
-        "Jobs abroad with relocation support. Uses your account: log in once by "
-        "hand and the robot reuses the saved session."
+        "Senior tech jobs at companies that sponsor visas and relocation, plus "
+        "remote jobs with companies that hire internationally. Uses your account."
     )
+    about = _(
+        "The robot reads the jobs and your VanHack profile with the session saved "
+        "when you log in by hand: it never fills in the login form or solves a "
+        "human check. If the session expires, the collection stops and asks you to "
+        "log in again."
+    )
+    site = "https://vanhack.com"
+    fields: ClassVar[dict[str, str]] = {
+        "headless": _("Hide the browser during the collection"),
+        "max_listing_scrolls": _("Maximum listing scrolls"),
+    }
     needs_browser = True
 
     @classmethod

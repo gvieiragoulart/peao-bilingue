@@ -182,7 +182,7 @@ def test_run_row_shows_source_labels() -> None:
         sources=["remotive", "gone"],
     )
     # A source whose adapter no longer exists shows its bare name.
-    assert presentation.run_row(run)[2] == "Remotive (public API, remote jobs), gone"
+    assert presentation.run_row(run)[2] == "Remotive, gone"
 
 
 def test_comma_separated_terms() -> None:

@@ -43,6 +43,12 @@ class JobSource(ABC):
     label: ClassVar[str]  # display name
     # What the source brings, in one or two sentences (the Sources tab's cards).
     description: ClassVar[str] = ""
+    # How the app uses it, longer: calls, caches, what its terms ask (the source's
+    # dialog on the Sources tab).
+    about: ClassVar[str] = ""
+    site: ClassVar[str] = ""  # the source's own page, opened from the dialog
+    # Settings fields that configure the source -> label on screen, as LLMProvider.
+    fields: ClassVar[dict[str, str]] = {}
     needs_browser: ClassVar[bool] = False
     # Set by composition when the user asks for screenshots: sources that read web pages
     # save each search's page here; the others ignore it.
