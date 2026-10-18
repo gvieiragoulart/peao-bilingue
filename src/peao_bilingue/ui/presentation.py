@@ -8,10 +8,17 @@ from peao_bilingue import factories
 from peao_bilingue.application.filters import matched_keywords
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import JobAnalysis, SavedAnalysis
-from peao_bilingue.domain.collection import Run, RunStatus, Trigger
+from peao_bilingue.domain.collection import (
+    JobSource,
+    ManualSession,
+    Run,
+    RunStatus,
+    Trigger,
+)
 from peao_bilingue.domain.errors import UnknownName
 from peao_bilingue.domain.jobs import NEW_AT_SOURCE, Job, JobStatus, ListedJob, Posting
 from peao_bilingue.domain.privacy import Removed
+from peao_bilingue.domain.profile import ProfileSource
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
 
@@ -119,6 +126,21 @@ def source_label(name: str) -> str:
         return factories.sources.class_of(name).label
     except UnknownName:
         return name
+
+
+def source_features(cls: type[JobSource]) -> list[str]:
+    """What a source needs and does, as short tags: the Sources tab's chips and the
+    guide's hint."""
+    features = []
+    if issubclass(cls, ManualSession):
+        features.append(_("needs your login"))
+    else:
+        features.append(_("no account needed"))
+    if cls.needs_browser:
+        features.append(_("browser"))
+    if issubclass(cls, ProfileSource):
+        features.append(_("reads your profile"))
+    return features
 
 
 def trigger_labels() -> dict[Trigger, str]:

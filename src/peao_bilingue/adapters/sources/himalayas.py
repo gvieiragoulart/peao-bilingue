@@ -41,6 +41,10 @@ def _periods() -> dict[str, str]:
 class Himalayas(ApiSource):
     name = "himalayas"
     label = _("Himalayas (public API, remote jobs)")
+    description = _(
+        "Remote jobs open to Brazil or worldwide, searched once per keyword of "
+        "your searches."
+    )
     brand = "Himalayas"
     url = URL
     validity_s = 12 * 3600

@@ -1,5 +1,5 @@
-"""One source on the Sources tab: its switch, what it does, and the manual login for
-those that need it."""
+"""One source on the Sources tab, as a card: its title and on/off switch, what it
+brings, what it needs, and the manual login for those that need it."""
 
 from collections.abc import Callable
 from typing import Any
@@ -8,9 +8,14 @@ import customtkinter as ctk
 
 from peao_bilingue import factories
 from peao_bilingue.domain.collection import ManualSession
-from peao_bilingue.domain.profile import ProfileSource
 from peao_bilingue.i18n import _
+from peao_bilingue.ui.presentation import source_features
 from peao_bilingue.ui.widgets import Hint
+
+PADDING = 16
+# Room the On/Off switch takes next to the title.
+SWITCH_WIDTH = 130
+CHIP_COLOR = ("gray78", "gray25")
 
 
 class SourceCard(ctk.CTkFrame):
@@ -23,39 +28,73 @@ class SourceCard(ctk.CTkFrame):
         on_login: Callable[["SourceCard"], None],
         on_check: Callable[["SourceCard"], None],
     ) -> None:
-        super().__init__(master)
+        super().__init__(master, corner_radius=10, border_width=1)
         self.name = name
         self.cls = factories.sources.class_of(name)
+        self.grid_columnconfigure(0, weight=1)
 
-        self.switch = ctk.CTkSwitch(self, text=self.cls.label, command=on_toggle)
-        self.switch.pack(side="left", padx=12, pady=12)
+        self.title = ctk.CTkLabel(
+            self,
+            text=self.cls.label,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            justify="left",
+            anchor="w",
+            wraplength=260,
+        )
+        self.title.grid(row=0, column=0, sticky="w", padx=PADDING, pady=(PADDING, 2))
 
-        features = []
-        if self.cls.needs_browser:
-            features.append(_("browser"))
-        if issubclass(self.cls, ProfileSource):
-            features.append(_("reads your profile"))
-        if features:
-            Hint(self, " · ".join(features)).pack(side="left")
+        def toggle() -> None:
+            self._show_state()
+            on_toggle()
+
+        self.switch = ctk.CTkSwitch(self, text="", command=toggle)
+        self.switch.grid(row=0, column=1, sticky="e", padx=PADDING, pady=(PADDING, 2))
+
+        self.description = Hint(
+            self, self.cls.description, justify="left", anchor="w", wraplength=360
+        )
+        self.description.grid(row=1, column=0, columnspan=2, sticky="ew", padx=PADDING)
+        # The title and the description wrap with the card, not at a fixed width.
+        self.bind("<Configure>", self._wrap)
+
+        chips = ctk.CTkFrame(self, fg_color="transparent")
+        chips.grid(row=2, column=0, columnspan=2, sticky="w", padx=PADDING, pady=10)
+        for feature in source_features(self.cls):
+            ctk.CTkLabel(
+                chips,
+                text=feature,
+                fg_color=CHIP_COLOR,
+                corner_radius=8,
+                height=22,
+                font=ctk.CTkFont(size=12),
+            ).pack(side="left", padx=(0, 6), ipadx=6)
 
         self.status: ctk.CTkLabel | None = None
         if issubclass(self.cls, ManualSession):
-            self.status = ctk.CTkLabel(self, text="")
-            self.status.pack(side="right", padx=12)
+            actions = ctk.CTkFrame(self, fg_color="transparent")
+            actions.grid(
+                row=3, column=0, columnspan=2, sticky="ew", padx=PADDING, pady=(0, 14)
+            )
             ctk.CTkButton(
-                self,
+                actions,
+                text=_("Log in"),
+                width=110,
+                command=lambda: on_login(self),
+            ).pack(side="left")
+            ctk.CTkButton(
+                actions,
                 text=_("Check session"),
                 width=130,
                 fg_color="transparent",
                 border_width=1,
+                # The theme's text is white: on a transparent button it vanishes in
+                # light mode.
+                text_color=("gray10", "gray90"),
                 command=lambda: on_check(self),
-            ).pack(side="right")
-            ctk.CTkButton(
-                self,
-                text=_("Log in"),
-                width=110,
-                command=lambda: on_login(self),
-            ).pack(side="right", padx=6)
+            ).pack(side="left", padx=6)
+            self.status = ctk.CTkLabel(actions, text="")
+            self.status.pack(side="left", padx=6)
+        self._show_state()
 
     @property
     def session(self) -> type[ManualSession] | None:
@@ -68,7 +107,25 @@ class SourceCard(ctk.CTkFrame):
 
     def set_enabled(self, enabled: bool) -> None:
         self.switch.select() if enabled else self.switch.deselect()
+        self._show_state()
 
     def show_status(self, text: str) -> None:
         if self.status is not None:
             self.status.configure(text=text)
+
+    def _show_state(self) -> None:
+        """The switch says On/Off and an enabled card gets the accent border."""
+        theme = ctk.ThemeManager.theme
+        self.switch.configure(text=_("On") if self.enabled else _("Off"))
+        self.configure(
+            border_color=theme["CTkButton"]["fg_color"]
+            if self.enabled
+            else theme["CTkFrame"]["border_color"]
+        )
+
+    def _wrap(self, event: Any) -> None:
+        # The event's width is in screen pixels; wraplength is scaled by CustomTkinter.
+        width = event.width / self._get_widget_scaling() - 2 * PADDING
+        if width > 100:
+            self.description.configure(wraplength=width)
+            self.title.configure(wraplength=max(width - SWITCH_WIDTH, 100))

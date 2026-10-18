@@ -33,6 +33,9 @@ CATEGORIES = (
 class WeWorkRemotely(ApiSource):
     name = "weworkremotely"
     label = _("We Work Remotely (public RSS, remote jobs)")
+    description = _(
+        "Remote back-end, full-stack and front-end jobs, from the site's RSS feeds."
+    )
     brand = "We Work Remotely"
     url = f"{URL_BASE}{CATEGORIES[0]}.rss"
     pause_s = 2.0
