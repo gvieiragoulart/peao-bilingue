@@ -6,6 +6,7 @@ from typing import Any
 import customtkinter as ctk
 
 from peao_bilingue.i18n import _
+from peao_bilingue.ui import theme
 from peao_bilingue.ui.widgets import Hint
 
 
@@ -14,9 +15,9 @@ class NotesEditor(ctk.CTkFrame):
         super().__init__(master, fg_color="transparent")
         heading = ctk.CTkFrame(self, fg_color="transparent")
         heading.pack(fill="x")
-        ctk.CTkLabel(
-            heading, text=_("Notes about you"), font=ctk.CTkFont(weight="bold")
-        ).pack(side="left")
+        ctk.CTkLabel(heading, text=_("Notes about you"), font=theme.section()).pack(
+            side="left"
+        )
         ctk.CTkButton(heading, text=_("Save notes"), width=120, command=on_save).pack(
             side="right"
         )

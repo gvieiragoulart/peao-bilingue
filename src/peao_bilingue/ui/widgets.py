@@ -11,6 +11,7 @@ from peao_bilingue.config import SECRETS, Settings
 from peao_bilingue.domain.analysis import LLMProvider
 from peao_bilingue.domain.notifications import Notifier
 from peao_bilingue.i18n import _
+from peao_bilingue.ui import theme
 
 FieldKind = Literal["text", "integer", "boolean", "secret", "options"]
 
@@ -37,24 +38,27 @@ class Heading(ctk.CTkLabel):
     """A section's title, on the scrollable tabs (LLMs, Settings)."""
 
     def __init__(self, master: Any, text: str) -> None:
-        super().__init__(master, text=text, font=ctk.CTkFont(size=15, weight="bold"))
+        super().__init__(master, text=text, font=theme.section())
 
 
 class Hint(ctk.CTkLabel):
     """A gray explanation next to what it explains."""
 
     def __init__(self, master: Any, text: str, **kwargs: Any) -> None:
-        super().__init__(master, text=text, text_color="gray55", **kwargs)
+        kwargs.setdefault("text_color", theme.MUTED)
+        super().__init__(master, text=text, **kwargs)
 
 
 class OutlineButton(ctk.CTkButton):
-    """A secondary button: transparent with a border. The theme's text is white, made
-    for filled buttons, so it sets a text color readable in both modes."""
+    """A secondary button: transparent with a border. The theme's text and hover are
+    made for the accent's fill, so it sets its own, readable in both modes."""
 
     def __init__(self, master: Any, **kwargs: Any) -> None:
         kwargs.setdefault("fg_color", "transparent")
         kwargs.setdefault("border_width", 1)
-        kwargs.setdefault("text_color", ("gray10", "gray90"))
+        kwargs.setdefault("border_color", theme.STRONG_BORDER)
+        kwargs.setdefault("text_color", theme.TEXT)
+        kwargs.setdefault("hover_color", theme.RAISED)
         super().__init__(master, **kwargs)
 
 

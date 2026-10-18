@@ -16,7 +16,7 @@ import customtkinter as ctk
 
 from peao_bilingue.domain.jobs import ListedJob
 from peao_bilingue.i18n import _
-from peao_bilingue.ui import presentation
+from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.presentation import KeywordGroup
 from peao_bilingue.ui.widgets import theme_color
 
@@ -26,10 +26,10 @@ CHIP_PADDING = 8  # on each side of the chip's text
 CHIP_GAP = 4
 CELL_PADDING = 8
 TITLE_MIN_WIDTH = 160
-MORE_CHIPS_COLOR = ("gray55", "gray40")
-HOVER_COLOR = ("gray80", "gray22")
-SELECTED_COLOR = ("gray72", "gray28")  # neutral: a blue row would hide blue chips
-CHECKED_COLOR = ("#d9dee4", "#262d35")
+MORE_CHIPS_COLOR = ("#7A838F", "#4F5763")
+HOVER_COLOR = theme.RAISED
+SELECTED_COLOR = theme.CONTROL_HOVER  # neutral: a colored row would hide the chips
+CHECKED_COLOR = ("#FBF3E2", "#26241F")  # the accent's tone, softer
 CHECK_SIZE = 14
 WHEEL_ROWS = 3
 
@@ -66,9 +66,7 @@ def columns() -> list[Column]:
     ]
 
 
-def pick(pair: tuple[str, str]) -> str:
-    """A (light, dark) color pair, by the current appearance mode."""
-    return pair[1] if ctk.get_appearance_mode() == "Dark" else pair[0]
+pick = theme.pick
 
 
 class JobTable(ctk.CTkFrame):
@@ -284,7 +282,9 @@ class JobTable(ctk.CTkFrame):
                 tags=("header", f"header{column.identifier}"),
             )
             x += width
-        self.header.create_line(0, row_height - 1, x, row_height - 1, fill="gray50")
+        self.header.create_line(
+            0, row_height - 1, x, row_height - 1, fill=pick(theme.BORDER)
+        )
 
         self.canvas.delete("all")
         for index, key in enumerate(self._keys):

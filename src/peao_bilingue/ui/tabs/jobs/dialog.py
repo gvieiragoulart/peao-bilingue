@@ -12,11 +12,12 @@ import customtkinter as ctk
 from peao_bilingue.domain.analysis import SavedAnalysis
 from peao_bilingue.domain.jobs import JobStatus, ListedJob
 from peao_bilingue.i18n import _
+from peao_bilingue.ui import theme
 from peao_bilingue.ui.presentation import SEARCH_COLORS, KeywordGroup
 from peao_bilingue.ui.tabs.jobs.preview import JobPreview
 
 # Tk has no transparency: the backdrop is a solid color around the card.
-BACKDROP = ("gray60", "gray8")
+BACKDROP = ("#9AA3AE", "#0B0C0F")
 
 
 class JobDialog(ctk.CTkFrame):
@@ -44,8 +45,8 @@ class JobDialog(ctk.CTkFrame):
             text="✕",
             width=32,
             fg_color="transparent",
-            text_color=("gray20", "gray80"),
-            hover_color=("gray75", "gray30"),
+            text_color=theme.TEXT,
+            hover_color=theme.RAISED,
             command=self.close,
         ).pack(side="right")
         self.heading = ctk.CTkLabel(
@@ -53,7 +54,7 @@ class JobDialog(ctk.CTkFrame):
             text="",
             anchor="w",
             justify="left",
-            font=ctk.CTkFont(size=17, weight="bold"),
+            font=theme.display(18),
         )
         self.heading.pack(side="left", fill="x", expand=True)
 
@@ -115,12 +116,12 @@ class JobDialog(ctk.CTkFrame):
             ctk.CTkLabel(
                 self.keywords,
                 text=_("No keyword from the searches shows up in this job anymore."),
-                text_color="gray55",
+                text_color=theme.MUTED,
             ).pack(side="left")
             return
         for group in groups:
             ctk.CTkLabel(
-                self.keywords, text=f"{group.search}:", text_color="gray55"
+                self.keywords, text=f"{group.search}:", text_color=theme.MUTED
             ).pack(side="left", padx=(0, 4))
             color = colors.get(group.search, SEARCH_COLORS[0])
             for keyword in group.keywords:
