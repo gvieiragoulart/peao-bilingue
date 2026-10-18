@@ -6,8 +6,8 @@ from zoneinfo import ZoneInfo
 
 from peao_bilingue import factories
 from peao_bilingue.application.filters import matched_keywords
-from peao_bilingue.config import settings
-from peao_bilingue.domain.analysis import JobAnalysis, SavedAnalysis
+from peao_bilingue.config import SECRETS, Settings, settings
+from peao_bilingue.domain.analysis import JobAnalysis, LLMProvider, SavedAnalysis
 from peao_bilingue.domain.collection import (
     JobSource,
     ManualSession,
@@ -133,6 +133,35 @@ def short_source_label(name: str) -> str:
     """The display name without what follows it: "Remotive (public API, remote
     jobs)" -> "Remotive", "Hacker News: Who is hiring? (...)" -> "Hacker News"."""
     return source_label(name).split(" (")[0].split(":")[0]
+
+
+def short_llm_label(name: str) -> str:
+    """The LLM's name without what follows it: "Ollama (local, free)" -> "Ollama"."""
+    try:
+        label = factories.llms.class_of(name).label
+    except UnknownName:
+        return name
+    return label.split(" (")[0]
+
+
+def llm_features(cls: type[LLMProvider]) -> list[str]:
+    """What an LLM costs, as a short tag: the LLMs tab's chips."""
+    if any(field in SECRETS for field in cls.fields):
+        return [_("paid, your API key")]
+    return [_("free, on your PC")]
+
+
+def llm_state(cls: type[LLMProvider], current: Settings) -> str:
+    """What is still missing to use it, or the model it will use."""
+    if any(field in SECRETS and not getattr(current, field) for field in cls.fields):
+        return _("no API key yet")
+    model = next(
+        (getattr(current, field) for field in cls.fields if field.endswith("_model")),
+        "",
+    )
+    if not model:
+        return _("no model yet")
+    return _("model {model}").format(model=model)
 
 
 def source_features(cls: type[JobSource]) -> list[str]:
