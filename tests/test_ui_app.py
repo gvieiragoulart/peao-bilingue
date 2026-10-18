@@ -115,7 +115,9 @@ def test_jobs_show_and_detail_has_analysis(
     tab.open_job(new.key)
     window.update()
     assert tab.dialog.is_open
-    assert "INTERVIEW QUESTIONS (20)" in tab.preview.detail.get("1.0", "end")
+    assert tab.preview.ring.score == 82
+    tab.preview.pick_section("questions")
+    assert "20. Question 20" in tab.preview.detail.get("1.0", "end")
 
 
 def test_table_shows_keywords_found_as_chips(
@@ -621,9 +623,7 @@ def test_analyze_uses_chosen_llm_and_profile(
     tab.preview.llm.set("Ollama (local, free)")
     tab._analyze()
 
-    assert process_until(
-        window, lambda: "INTERVIEW QUESTIONS" in tab.preview.detail.get("1.0", "end")
-    )
+    assert process_until(window, lambda: tab.preview.ring.score == 74)
     assert requested_llms == ["ollama"]
     saved = saved_analysis(repository, "vanhack:1")
     assert (saved.analysis.fit_score, saved.provider, saved.profile_source) == (
@@ -921,3 +921,25 @@ def test_fit_is_drawn_as_a_chip(window: App, repository: SQLiteRepository) -> No
 
     assert tab.table.fit_chip(analyzed.key) == "82"
     assert tab.table.fit_chip("vanhack:2") is None
+
+
+def test_the_panel_swaps_to_another_job_while_open(
+    window: App, repository: SQLiteRepository
+) -> None:
+    analyzed = with_analyzed_job(repository, "1", fit=82)
+    repository.save_job(job("2", "Data Engineer"), ["Python"])
+    repository.change_status("vanhack:2", JobStatus.studying)
+    tab = window.panels["jobs"]
+    tab.refresh()
+
+    tab.open_job(analyzed.key)
+    assert tab.preview.fit_card.winfo_manager() == "pack"
+    tab.open_job("vanhack:2")
+    window.update()
+
+    assert tab.dialog.is_open
+    assert tab.dialog.heading.cget("text") == "Data Engineer"
+    assert not tab.preview.fit_card.winfo_manager()  # not analyzed
+    assert tab.dialog.status_chip.cget("text") == "Studying"
+    studying = tab.preview.status_buttons.buttons[JobStatus.studying]
+    assert studying.cget("fg_color") != "transparent"

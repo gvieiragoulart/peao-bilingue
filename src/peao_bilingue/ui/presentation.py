@@ -270,7 +270,7 @@ def _also_on(postings: list[Posting]) -> list[str]:
 
 
 def _details(job: Job) -> str:
-    return " | ".join(
+    return " · ".join(
         part
         for part in (
             job.company,
@@ -283,60 +283,69 @@ def _details(job: Job) -> str:
     )
 
 
-def analysis_text(
-    job: Job,
-    analysis: JobAnalysis,
-    also_on: list[Posting] | None = None,
-    dates: list[str] | None = None,
-) -> str:
-    # No title: the job's dialog shows it as its header.
-    return "\n".join(
-        [
-            _details(job),
-            job.url,
-            *_also_on(also_on or []),
-            *(dates or []),
-            "",
-            _("Fit: {score}/100").format(score=analysis.fit_score),
-            "",
-            _("SUMMARY"),
-            analysis.summary,
-            "",
-            _("PREPARATION"),
-            *(f"- {step}" for step in analysis.preparation),
-            "",
-            _("INTERVIEW QUESTIONS ({count})").format(count=len(analysis.questions)),
-            *(f"{n}. {question}" for n, question in enumerate(analysis.questions, 1)),
-            "",
-            _("GAPS"),
-            *(f"- {gap}" for gap in analysis.gaps or [_("(none found)")]),
-            "",
-            _("WHAT TO IMPROVE IN THE PROFILE"),
-            *(f"- {improvement}" for improvement in analysis.profile_improvements),
-        ]
-    )
+@dataclass(frozen=True)
+class AnalysisSection:
+    """One part of the analysis, behind its own button on the job's panel."""
+
+    key: str
+    title: str
+    text: str
 
 
-def job_detail(
-    item: ListedJob, analysis: SavedAnalysis | None, now: datetime | None = None
-) -> str:
-    dates = _dates(item, now or _now())
-    if analysis is None:
-        # No description: the dialog shows the keywords found, and the job reads
-        # better on its own site.
-        return "\n".join(
-            [
-                _details(item.job),
-                item.job.url,
-                *_also_on(item.also_on),
-                *dates,
-                "",
-                _(
-                    "Not analyzed yet: pick the LLM and the profile, then click Analyze."
-                ),
-            ]
-        )
+@dataclass(frozen=True)
+class JobPanel:
+    """What the job's panel shows, already as text."""
 
+    status: str
+    facts: str  # the line beside the status: source and when it was found
+    details: str  # company | place | work mode | salary
+    notes: list[str]  # the dates explained, and the other sites with the job
+    fit: int | None
+    fit_label: str
+    summary: str
+    sections: list[AnalysisSection]
+    # Who analyzed it and when; without an analysis, how to get one.
+    footer: str
+    outdated: str  # empty unless the profile changed after the analysis
+
+
+def fit_label(score: int) -> str:
+    if score >= FIT_COLORS[0][0]:
+        return _("Good fit")
+    if score >= FIT_COLORS[1][0]:
+        return _("Worth a look")
+    return _("Weak fit")
+
+
+def analysis_sections(analysis: JobAnalysis) -> list[AnalysisSection]:
+    gaps = analysis.gaps or [_("(none found)")]
+    return [
+        AnalysisSection(
+            "preparation",
+            _("Preparation"),
+            "\n".join(f"• {step}" for step in analysis.preparation),
+        ),
+        AnalysisSection(
+            "questions",
+            _("Questions ({count})").format(count=len(analysis.questions)),
+            "\n\n".join(
+                f"{n}. {question}" for n, question in enumerate(analysis.questions, 1)
+            ),
+        ),
+        AnalysisSection(
+            "gaps",
+            _("Gaps ({count})").format(count=len(analysis.gaps)),
+            "\n".join(f"• {gap}" for gap in gaps),
+        ),
+        AnalysisSection(
+            "profile",
+            _("Improve the profile"),
+            "\n".join(f"• {item}" for item in analysis.profile_improvements),
+        ),
+    ]
+
+
+def _analysis_footer(analysis: SavedAnalysis) -> str:
     footer = _("Analysis by {provider} ({model}) on {when}").format(
         provider=analysis.provider,
         model=analysis.model,
@@ -346,14 +355,58 @@ def job_detail(
         footer += _(", with the {source} profile").format(
             source=analysis.profile_source
         )
-    footer += "."
+    return footer + "."
+
+
+def job_panel(
+    item: ListedJob, analysis: SavedAnalysis | None, now: datetime | None = None
+) -> JobPanel:
+    now = now or _now()
+    facts = " · ".join(
+        [
+            short_source_label(item.job.source),
+            _("found {when}").format(when=ago(item.seen_at, now)),
+        ]
+    )
+    status = job_status_labels()[item.status]
+    details = _details(item.job)
+    notes = [*_dates(item, now), *_also_on(item.also_on)]
+    if analysis is None:
+        # No description: the panel shows the keywords found, and the job reads
+        # better on its own site.
+        return JobPanel(
+            status,
+            facts,
+            details,
+            notes,
+            fit=None,
+            fit_label="",
+            summary="",
+            sections=[],
+            footer=_(
+                "Not analyzed yet: pick the LLM and the profile, then click Analyze."
+            ),
+            outdated="",
+        )
+    outdated = ""
     if analysis.profile_outdated:
-        footer += "\n" + _(
+        outdated = _(
             "The {source} profile changed after this analysis: analyze again to update "
             "it."
         ).format(source=analysis.profile_source)
-    text = analysis_text(item.job, analysis.analysis, item.also_on, dates)
-    return f"{text}\n\n{footer}"
+    result = analysis.analysis
+    return JobPanel(
+        status,
+        facts,
+        details,
+        notes,
+        fit=result.fit_score,
+        fit_label=fit_label(result.fit_score),
+        summary=result.summary,
+        sections=analysis_sections(result),
+        footer=_analysis_footer(analysis),
+        outdated=outdated,
+    )
 
 
 def schedule_line(status: ScheduleStatus | None) -> str:
