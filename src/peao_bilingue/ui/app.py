@@ -36,7 +36,7 @@ from peao_bilingue.ui.tabs.runs import RunsTab
 from peao_bilingue.ui.tabs.searches import SearchesTab
 from peao_bilingue.ui.tabs.settings import SettingsTab
 from peao_bilingue.ui.tabs.sources import SourcesTab
-from peao_bilingue.ui.widgets import OutlineButton
+from peao_bilingue.ui.widgets import OutlineButton, Toast
 
 LOG_INTERVAL_MS = 200
 PAGE_PADDING = 24
@@ -125,6 +125,7 @@ class App(ctk.CTk):
         self.current: str | None = None
         self.show("jobs")
 
+        self.toast = Toast(self)
         self.on_change()
         if needs_onboarding(self.repository):
             self.open_onboarding()
@@ -244,6 +245,10 @@ class App(ctk.CTk):
         # CustomTkinter calls it on every light/dark switch: the title bar follows.
         super()._set_appearance_mode(mode_string)
         chrome.paint_title_bar(self)
+        # What isn't a CustomTkinter widget (the Canvas tables, ttk) repaints on
+        # refresh. Called by CustomTkinter's own init too, before the panels exist.
+        if hasattr(self, "panels"):
+            self.after_idle(self.on_change)
 
     def on_change(self) -> None:
         for panel in self.panels.values():
@@ -272,7 +277,15 @@ class App(ctk.CTk):
         self.show_error(value)
 
     def inform(self, message: str) -> None:
-        messagebox.showinfo(APP_NAME, message, parent=self)
+        """A short notice at the bottom of the window: nothing to click."""
+        self.notify(message)
+
+    def notify(
+        self, message: str, action: tuple[str, Callable[[], None]] | None = None
+    ) -> None:
+        """Like inform, with an optional action such as ("Undo", undo)."""
+        logger.info("Notice shown to the user: %s", message)
+        self.toast.show(message, action)
 
     def confirm(self, question: str) -> bool:
         return bool(messagebox.askyesno(APP_NAME, question, parent=self))
