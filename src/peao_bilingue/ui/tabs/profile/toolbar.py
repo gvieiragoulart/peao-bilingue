@@ -6,6 +6,7 @@ from typing import Any
 import customtkinter as ctk
 
 from peao_bilingue.i18n import _
+from peao_bilingue.ui.widgets import OutlineButton
 
 
 class ProfileToolbar(ctk.CTkFrame):
@@ -33,12 +34,10 @@ class ProfileToolbar(ctk.CTkFrame):
         self.save_button = ctk.CTkButton(
             self, text=_("Save profile"), width=120, command=on_save
         )
-        self.import_button = ctk.CTkButton(
+        self.import_button = OutlineButton(
             self,
             text=_("Import file…"),
             width=130,
-            fg_color="transparent",
-            border_width=1,
             command=on_import,
         )
 

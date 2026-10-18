@@ -10,7 +10,7 @@ from peao_bilingue import factories
 from peao_bilingue.domain.collection import ManualSession
 from peao_bilingue.domain.profile import ProfileSource
 from peao_bilingue.i18n import _
-from peao_bilingue.ui.widgets import Hint
+from peao_bilingue.ui.widgets import Hint, OutlineButton
 
 
 class SourceCard(ctk.CTkFrame):
@@ -42,12 +42,10 @@ class SourceCard(ctk.CTkFrame):
         if issubclass(self.cls, ManualSession):
             self.status = ctk.CTkLabel(self, text="")
             self.status.pack(side="right", padx=12)
-            ctk.CTkButton(
+            OutlineButton(
                 self,
                 text=_("Check session"),
                 width=130,
-                fg_color="transparent",
-                border_width=1,
                 command=lambda: on_check(self),
             ).pack(side="right")
             ctk.CTkButton(

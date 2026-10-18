@@ -47,6 +47,17 @@ class Hint(ctk.CTkLabel):
         super().__init__(master, text=text, text_color="gray55", **kwargs)
 
 
+class OutlineButton(ctk.CTkButton):
+    """A secondary button: transparent with a border. The theme's text is white, made
+    for filled buttons, so it sets a text color readable in both modes."""
+
+    def __init__(self, master: Any, **kwargs: Any) -> None:
+        kwargs.setdefault("fg_color", "transparent")
+        kwargs.setdefault("border_width", 1)
+        kwargs.setdefault("text_color", ("gray10", "gray90"))
+        super().__init__(master, **kwargs)
+
+
 class Table(ctk.CTkFrame):
     """A ttk.Treeview with the theme's colors (CustomTkinter has no table)."""
 

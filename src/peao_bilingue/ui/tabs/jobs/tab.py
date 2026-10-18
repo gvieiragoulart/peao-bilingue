@@ -20,7 +20,7 @@ from peao_bilingue.ui.presentation import KeywordGroup
 from peao_bilingue.ui.tabs.jobs.dialog import JobDialog
 from peao_bilingue.ui.tabs.jobs.filters import JobFilters
 from peao_bilingue.ui.tabs.jobs.table import JobTable
-from peao_bilingue.ui.widgets import Hint
+from peao_bilingue.ui.widgets import Hint, OutlineButton
 
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
@@ -53,12 +53,10 @@ class JobsTab(ctk.CTkFrame):
             bar, text=_("Discard selected"), width=150, command=self._discard_checked
         )
         self.discard_checked.pack(side="left", padx=(0, 6))
-        self.clear_checked = ctk.CTkButton(
+        self.clear_checked = OutlineButton(
             bar,
             text=_("Clear selection"),
             width=120,
-            fg_color="transparent",
-            border_width=1,
             command=self._clear_checked,
         )
         self.clear_checked.pack(side="left")

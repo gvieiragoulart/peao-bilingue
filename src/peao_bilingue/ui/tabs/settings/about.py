@@ -8,7 +8,7 @@ import customtkinter as ctk
 from peao_bilingue import __version__
 from peao_bilingue.config import Settings
 from peao_bilingue.i18n import _
-from peao_bilingue.ui.widgets import Field, Form, Heading
+from peao_bilingue.ui.widgets import Field, Form, Heading, OutlineButton
 
 
 class AboutSection(ctk.CTkFrame):
@@ -44,12 +44,10 @@ class AboutSection(ctk.CTkFrame):
             (_("Project page"), 130, on_project_page, 6),
             (_("Run the setup guide again"), 190, on_setup_guide, 0),
         ):
-            ctk.CTkButton(
+            OutlineButton(
                 support,
                 text=text,
                 width=width,
-                fg_color="transparent",
-                border_width=1,
                 command=command,
             ).pack(side="left", padx=padx)
 
