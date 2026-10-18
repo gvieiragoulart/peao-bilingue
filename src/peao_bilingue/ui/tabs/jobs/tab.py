@@ -163,13 +163,26 @@ class JobsTab(ctk.CTkFrame):
             webbrowser.open(self._current.job.url)
 
     def _change_status(self, status: JobStatus) -> None:
-        if self._current is None:
+        item = self._current
+        if item is None:
             return
-        key = self._current.job.key
+        key = item.job.key
         self.app.repository.change_status(key, status)
-        # The dialog stays open: the job may even have left the filtered list.
+        if status is JobStatus.discarded:
+            # Done with this job: the dialog closes and the toast can bring it back.
+            self.dialog.close()
+            self.refresh()
+            self.app.notify(
+                _("Job discarded."),
+                (_("Undo"), lambda: self._restore({key: item.status})),
+            )
+            return
+        # The dialog stays open, showing the new status: the job may even have left
+        # the filtered list.
         self.refresh()
         self.table.select(key)
+        self._current = item.model_copy(update={"status": status})
+        self.open_job(key)
 
     def _focus_search(self) -> None:
         self.app.show("jobs")
@@ -232,11 +245,16 @@ class JobsTab(ctk.CTkFrame):
     def _after_marking(self, keys: list[str], status: JobStatus) -> None:
         self.table.clear_checked()
         self.refresh()
-        # The dialog stays open, showing the new status, like a single change.
+        # Like a single change: the dialog closes on a discarded job, else it stays open
+        # showing the new status.
         current = self._current
-        if self.dialog.is_open and current and current.job.key in keys:
-            self._current = current.model_copy(update={"status": status})
-            self.open_job(current.job.key)
+        if not (self.dialog.is_open and current and current.job.key in keys):
+            return
+        if status is JobStatus.discarded:
+            self.dialog.close()
+            return
+        self._current = current.model_copy(update={"status": status})
+        self.open_job(current.job.key)
 
     def _clear_checked(self) -> None:
         self.table.clear_checked()
