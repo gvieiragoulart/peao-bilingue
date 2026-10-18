@@ -24,6 +24,7 @@ from peao_bilingue.domain.schedule import Scheduler
 from peao_bilingue.domain.updates import Release, ReleaseFeed
 from peao_bilingue.i18n import _
 from peao_bilingue.logs import log_to_file, record_uncaught_exceptions
+from peao_bilingue.ui import theme
 from peao_bilingue.ui.executor import AsyncExecutor, LogQueue, track
 from peao_bilingue.ui.onboarding import Onboarding, needs_onboarding
 from peao_bilingue.ui.tabs.jobs import JobsTab
@@ -61,7 +62,9 @@ class App(ctk.CTk):
         scheduler: Scheduler | None = None,
         release_feed: ReleaseFeed | None = None,
     ) -> None:
+        theme.install()
         super().__init__()
+        theme.choose_fonts(self)
         self.title(
             _("{app} {version} — job radar").format(app=APP_NAME, version=__version__)
         )
@@ -77,8 +80,10 @@ class App(ctk.CTk):
         logging.getLogger().addHandler(self._log)
 
         # Shown above the tabs only when a newer version is out.
-        self.update_banner = ctk.CTkFrame(self, fg_color=("#DCEBFB", "#1F3A5A"))
-        self.update_text = ctk.CTkLabel(self.update_banner, text="")
+        self.update_banner = ctk.CTkFrame(self, fg_color=theme.ACCENT_SOFT)
+        self.update_text = ctk.CTkLabel(
+            self.update_banner, text="", text_color=theme.ACCENT_TEXT
+        )
         self.update_text.pack(side="left", padx=12, pady=8)
         self.update_button = ctk.CTkButton(
             self.update_banner, text=_("Download"), width=110

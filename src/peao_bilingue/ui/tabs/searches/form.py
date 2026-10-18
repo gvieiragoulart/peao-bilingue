@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from peao_bilingue import factories
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
-from peao_bilingue.ui import presentation
+from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.widgets import Hint, OutlineButton
 
 
@@ -25,9 +25,7 @@ class SearchForm(ctk.CTkFrame):
         # The id of the search on screen; None for a new one.
         self.editing: int | None = None
 
-        self.heading = ctk.CTkLabel(
-            self, text=_("New search"), font=ctk.CTkFont(weight="bold")
-        )
+        self.heading = ctk.CTkLabel(self, text=_("New search"), font=theme.strong())
         self.heading.pack(anchor="w", padx=12, pady=(12, 8))
 
         self.name = self._entry(_("Name"))
@@ -64,7 +62,9 @@ class SearchForm(ctk.CTkFrame):
             buttons,
             text=_("Remove"),
             width=90,
-            fg_color="#B33A3A",
+            fg_color=theme.DANGER_SOFT,
+            hover_color=theme.DANGER_SOFT_HOVER,
+            text_color=theme.DANGER_TEXT,
             command=on_remove,
         ).pack(side="right")
         self.clear()
