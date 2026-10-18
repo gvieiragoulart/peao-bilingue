@@ -1183,3 +1183,25 @@ def test_the_toast_goes_away_by_itself(window: App) -> None:
     window.toast.show("Saved.", seconds=0)
     assert window.toast.visible
     assert process_until(window, lambda: not window.toast.visible)
+
+
+def test_the_sidebar_button_switches_light_and_dark(
+    window: App, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    applied: list[str] = []
+    # The mode is process-wide: recorded, not changed, so other tests keep theirs.
+    monkeypatch.setattr(ctk, "set_appearance_mode", applied.append)
+    monkeypatch.setattr(ctk, "get_appearance_mode", lambda: "Dark")
+
+    window.sidebar.mode_button.invoke()
+
+    assert applied == ["light"]
+    assert settings.appearance == "light"
+    recorded = json.loads(config.CONFIG_PATH.read_text(encoding="utf-8"))
+    assert recorded["appearance"] == "light"
+
+    monkeypatch.setattr(ctk, "get_appearance_mode", lambda: "Light")
+    window.sidebar.mode_button.invoke()
+    assert applied == ["light", "dark"]
+    recorded = json.loads(config.CONFIG_PATH.read_text(encoding="utf-8"))
+    assert recorded["appearance"] == "dark"
