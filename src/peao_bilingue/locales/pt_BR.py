@@ -372,13 +372,7 @@ MESSAGES: dict[str, str] = {
     "'{field}' must be a whole number.": "'{field}' precisa ser um número inteiro.",
     # --- window: job detail -------------------------------------------------------
     "Also on {source}: {url}": "Também em {source}: {url}",
-    "Fit: {score}/100": "Fit: {score}/100",
-    "SUMMARY": "RESUMO",
-    "PREPARATION": "PREPARAÇÃO",
-    "INTERVIEW QUESTIONS ({count})": "PERGUNTAS DE ENTREVISTA ({count})",
-    "GAPS": "GAPS",
     "(none found)": "(nenhum identificado)",
-    "WHAT TO IMPROVE IN THE PROFILE": "O QUE MELHORAR NO PERFIL",
     "Not analyzed yet: pick the LLM and the profile, then click Analyze.": (
         "Ainda não analisada: escolha o LLM e o perfil e clique em Analisar."
     ),
@@ -412,27 +406,34 @@ MESSAGES: dict[str, str] = {
     "{years} years ago": "há {years} anos",
     # --- window: Jobs tab ---------------------------------------------------------
     "(none)": "(nenhum)",
-    "Search the title, company, location, skills and description (Enter to filter)": (
-        "Procurar no título, empresa, local, skills e descrição (Enter para filtrar)"
-    ),
     "fit ≥": "fit ≥",
     "Minimum fit": "Fit mínimo",
-    "Filter": "Filtrar",
     "Fit": "Fit",
     "Job": "Vaga",
-    "Found": "Encontrada",
     "Published": "Publicada",
-    "Location": "Local",
     "Analyze": "Analisar",
     "Open job": "Abrir vaga",
     "Mark as:": "Marcar como:",
-    "{count} job(s). Click one to see it or analyze it; tick the boxes to discard "
-    "several at once.": (
-        "{count} vaga(s). Clique em uma para ver ou analisar; marque as caixas para "
-        "descartar várias de uma vez."
+    "{count} job(s) · click one to open it; tick the boxes to act on several.": (
+        "{count} vaga(s) · clique em uma para abrir; marque as caixas para agir em "
+        "várias."
     ),
-    "Discard selected": "Descartar selecionadas",
-    "Clear selection": "Limpar seleção",
+    "found {when}": "encontrada {when}",
+    "Mark as…": "Marcar como…",
+    "{count} job(s) marked as {status}.": "{count} vaga(s) marcada(s) como {status}.",
+    "Undo": "Desfazer",
+    "Good fit": "Bom encaixe",
+    "Worth a look": "Vale olhar",
+    "Weak fit": "Encaixe fraco",
+    "Preparation": "Preparação",
+    "Questions ({count})": "Perguntas ({count})",
+    "Gaps ({count})": "Lacunas ({count})",
+    "Improve the profile": "Melhorar o perfil",
+    "Discard": "Descartar",
+    "Clear": "Limpar",
+    "Search the title, company, skills and description": (
+        "Buscar no título, empresa, skills e descrição"
+    ),
     "{count} selected": "{count} selecionada(s)",
     "Discard {count} job(s)?": "Descartar {count} vaga(s)?",
     "No keyword from the searches shows up in this job anymore.": (
@@ -587,6 +588,17 @@ MESSAGES: dict[str, str] = {
         "vencida. Ligue só os que já estiverem preenchidos."
     ),
     "Settings saved.": "Configurações salvas.",
+    "Appearance": "Aparência",
+    "job radar": "radar de vagas",
+    "No daily collection": "Sem coleta diária",
+    "Daily collection at {time}": "Coleta diária às {time}",
+    "No collection yet": "Nenhuma coleta ainda",
+    "Collecting since {when}": "Coletando desde {when}",
+    "Last: {when} · {status}": "Última: {when} · {status}",
+    "Last: {when} · {count} new": "Última: {when} · {count} novas",
+    "Same as Windows": "Igual ao Windows",
+    "Light": "Claro",
+    "Dark": "Escuro",
     "About and support": "Sobre e suporte",
     "Version {version}": "Versão {version}",
     "Check for a new version when the app opens": (

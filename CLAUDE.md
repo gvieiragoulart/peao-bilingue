@@ -99,7 +99,8 @@ src/peao_bilingue/
 ├── i18n.py            # `_()` and the locale; locales/pt_BR.py has the translations
 ├── texts.py           # user-facing text shared by the CLI and the window
 ├── launcher.py        # the .exe's entry point: window or CLI
-├── ui/                # CustomTkinter: app, async executor, tabs, widgets, presentation,
+├── ui/                # CustomTkinter: app, theme, chrome (title bar), navigation (the
+│                      #   sidebar), async executor, tabs, widgets, presentation,
 │                      #   onboarding (the first-run guide)
 └── cli.py             # peao login | check | run | searches | schedule | adapters
 ```
@@ -119,24 +120,57 @@ thread**: callbacks coming from the worker (e.g. the login's `report`) only queu
 Windows: Playwright works on that thread (Proactor loop) without freezing the window. The LLM and
 notice forms are built from the `fields` each adapter declares, with the widget type inferred
 from `Settings` itself. Sources with a manual login implement the `ManualSession` port and get
-login/check buttons automatically. Tabs have an internal id (`jobs`, `runs`...) and a translated
-title. `peao-ui` is a gui-script: it opens with no console.
+login/check buttons automatically. Sections ("tabs" in the code) have an internal id (`jobs`,
+`runs`...) and a translated title. `peao-ui` is a gui-script: it opens with no console.
 
-**Jobs tab (2026-10-17):** the table fills the tab and shows, as colored chips (one color per
-search, `presentation.search_colors`), the keywords of the job's searches that show up in it
-(`filters.matched_keywords`); no description. It is **drawn on a `tk.Canvas`**
-(`ui/tabs/jobs/table.py`): a `ttk.Treeview` only colors whole rows, and a row of CustomTkinter
-widgets per job took 45 s for 500 jobs (the Canvas: 0.24 s). A click opens the job's dialog
-(`ui/tabs/jobs/dialog.py`) **inside the window**, placed over the tab (not a `CTkToplevel`, for
-the same reason as the guide), with the analysis, the LLM/profile pickers, Analyze, Open and the
-status buttons; Esc, ✕ or a click outside closes it. Generated mouse and key events don't reach
-the hidden test window: the tests call the click handler and check the Esc binding.
+**Look (2026-10-18; the mockups are on the canvas https://claude.ai/artifact/VeFksEHsMQmuFT2Py6STZo):**
+everything comes from CustomTkinter 6 + `tk.Canvas` + `ctypes`, **no new dependency** (Pillow
+isn't installed; icons are glyphs of the Segoe Fluent Icons font, MDL2 Assets on Windows 10,
+none elsewhere: `theme.icon()` returns "" then). `ui/theme.py` holds the color tokens as
+(light, dark) pairs and builds the CustomTkinter theme over the built-in "blue" one
+(`theme.install()`, called by every `App` before CustomTkinter reads its colors; no JSON file,
+so nothing for the .exe to carry); `theme.choose_fonts(root)` picks Segoe UI Variable /
+Cascadia Mono when the system has them. Accent amber `#F2B33D` with dark text on it. **No raw
+color in the tabs**: use the tokens (`theme.MUTED` for hints...). Tk has no alpha: soft chips are
+mixed colors (`presentation.soft`/`blend`). `ui/chrome.py` paints the title bar in the ground
+color (`DwmSetWindowAttribute` 35/36; CustomTkinter already does dark/light), again on every
+mode switch (`App._set_appearance_mode`, which also refreshes the panels: the Canvas and ttk
+tables repaint on refresh). Settings → "Aparência" (`appearance`: system/light/dark).
+**Sidebar** (`ui/navigation.py`) instead of a `CTkTabview`: `App.show(id)` swaps the section,
+the Jobs item shows a badge with the jobs still `new` (99+), and a card shows the daily
+collection, the last run and "Coletar agora" (`App.collect_now` → `RunsTab.collect`).
+`App.inform` is an in-window `Toast` (no click needed); `App.notify(message, (label, action))`
+adds an action, e.g. Undo; errors and confirmations stay modal. `widgets.Card` /
+`section_card` for page sections; `widgets.Table` (ttk) is a card restyled on every fill.
+Screenshots of the real window: `PrintWindow` on the window's HWND, from a script that opens
+`App` with the test fakes (`FakeScheduler`, `FakeReleaseFeed`) and `PEAO_DATA_DIR` pointing at a
+copy of `data/`.
+
+**Jobs tab (2026-10-17, redesigned 2026-10-18):** a card with the table; each row is two lines
+(the title over `presentation.job_meta`: company · place · short source name · found when) and
+columns ☐ / Fit / Job / Keywords / Published / Status. The fit, the keywords (one color per
+search, `presentation.search_colors`; `filters.matched_keywords`) and the status are soft chips;
+the fit's color by range (`presentation.fit_color`: ≥75, 50–74, <50). It is **drawn on a
+`tk.Canvas`** (`ui/tabs/jobs/table.py`): a `ttk.Treeview` only colors whole rows, and a row of
+CustomTkinter widgets per job took 45 s for 500 jobs (the Canvas: 0.24 s). The filters apply on
+every change (status as a `CTkSegmentedButton`; Enter in the search box, Ctrl+F focuses it).
+A click opens the job's **side panel** (`ui/tabs/jobs/dialog.py`, still `JobDialog`) **inside the
+window**, placed on the right (`WIDTH` of the tab; not a `CTkToplevel`, for the same reason as
+the guide); the table stays usable and a click on another row shows that job. It shows
+`presentation.job_panel` (a `JobPanel`): status chip, facts, the fit as a ring (`FitRing`, a
+Canvas arc) with its label and summary, the analysis in parts behind a segmented button
+(`preview.pick_section("questions")`...), the outdated-profile banner, and a footer with the
+LLM/profile pickers, Analyze, Open and the status pills. Esc or ✕ closes it. Generated mouse
+and key events don't reach the hidden test window: the tests call the click handler and check
+the Esc binding.
 **Selection and status colors (2026-10-18):** the first column is a box per row (the header's
-ticks every listed job); a click on the box only toggles it, elsewhere it opens the dialog. A
-refresh keeps the boxes of jobs still listed. "Descartar selecionadas" asks (`App.confirm`) and
-calls `JobRepository.change_statuses` (one transaction, all or none). Each `JobStatus` carries
-its display color (`JobStatus.color`, light/dark pair): the Status column draws it as a chip and
-the "Mark as" buttons use it as their border. A click on the Published header cycles ↕ (the
+ticks every listed job); a click on the box only toggles it, elsewhere it opens the panel. A
+refresh keeps the boxes of jobs still listed. While boxes are ticked, a selection bar shows
+"Marcar como…" (any status), Descartar (asks first, `App.confirm`) and Limpar; both call
+`JobRepository.change_statuses` (one transaction, all or none) and offer Undo in the toast,
+which gives each job back its own old status. Each `JobStatus` carries its base color
+(`JobStatus.color`, light/dark pair): the Status chip and the status pills use its soft tones.
+A click on the Published header cycles ↕ (the
 repository's order, newest found first) → ▼ newest at the source → ▲ oldest → ↕, sorted in the
 table (`JobTable.sort_by_published`), kept across refreshes; jobs with no date go last.
 
@@ -690,6 +724,9 @@ commit and push.
       **Adzuna** waits for Gabriel: its API needs a free `app_id`/`app_key` (developer.adzuna.com;
       terms allow "Personal research", 250 calls a day, descriptions are only a snippet), and
       the adapter needs a real response as its fixture first.
+- [x] **A more modern look** (2026-10-18, branch `modern-ui`, on top of `add-job-sources`): own
+      theme and fonts, title bar in the app's color, sidebar, the Jobs table and side panel
+      redesigned, toasts with Undo, cards on the other sections (see "Look" above).
 
 Waiting on Gabriel (costs money or needs him): the first real analysis with the Analyze button
 (Claude spends credit; Ollama is free but needs installing), a real email notice (fill in SMTP,

@@ -9,13 +9,14 @@ import customtkinter as ctk
 from peao_bilingue import factories
 from peao_bilingue.domain.collection import ManualSession
 from peao_bilingue.i18n import _
+from peao_bilingue.ui import theme
 from peao_bilingue.ui.presentation import source_features
 from peao_bilingue.ui.widgets import Hint, OutlineButton
 
 PADDING = 16
 # Room the On/Off switch takes next to the title.
 SWITCH_WIDTH = 130
-CHIP_COLOR = ("gray78", "gray25")
+CHIP_COLOR = theme.CONTROL
 
 
 class SourceCard(ctk.CTkFrame):
@@ -36,7 +37,7 @@ class SourceCard(ctk.CTkFrame):
         self.title = ctk.CTkLabel(
             self,
             text=self.cls.label,
-            font=ctk.CTkFont(size=15, weight="bold"),
+            font=theme.section(),
             justify="left",
             anchor="w",
             wraplength=260,
@@ -66,7 +67,8 @@ class SourceCard(ctk.CTkFrame):
                 fg_color=CHIP_COLOR,
                 corner_radius=8,
                 height=22,
-                font=ctk.CTkFont(size=12),
+                font=theme.small(),
+                text_color=theme.MUTED,
             ).pack(side="left", padx=(0, 6), ipadx=6)
 
         self.status: ctk.CTkLabel | None = None

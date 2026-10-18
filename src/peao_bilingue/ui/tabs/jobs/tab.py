@@ -15,12 +15,12 @@ from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import JobAnalysis
 from peao_bilingue.domain.jobs import JobStatus, ListedJob
 from peao_bilingue.i18n import _
-from peao_bilingue.ui import presentation
+from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.presentation import KeywordGroup
 from peao_bilingue.ui.tabs.jobs.dialog import JobDialog
 from peao_bilingue.ui.tabs.jobs.filters import JobFilters
 from peao_bilingue.ui.tabs.jobs.table import JobTable
-from peao_bilingue.ui.widgets import Hint, OutlineButton
+from peao_bilingue.ui.widgets import Hint
 
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
@@ -40,26 +40,57 @@ class JobsTab(ctk.CTkFrame):
         self._colors: dict[str, tuple[str, str]] = {}
 
         self.filters = JobFilters(self, on_apply=self.refresh)
-        self.filters.pack(fill="x", pady=(0, 4))
-        self.count = Hint(self, text="", anchor="w")
-        self.count.pack(fill="x", pady=(0, 4))
+        self.filters.pack(fill="x", pady=(0, 14))
+        self.count = Hint(self.filters.top, text="", anchor="w")
+        self.count.pack(side="left", fill="x", expand=True)
+        app.bind("<Control-f>", lambda _event: self._focus_search())
 
-        # What the ticked boxes are for.
-        bar = ctk.CTkFrame(self, fg_color="transparent")
-        bar.pack(fill="x", pady=(0, 4))
-        self.checked_count = Hint(bar, text="", anchor="w")
-        self.checked_count.pack(side="left", padx=(0, 12))
-        self.discard_checked = ctk.CTkButton(
-            bar, text=_("Discard selected"), width=150, command=self._discard_checked
+        # What the ticked boxes are for: only on screen while some are ticked.
+        self.selection_bar = ctk.CTkFrame(
+            self.filters.controls,
+            fg_color=theme.ACCENT_SOFT,
+            corner_radius=8,
+            height=34,
         )
-        self.discard_checked.pack(side="left", padx=(0, 6))
-        self.clear_checked = OutlineButton(
-            bar,
-            text=_("Clear selection"),
-            width=120,
+        self.checked_count = ctk.CTkLabel(
+            self.selection_bar,
+            text="",
+            text_color=theme.ACCENT_TEXT,
+            font=theme.strong(),
+        )
+        self.checked_count.pack(side="left", padx=(12, 10))
+        labels = presentation.job_status_labels()
+        self.mark_checked = ctk.CTkOptionMenu(
+            self.selection_bar,
+            values=[labels[status] for status in JobStatus],
+            width=130,
+            height=28,
+            command=self._mark_checked,
+        )
+        self.mark_checked.set(_("Mark as…"))
+        self.mark_checked.pack(side="left", padx=(0, 6))
+        self.discard_checked = ctk.CTkButton(
+            self.selection_bar,
+            text=_("Discard"),
+            width=90,
+            height=28,
+            fg_color=theme.DANGER_SOFT,
+            hover_color=theme.DANGER_SOFT_HOVER,
+            text_color=theme.DANGER_TEXT,
+            command=self._discard_checked,
+        )
+        self.discard_checked.pack(side="left", padx=(0, 4))
+        self.clear_checked = ctk.CTkButton(
+            self.selection_bar,
+            text=_("Clear"),
+            width=60,
+            height=28,
+            fg_color="transparent",
+            hover_color=theme.RAISED,
+            text_color=theme.ACCENT_TEXT,
             command=self._clear_checked,
         )
-        self.clear_checked.pack(side="left")
+        self.clear_checked.pack(side="left", padx=(0, 4))
 
         self.table = JobTable(self)
         self.table.pack(fill="both", expand=True)
@@ -140,12 +171,72 @@ class JobsTab(ctk.CTkFrame):
         self.refresh()
         self.table.select(key)
 
+    def _focus_search(self) -> None:
+        self.app.show("jobs")
+        self.filters.focus_search()
+
     def _show_checked(self) -> None:
         count = len(self.table.checked())
         self.checked_count.configure(text=_("{count} selected").format(count=count))
         state = "normal" if count else "disabled"
-        self.discard_checked.configure(state=state)
-        self.clear_checked.configure(state=state)
+        for button in (self.mark_checked, self.discard_checked, self.clear_checked):
+            button.configure(state=state)
+        if count and not self.selection_bar.winfo_manager():
+            self.selection_bar.pack(side="right")
+        elif not count:
+            self.selection_bar.pack_forget()
+
+    def _mark_checked(self, label: str) -> None:
+        """The selection bar's "Mark as…": every ticked job gets the status picked."""
+        self.mark_checked.set(_("Mark as…"))
+        status = presentation.status_from_label(label)
+        keys = self.table.checked()
+        if status is None or not keys:
+            return
+        if status is JobStatus.discarded:
+            self._discard_checked()
+            return
+        self._mark(keys, status)
+
+    def _mark(self, keys: list[str], status: JobStatus) -> None:
+        """Gives `keys` a status, offering to undo it."""
+        before = {
+            key: item.status
+            for key in keys
+            if (item := self.table.job(key)) is not None
+        }
+        self.app.repository.change_statuses(keys, status)
+        logger.info("Marked %d job(s) as %s.", len(keys), status)
+        self._after_marking(keys, status)
+        self.app.notify(
+            _("{count} job(s) marked as {status}.").format(
+                count=len(keys), status=presentation.job_status_labels()[status]
+            ),
+            (_("Undo"), lambda: self._restore(before)),
+        )
+
+    def _restore(self, before: dict[str, JobStatus]) -> None:
+        """Undo: each job gets back the status it had."""
+        for status in set(before.values()):
+            keys = [key for key, old in before.items() if old is status]
+            self.app.repository.change_statuses(keys, status)
+        logger.info("Restored the status of %d job(s).", len(before))
+        self.refresh()
+        current = self._current
+        if self.dialog.is_open and current and current.job.key in before:
+            self._current = current.model_copy(
+                update={"status": before[current.job.key]}
+            )
+            self.open_job(current.job.key)
+
+    def _after_marking(self, keys: list[str], status: JobStatus) -> None:
+        self.table.clear_checked()
+        self.refresh()
+        # The dialog stays open, showing the new status, like a single change.
+        current = self._current
+        if self.dialog.is_open and current and current.job.key in keys:
+            self._current = current.model_copy(update={"status": status})
+            self.open_job(current.job.key)
 
     def _clear_checked(self) -> None:
         self.table.clear_checked()
@@ -156,15 +247,7 @@ class JobsTab(ctk.CTkFrame):
             return
         if not self.app.confirm(_("Discard {count} job(s)?").format(count=len(keys))):
             return
-        self.app.repository.change_statuses(keys, JobStatus.discarded)
-        logger.info("Discarded %d job(s).", len(keys))
-        self.table.clear_checked()
-        self.refresh()
-        # The dialog stays open, showing the new status, like a single change.
-        current = self._current
-        if self.dialog.is_open and current and current.job.key in keys:
-            self._current = current.model_copy(update={"status": JobStatus.discarded})
-            self.open_job(current.job.key)
+        self._mark(keys, JobStatus.discarded)
 
     def _analyze(self) -> None:
         item = self._current

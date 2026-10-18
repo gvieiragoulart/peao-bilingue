@@ -10,7 +10,7 @@ import os
 import sys
 from contextlib import suppress
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import keyring
 from keyring.errors import PasswordDeleteError
@@ -260,6 +260,9 @@ class Settings(BaseSettings):
 
     # The first-run guide: shown until finished or skipped (see ui/onboarding.py).
     onboarding_done: bool = False
+
+    # The window: follow Windows' light/dark mode, or force one.
+    appearance: Literal["system", "light", "dark"] = "system"
 
     # Updates: when the app opens, ask GitHub Releases whether there's a newer version.
     check_for_updates: bool = True

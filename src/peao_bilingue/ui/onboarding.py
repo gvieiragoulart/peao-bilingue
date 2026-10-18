@@ -24,7 +24,7 @@ from peao_bilingue.domain.repository import Repository
 from peao_bilingue.domain.schedule import check_time
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
-from peao_bilingue.ui import presentation
+from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.widgets import Form, OutlineButton, adapter_fields
 
 if TYPE_CHECKING:
@@ -73,11 +73,9 @@ class Onboarding(ctk.CTkFrame):
 
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(20, 8))
-        self.step_label = ctk.CTkLabel(header, text="", text_color="gray55")
+        self.step_label = ctk.CTkLabel(header, text="", text_color=theme.MUTED)
         self.step_label.pack(anchor="w")
-        self.title_label = ctk.CTkLabel(
-            header, text="", font=ctk.CTkFont(size=20, weight="bold")
-        )
+        self.title_label = ctk.CTkLabel(header, text="", font=theme.display(20))
         self.title_label.pack(anchor="w")
 
         # Packed before the content, so a tall step never pushes the buttons away.
@@ -172,7 +170,7 @@ class Onboarding(ctk.CTkFrame):
                 "to prepare and 20 interview questions."
             ).format(app=APP_NAME),
         )
-        self._text(page, _("How your data is treated"), font=ctk.CTkFont(weight="bold"))
+        self._text(page, _("How your data is treated"), font=theme.strong())
         for line in (
             _(
                 "Everything stays on this computer: the jobs, your profile and the "
@@ -195,7 +193,7 @@ class Onboarding(ctk.CTkFrame):
         self._text(
             page,
             _("It takes about 3 minutes, and everything can be changed later."),
-            text_color="gray55",
+            text_color=theme.MUTED,
         )
         return page
 
@@ -245,7 +243,7 @@ class Onboarding(ctk.CTkFrame):
             ctk.CTkLabel(
                 page,
                 text=f"{cls.description}\n{features}",
-                text_color="gray55",
+                text_color=theme.MUTED,
                 wraplength=WRAP - 30,
                 justify="left",
             ).pack(anchor="w", padx=(30, 0))
@@ -338,7 +336,7 @@ class Onboarding(ctk.CTkFrame):
         self._text(
             page,
             _("The keys live in Windows Credential Manager, not in a file."),
-            text_color="gray55",
+            text_color=theme.MUTED,
         )
         return page
 
@@ -372,7 +370,7 @@ class Onboarding(ctk.CTkFrame):
                 "Even with the app closed (Windows Task Scheduler). If the computer is "
                 "off at that time, it collects when it's turned on."
             ),
-            text_color="gray55",
+            text_color=theme.MUTED,
         )
         notifier = factories.notifiers.class_of(WINDOWS_NOTICE)
         self.windows_notice = ctk.CTkSwitch(page, text=notifier.label)
@@ -382,7 +380,7 @@ class Onboarding(ctk.CTkFrame):
         self._text(
             page,
             _("Email and WhatsApp can be set up later, on the Settings tab."),
-            text_color="gray55",
+            text_color=theme.MUTED,
         )
         return page
 

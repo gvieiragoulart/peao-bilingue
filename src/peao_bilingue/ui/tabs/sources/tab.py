@@ -8,6 +8,7 @@ import customtkinter as ctk
 from peao_bilingue import config, factories
 from peao_bilingue.config import settings
 from peao_bilingue.i18n import _
+from peao_bilingue.ui import theme
 from peao_bilingue.ui.tabs.sources.source_card import SourceCard
 
 if TYPE_CHECKING:
@@ -40,7 +41,8 @@ class SourcesTab(ctk.CTkScrollableFrame):
             ),
             wraplength=900,
             justify="left",
-        ).pack(anchor="w", padx=6, pady=(0, 6))
+            text_color=theme.MUTED,
+        ).pack(anchor="w", padx=6, pady=(0, 10))
 
         # The cards in a grid that reflows with the tab's width.
         self.grid_frame = ctk.CTkFrame(self, fg_color="transparent")
