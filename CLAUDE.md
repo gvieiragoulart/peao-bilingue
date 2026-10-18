@@ -162,7 +162,10 @@ appear in the title, company, location, skills or description, ignoring accents 
 
 **Collection (`run_collection`):** search → filter → save → notify; **calls no LLM**. Sources run
 one at a time (one browser open at a time). A failing source doesn't stop the others: it becomes
-"Partial failures" on the run; everything fails only if every source fails. Each source that
+"Partial failures" on the run; everything fails only if every source fails. The Runs tab's
+picker collects all enabled sources or **only one** of them (2026-10-17; `build_services(sources=)`,
+like `peao run --source`); each run records its sources (`Run.sources`, a JSON column that is
+NULL in older rows, read as `[]`) and the history shows them. Each source that
 implements `ProfileSource` reads and saves **its own profile** on every collection; if reading
 fails, its last saved one stays. **Notices** (a digest of the new jobs: title, source, link) only
 with `notify=True`: the scheduled collection and `peao run --notify`; the button's doesn't

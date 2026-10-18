@@ -4,6 +4,8 @@ import pytest
 from builders import analysis, job, profile
 from pydantic import ValidationError
 from queries import saved_analysis, saved_profile
+from sqlalchemy.pool import StaticPool
+from sqlmodel import create_engine
 
 from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
 from peao_bilingue.domain.collection import RunStatus, Trigger
@@ -243,6 +245,40 @@ def test_run_is_recorded_from_start_to_end(repository: SQLiteRepository) -> None
     assert saved.new_jobs == 3
     assert saved.trigger == Trigger.scheduled
     assert saved.finished_at is not None
+
+
+def test_run_keeps_its_sources(repository: SQLiteRepository) -> None:
+    run = repository.start_run(Trigger.manual, ["remotive"])
+    assert run.sources == ["remotive"]
+    # Listed before finishing too: a run in progress already says what it collects.
+    assert repository.list_runs()[0].sources == ["remotive"]
+
+    run.status = RunStatus.ok
+    repository.finish_run(run)
+    assert repository.list_runs()[0].sources == ["remotive"]
+
+
+def test_runs_from_before_the_sources_column_list_none() -> None:
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+    # The run table as it was before the column.
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            'CREATE TABLE "run" (id INTEGER PRIMARY KEY, "trigger" VARCHAR NOT NULL, '
+            "status VARCHAR NOT NULL, started_at DATETIME NOT NULL, finished_at "
+            "DATETIME, listed_jobs INTEGER NOT NULL, new_jobs INTEGER NOT NULL, "
+            "error VARCHAR, artifact VARCHAR)"
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO run VALUES (1, 'scheduled', 'ok', '2026-10-06 09:30:00', "
+            "NULL, 4, 1, NULL, NULL)"
+        )
+
+    [old] = SQLiteRepository(engine).list_runs()
+
+    assert old.sources == []
+    assert old.listed_jobs == 4
 
 
 def test_only_running_runs_are_closed_as_orphans(

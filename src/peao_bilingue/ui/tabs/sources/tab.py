@@ -57,6 +57,8 @@ class SourcesTab(ctk.CTkScrollableFrame):
     def _save(self) -> None:
         enabled = [name for name, card in self.cards.items() if card.enabled]
         config.save({"enabled_sources": enabled})
+        # Other tabs show the enabled sources (the Runs tab's picker).
+        self.app.on_change()
 
     def _login(self, card: SourceCard) -> None:
         session = card.session

@@ -89,3 +89,5 @@ class RunTable(SQLModel, table=True):
     new_jobs: int = 0
     error: str | None = None
     artifact: str | None = None
+    # NULL in rows from before the column: a JSON column gets no SQL default.
+    sources: list[str] | None = Field(default=None, sa_column=Column(JSON))

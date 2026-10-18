@@ -150,9 +150,21 @@ def test_run_row_truncates_long_error() -> None:
         error="x" * 500,
     )
     row = presentation.run_row(run)
-    assert row[:3] == ("06/10 09:30", "scheduled", "error")
+    assert row[:4] == ("06/10 09:30", "scheduled", "", "error")
     assert len(row[-1]) == presentation.TABLE_ERROR_SIZE
     assert row[-1].endswith("…")
+
+
+def test_run_row_shows_source_labels() -> None:
+    run = Run(
+        id=1,
+        trigger=Trigger.manual,
+        status=RunStatus.ok,
+        started_at=NOW,
+        sources=["remotive", "gone"],
+    )
+    # A source whose adapter no longer exists shows its bare name.
+    assert presentation.run_row(run)[2] == "Remotive (public API, remote jobs), gone"
 
 
 def test_comma_separated_terms() -> None:

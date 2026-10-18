@@ -4,6 +4,7 @@ import json
 import time
 import tkinter as tk
 from collections.abc import Callable, Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -13,13 +14,16 @@ from queries import saved_analysis
 
 from peao_bilingue import config
 from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
+from peao_bilingue.application.collect import Services
 from peao_bilingue.config import settings
+from peao_bilingue.domain.collection import Run, RunStatus, Trigger
 from peao_bilingue.domain.jobs import Job, JobStatus
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.domain.updates import Release
 from peao_bilingue.ui.app import App, tabs
 from peao_bilingue.ui.onboarding import Onboarding
 from peao_bilingue.ui.tabs.jobs import tab as jobs_tab
+from peao_bilingue.ui.tabs.runs import tab as runs_tab
 
 # A real Tk window (hidden): it needs a graphical session.
 pytestmark = pytest.mark.integration
@@ -314,6 +318,69 @@ def test_invalid_time_warns(window: App) -> None:
 
     assert process_until(window, lambda: bool(window.notices["errors"]))
     assert window.scheduler.status() is None
+
+
+REMOTIVE = "Remotive (public API, remote jobs)"
+
+
+def test_collect_picker_offers_only_enabled_sources(window: App) -> None:
+    tab = window.panels["runs"]
+    sources = window.panels["sources"]
+    assert tab.collect_bar.source.cget("values") == ["All enabled sources", "VanHack"]
+
+    # Turning a source on in the Sources tab reaches the picker.
+    sources.cards["remotive"].set_enabled(True)
+    sources._save()
+    assert tab.collect_bar.source.cget("values") == [
+        "All enabled sources",
+        REMOTIVE,
+        "VanHack",
+    ]
+
+    # The chosen source turned off: back to all of them.
+    tab.collect_bar.source.set(REMOTIVE)
+    sources.cards["remotive"].set_enabled(False)
+    sources._save()
+    assert tab.collect_bar.source.get() == "All enabled sources"
+    assert tab.collect_bar.chosen_source() is None
+
+
+@pytest.mark.parametrize(
+    ("choice", "expected"), [(REMOTIVE, ["remotive"]), (None, None)]
+)
+def test_collect_now_runs_the_chosen_source(
+    window: App,
+    monkeypatch: pytest.MonkeyPatch,
+    choice: str | None,
+    expected: list[str] | None,
+) -> None:
+    built: list[list[str] | None] = []
+
+    def build(*, sources: list[str] | None, **_kwargs: object) -> object:
+        built.append(sources)
+        return object()
+
+    async def collect(_services: Services, trigger: Trigger) -> Run:
+        return Run(
+            id=1, trigger=trigger, status=RunStatus.ok, started_at=datetime.now(UTC)
+        )
+
+    monkeypatch.setattr(runs_tab, "build_services", build)
+    monkeypatch.setattr(runs_tab, "run_collection", collect)
+    monkeypatch.setattr(settings, "enabled_sources", ["remotive", "vanhack"])
+    tab = window.panels["runs"]
+    tab.refresh()
+    if choice:
+        tab.collect_bar.source.set(choice)
+
+    tab._collect()
+
+    assert built == [expected]
+    assert tab.collect_bar.button.cget("state") == "disabled"
+    assert process_until(
+        window, lambda: tab.collect_bar.button.cget("state") == "normal"
+    )
+    assert window.notices["errors"] == []
 
 
 # --- analysis requested on screen ---------------------------------------------------
