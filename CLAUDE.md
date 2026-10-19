@@ -147,7 +147,9 @@ adds an action, e.g. Undo; errors and confirmations stay modal. `widgets.Card` /
 `section_card` for page sections; `widgets.Table` (ttk) is a card restyled on every fill.
 Screenshots of the real window: `PrintWindow` on the window's HWND, from a script that opens
 `App` with the test fakes (`FakeScheduler`, `FakeReleaseFeed`) and `PEAO_DATA_DIR` pointing at a
-copy of `data/`.
+copy of `data/`. `packaging/site_screenshots.py` does it for the download site, over an
+in-memory database of **fictitious** jobs and analyses (never the real data), in both themes,
+into `site/img/` (PNG written with zlib: no Pillow).
 
 **Jobs tab (2026-10-17, redesigned 2026-10-18):** a card with the table; each row is two lines
 (the title over `presentation.job_meta`: company · place · short source name · found when) and
@@ -480,6 +482,14 @@ Anyone can download the app from a **download site with a product preview**; the
   comes, it is added as an alias **to the same distribution**, so the old address (baked into
   every installed version as `SITE_URL` in `config.py`) keeps working. A US$ 5 budget alarm
   guards the account.
+- **The site** (`site/`): one page in Brazilian Portuguese (pitch, download button, screenshots
+  in light and dark through `<picture>`, features, privacy, requirements, the SmartScreen how-to,
+  FAQ) plus `404.html`. No framework, no build, no third-party script, font or analytics: the
+  CloudFront CSP is `default-src 'self'`, so **no inline script or style** (SVG presentation
+  attributes are fine). The buttons are plain links to `/download/PeaoBilingue-Setup.exe`;
+  `app.js` only fills in the version, size and SHA-256 from `/latest.json`. Never commit a
+  `site/latest.json`: the release writes it (site.yml excludes it anyway). To preview, serve a
+  copy of `site/` with a fake `latest.json` from the scratchpad (`python -m http.server`).
 - **Layout on the bucket:** `releases/<v>/PeaoBilingue-Setup-<v>.exe` (+ `.sha256`, cached
   for a year as immutable: a version is never published twice), `download/PeaoBilingue-Setup.exe`
   (the site's button: the latest, `max-age=300`, `Content-Disposition` with the versioned name)
