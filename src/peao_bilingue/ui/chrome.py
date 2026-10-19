@@ -1,4 +1,4 @@
-"""The window's title bar in the app's own ground color (Windows 11).
+"""The window's title bar: the app's icon, and the app's own ground color (Windows 11).
 
 CustomTkinter already switches the title bar between light and dark; Windows 11 also
 takes an exact caption color, so the bar and the window read as one surface. Through
@@ -9,12 +9,27 @@ import ctypes
 import logging
 import sys
 import tkinter as tk
+from pathlib import Path
 
 from peao_bilingue.ui import theme
 
 DWMWA_CAPTION_COLOR = 35
 DWMWA_TEXT_COLOR = 36
+# Built by packaging/app_icon.py; the spec embeds the same file in the .exe.
+ICON = Path(__file__).with_name("peao_bilingue.ico")
 logger = logging.getLogger(__name__)
+
+
+def set_icon(window: tk.Wm) -> None:
+    """The app's icon in the title bar and on the taskbar, for this window and any
+    other the app opens. CustomTkinter puts its own on the window a moment after it
+    opens, unless iconbitmap was called first."""
+    if not sys.platform.startswith("win"):
+        return
+    try:
+        window.wm_iconbitmap(default=str(ICON))  # type: ignore[no-untyped-call]
+    except tk.TclError as failure:
+        logger.info("Couldn't set the window's icon: %s", failure)
 
 
 def colorref(color: str) -> int:

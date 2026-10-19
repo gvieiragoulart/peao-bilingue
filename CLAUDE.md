@@ -425,6 +425,16 @@ columns, the settings and the CLI commands were in Portuguese. The update migrat
 - **Data in `%LOCALAPPDATA%\PeaoBilingue`** when frozen (`config.base_dir()`): `data/`, `.env`,
   `profile_notes.md` and `artifacts/` come from there, not from the .exe's folder or the working
   directory. In the project, everything stays relative to the current folder.
+- **The icon** (2026-10-18): "P no balão", blue `#3A86F7`, picked from eight candidates
+  drawn on the canvas https://claude.ai/artifact/NTsQVNMHGSAMHg5wCyCJ1n and kept as SVGs
+  in `packaging/icons/` (its README lists them). `packaging/app_icon.py` (`uv run
+  --with pillow`) renders each SVG with Playwright's Chromium at every size and writes
+  `src/peao_bilingue/ui/peao_bilingue.ico`: the spec's `icon=` and a data file (the
+  only one), and `chrome.set_icon` puts it on the window right after `CTk.__init__`
+  (CustomTkinter sets its own icon 200 ms later unless `iconbitmap` was called).
+  **BMP frames, not PNG:** with PNG frames Tk gave Windows an empty 32 px icon (the
+  taskbar's), seen by reading the window's class icons back. The rest of the app still
+  uses the amber accent.
 - Added by hand in the spec: `peao_bilingue`'s submodules (adapters are imported by the
   registry), the `keyring` backends + metadata (found through entry points), `win32ctypes.core`
   and SQLAlchemy's `sqlite` dialect. Playwright's Chromium is **not** bundled: it uses the

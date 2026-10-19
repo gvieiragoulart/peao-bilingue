@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- 3 · "Dois balões". -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#3A86F7"/>
+  <g fill="#D8E7FD">
+    <rect x="92" y="36" width="128" height="104" rx="30"/>
+    <path d="M188 134L212 166L164 138Z"/>
+  </g>
+  <g fill="#3A86F7">
+    <rect x="114" y="52" width="84" height="11" rx="5.5"/>
+    <rect x="114" y="70" width="54" height="11" rx="5.5"/>
+  </g>
+  <!-- The gap between the bubbles: the front one drawn first in the tile's color. -->
+  <g fill="#3A86F7" stroke="#3A86F7" stroke-width="16" stroke-linejoin="round">
+    <rect x="36" y="92" width="148" height="116" rx="34"/>
+    <path d="M68 200L54 232L106 204Z"/>
+  </g>
+  <g fill="#FFFFFF">
+    <rect x="36" y="92" width="148" height="116" rx="34"/>
+    <path d="M68 200L54 232L106 204Z"/>
+  </g>
+  <g fill="#2458A6" transform="translate(110 150) scale(0.53) translate(-128 -129)">
+    <circle cx="128" cy="78" r="28"/>
+    <rect x="94" y="104" width="68" height="16" rx="8"/>
+    <path d="M110 118H146C146 148 156 170 176 186H80C100 170 110 148 110 118Z"/>
+    <rect x="68" y="182" width="120" height="26" rx="10"/>
+  </g>
+</svg>
