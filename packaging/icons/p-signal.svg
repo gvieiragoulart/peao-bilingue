@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- 8 · "P com sinal". -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#3A86F7"/>
+  <g transform="translate(-8 14)">
+    <path d="M100 196V72H138A30 30 0 0 1 138 132H100" fill="none" stroke="#FFFFFF" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" transform="translate(108 140) scale(0.85) translate(-134 -134)"/>
+    <g fill="none" stroke-width="13" stroke-linecap="round">
+      <path d="M127.4 52.9A62 62 0 0 1 171.3 96.8" stroke="#FFFFFF"/>
+      <path d="M135.2 23.9A92 92 0 0 1 200.3 89" stroke="#A6C9FB"/>
+    </g>
+  </g>
+</svg>

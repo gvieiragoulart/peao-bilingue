@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- 2 · "Peão bilíngue": the right half is drawn again, darker, in a clipping viewport. -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#3A86F7"/>
+  <g fill="#FFFFFF">
+    <circle cx="128" cy="78" r="28"/>
+    <rect x="94" y="104" width="68" height="16" rx="8"/>
+    <path d="M110 118H146C146 148 156 170 176 186H80C100 170 110 148 110 118Z"/>
+    <rect x="68" y="182" width="120" height="26" rx="10"/>
+  </g>
+  <svg x="128" y="0" width="128" height="256" viewBox="128 0 128 256">
+    <rect x="8" y="8" width="240" height="240" rx="56" fill="#2458A6"/>
+    <g fill="#D8E7FD">
+      <circle cx="128" cy="78" r="28"/>
+      <rect x="94" y="104" width="68" height="16" rx="8"/>
+      <path d="M110 118H146C146 148 156 170 176 186H80C100 170 110 148 110 118Z"/>
+      <rect x="68" y="182" width="120" height="26" rx="10"/>
+    </g>
+  </svg>
+</svg>

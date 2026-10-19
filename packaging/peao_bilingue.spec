@@ -13,8 +13,11 @@ from PyInstaller.utils.hooks import (
 )
 
 ROOT = Path(SPECPATH).parent  # noqa: F821 - SPECPATH comes from PyInstaller
+# Built by packaging/app_icon.py: the .exe's icon, and the window's (ui/chrome.py).
+ICON = ROOT / "src" / "peao_bilingue" / "ui" / "peao_bilingue.ico"
 
 datas = [
+    (str(ICON), "peao_bilingue/ui"),
     # The Playwright driver (node + the JS package). Chromium is NOT bundled: the app
     # uses the installed Chrome (BROWSER_CHANNEL=chrome), the one Cloudflare accepts.
     *collect_data_files("playwright"),
@@ -47,6 +50,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name="PeaoBilingue",
+    icon=str(ICON),
     console=False,  # a GUI app; the scheduled collection writes to collection.log
     upx=False,
 )
