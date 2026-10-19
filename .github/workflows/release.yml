@@ -1,0 +1,170 @@
+# Publishes a release. On a version tag (v1.2.3, matching pyproject.toml) it builds the
+# installer, checks that it installs, runs and uninstalls, and uploads it to the download
+# site (a private S3 bucket behind CloudFront, infra/site.yaml) together with
+# latest.json, which the app reads to tell its users about the new version.
+#
+# AWS is reached through OIDC: the role (infra/site.yaml) trusts only this repository's
+# version tags and main, and no AWS key is stored anywhere. Repository variables (not
+# secrets): AWS_RELEASE_ROLE_ARN, SITE_BUCKET, SITE_DISTRIBUTION_ID, SITE_URL.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+  id-token: write  # the OIDC token that assumes the AWS role
+
+# Two tags pushed together publish one after the other, never interleaved.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  PYTHONIOENCODING: utf-8
+  AWS_REGION: us-east-1
+  # The official installer, checked against the hash winget publishes for it.
+  INNO_SETUP_VERSION: "6.7.3"
+  INNO_SETUP_SHA256: "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732"
+  SITE_URL: ${{ vars.SITE_URL }}
+  SITE_BUCKET: ${{ vars.SITE_BUCKET }}
+  SITE_DISTRIBUTION_ID: ${{ vars.SITE_DISTRIBUTION_ID }}
+
+jobs:
+  release:
+    name: Build, check and publish the installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0  # no moving major tag: an exact version
+        with:
+          version: "0.12.5"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Check the tag, the version and the site's address
+        run: |
+          $version = (Select-String pyproject.toml -Pattern '^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          if ("v$version" -ne $env:GITHUB_REF_NAME) {
+            throw "Tag $env:GITHUB_REF_NAME doesn't match pyproject.toml's version ($version)."
+          }
+          foreach ($name in 'SITE_URL', 'SITE_BUCKET', 'SITE_DISTRIBUTION_ID') {
+            if (-not [Environment]::GetEnvironmentVariable($name)) {
+              throw "Repository variable $name is not set (see infra/README.md)."
+            }
+          }
+          # The app checks for updates at the address it was built with.
+          if (-not (Select-String src/peao_bilingue/config.py -SimpleMatch "`"$env:SITE_URL`"" -Quiet)) {
+            throw "config.py's SITE_URL isn't the site's address ($env:SITE_URL)."
+          }
+          $placeholders = git grep -l 'REPLACE-WITH-CLOUDFRONT-DOMAIN' -- ':!.github'
+          if ($placeholders) { throw "The site's address is still a placeholder in: $placeholders" }
+          $global:LASTEXITCODE = 0  # git grep exits with 1 when it finds nothing: the good case
+          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$version"
+          Add-Content -Path $env:GITHUB_ENV -Value "SETUP=PeaoBilingue-Setup-$version.exe"
+
+      - name: Install dependencies (exactly the ones in uv.lock, with PyInstaller)
+        run: uv sync --locked --group packaging
+      # The integration tests ran on main before the tag; the unit tests are seconds.
+      - name: pytest — unit
+        run: uv run pytest -m "not integration"
+
+      - name: Install Inno Setup
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP 'innosetup.exe'
+          $tag = 'is-' + $env:INNO_SETUP_VERSION.Replace('.', '_')
+          Invoke-WebRequest "https://github.com/jrsoftware/issrc/releases/download/$tag/innosetup-$env:INNO_SETUP_VERSION.exe" -OutFile $installer
+          if ((Get-FileHash $installer -Algorithm SHA256).Hash -ne $env:INNO_SETUP_SHA256) {
+            throw "The Inno Setup installer doesn't match its SHA-256."
+          }
+          $process = Start-Process $installer -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/ALLUSERS' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installing Inno Setup failed ($($process.ExitCode))." }
+
+      - name: Build the installer
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File packaging\build_installer.ps1
+
+      # On the runner, never on a real machine: uninstalling removes the daily
+      # collection's scheduled task.
+      - name: Install, run and uninstall it
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP 'PeaoBilingue'
+          $process = Start-Process (Resolve-Path "dist\$env:SETUP").Path -Wait -PassThru -ArgumentList `
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$folder`"", "/LOG=`"$env:RUNNER_TEMP\install.log`""
+          if ($process.ExitCode -ne 0) {
+            Get-Content "$env:RUNNER_TEMP\install.log"
+            throw "The installer failed ($($process.ExitCode))."
+          }
+          $exe = Join-Path $folder 'PeaoBilingue.exe'
+          foreach ($file in $exe, (Join-Path $folder 'LICENSE.md'), (Join-Path $folder 'THIRD_PARTY_NOTICES.txt')) {
+            if (-not (Test-Path -LiteralPath $file)) { throw "$file was not installed." }
+          }
+          # The .exe with arguments is the command line: it starts and loads every adapter.
+          $process = Start-Process $exe -ArgumentList 'adapters' -Wait -PassThru -NoNewWindow
+          if ($process.ExitCode -ne 0) { throw "PeaoBilingue.exe adapters failed ($($process.ExitCode))." }
+          $process = Start-Process (Join-Path $folder 'unins000.exe') -Wait -PassThru `
+            -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
+          if ($process.ExitCode -ne 0) { throw "The uninstaller failed ($($process.ExitCode))." }
+          # The uninstaller hands over to a copy of itself in %TEMP%: give it time.
+          $deadline = (Get-Date).AddMinutes(2)
+          while ((Test-Path -LiteralPath $exe) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
+          if (Test-Path -LiteralPath $exe) { throw 'The uninstaller left PeaoBilingue.exe behind.' }
+
+      - name: Write the checksum and latest.json
+        run: |
+          $file = Get-Item "dist\$env:SETUP"
+          $sha256 = (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$sha256  $env:SETUP" | Set-Content "dist\$env:SETUP.sha256" -Encoding ascii
+          [ordered]@{
+            version   = $env:VERSION
+            page      = "$env:SITE_URL/"
+            installer = "$env:SITE_URL/releases/$env:VERSION/$env:SETUP"
+            sha256    = $sha256
+            size      = $file.Length
+            published = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+          } | ConvertTo-Json | Set-Content dist\latest.json -Encoding utf8NoBOM
+          Get-Content dist\latest.json
+
+      - name: Keep the installer with the run
+        uses: actions/upload-artifact@v7
+        with:
+          name: PeaoBilingue-Setup-${{ env.VERSION }}
+          path: |
+            dist/${{ env.SETUP }}
+            dist/${{ env.SETUP }}.sha256
+            dist/latest.json
+          if-no-files-found: error
+
+      - name: AWS credentials (OIDC, no stored key)
+        uses: aws-actions/configure-aws-credentials@v6.3.0  # third party: an exact version
+        with:
+          role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Refuse to publish a version twice
+        run: |
+          # A published installer is immutable (cached for a year): a new build needs a new version.
+          # Here a failure (404: not there yet) is the good outcome, so it must not throw.
+          $PSNativeCommandUseErrorActionPreference = $false
+          aws s3api head-object --bucket $env:SITE_BUCKET --key "releases/$env:VERSION/$env:SETUP" 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) { throw "Version $env:VERSION is already on the site." }
+          $global:LASTEXITCODE = 0
+
+      - name: Upload to the site
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $true
+          $bucket = "s3://$env:SITE_BUCKET"
+          $release = "$bucket/releases/$env:VERSION"
+          $forever = 'public, max-age=31536000, immutable'
+          aws s3 cp "dist\$env:SETUP" "$release/$env:SETUP" --cache-control $forever --content-type application/octet-stream
+          aws s3 cp "dist\$env:SETUP.sha256" "$release/$env:SETUP.sha256" --cache-control $forever --content-type 'text/plain; charset=utf-8'
+          # Then what points at it: the site's button and the apps never see a missing file.
+          aws s3 cp "dist\$env:SETUP" "$bucket/download/PeaoBilingue-Setup.exe" --cache-control 'public, max-age=300' `
+            --content-type application/octet-stream --content-disposition "attachment; filename=`"$env:SETUP`""
+          aws s3 cp dist\latest.json "$bucket/latest.json" --cache-control 'public, max-age=300' --content-type application/json
+          aws cloudfront create-invalidation --distribution-id $env:SITE_DISTRIBUTION_ID --paths /latest.json '/download/*'
+          "Published $env:SITE_URL/releases/$env:VERSION/$env:SETUP" | Add-Content $env:GITHUB_STEP_SUMMARY

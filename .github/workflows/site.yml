@@ -1,0 +1,43 @@
+# Publishes the download site (site/) to its S3 bucket behind CloudFront
+# (infra/site.yaml) whenever it changes on main. What the release workflow uploads
+# (releases/, download/, latest.json) is left alone. AWS is reached through OIDC, with
+# the same role and repository variables as release.yml.
+name: Site
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/site.yml"]
+  # After the stack is created (or the variables change), publish without a commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write  # the OIDC token that assumes the AWS role
+
+concurrency:
+  group: site
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Publish the site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE_BUCKET: ${{ vars.SITE_BUCKET }}
+      SITE_DISTRIBUTION_ID: ${{ vars.SITE_DISTRIBUTION_ID }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: AWS credentials (OIDC, no stored key)
+        uses: aws-actions/configure-aws-credentials@v6.3.0  # third party: an exact version
+        with:
+          role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: Sync site/ to the bucket
+        run: |
+          # --delete removes pages taken out of site/, but never what the excludes cover.
+          aws s3 sync site/ "s3://$SITE_BUCKET" --delete \
+            --exclude "releases/*" --exclude "download/*" --exclude "latest.json" \
+            --cache-control "public, max-age=300"
+          aws cloudfront create-invalidation --distribution-id "$SITE_DISTRIBUTION_ID" --paths "/*"
