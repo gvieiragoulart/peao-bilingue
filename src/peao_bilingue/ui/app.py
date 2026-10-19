@@ -69,6 +69,7 @@ class App(ctk.CTk):
     ) -> None:
         theme.install()
         super().__init__()
+        chrome.set_icon(self)
         theme.choose_fonts(self)
         self.title(
             _("{app} {version} — job radar").format(app=APP_NAME, version=__version__)

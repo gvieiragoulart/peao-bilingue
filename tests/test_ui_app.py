@@ -885,6 +885,12 @@ def test_title_has_the_version(window: App) -> None:
     assert __version__ in window.title()
 
 
+def test_window_takes_the_app_icon_before_customtkinter(window: App) -> None:
+    # CustomTkinter puts its own icon on the window 200 ms after it opens, unless
+    # iconbitmap was called first: this flag is what it checks.
+    assert window._iconbitmap_method_called
+
+
 # --- the pasted CV and the notes ----------------------------------------------------
 
 
