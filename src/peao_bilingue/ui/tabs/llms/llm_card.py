@@ -1,6 +1,5 @@
-"""One LLM on the LLMs tab, as a card: its logo and short name, what it is, what it
-costs and what is still missing. A click anywhere opens the LLM's modal, where it is
-configured. The LLM that analyzes by default (picked in Settings) is marked."""
+"""One LLM on the LLMs tab, as a card: its logo and short name and what it is. A click
+anywhere opens the LLM's modal, where it is configured. The LLM that analyzes by default (picked in Settings) is marked."""
 
 from collections.abc import Callable
 from typing import Any
@@ -18,20 +17,7 @@ PADDING = 16
 ICON_SIZE = 32
 # Room the logo and the Default chip take next to the title.
 TITLE_ROOM = 110
-CHIP_COLOR = theme.CONTROL
 CHEVRON_ICON = ""  # ChevronRight
-
-
-def chip(master: Any, text: str = "") -> ctk.CTkLabel:
-    return ctk.CTkLabel(
-        master,
-        text=text,
-        fg_color=CHIP_COLOR,
-        corner_radius=8,
-        height=22,
-        font=theme.small(),
-        text_color=theme.MUTED,
-    )
 
 
 class LLMCard(ctk.CTkFrame):
@@ -75,10 +61,6 @@ class LLMCard(ctk.CTkFrame):
         footer.grid(
             row=2, column=0, columnspan=3, sticky="ew", padx=PADDING, pady=(10, 14)
         )
-        for feature in presentation.llm_features(self.cls):
-            chip(footer, feature).pack(side="left", padx=(0, 6), ipadx=6)
-        self.state = chip(footer)
-        self.state.pack(side="left", padx=(0, 6), ipadx=6)
         chevron = theme.icon(CHEVRON_ICON)
         ctk.CTkLabel(
             footer,
@@ -96,8 +78,7 @@ class LLMCard(ctk.CTkFrame):
         return bool(self.default_chip.winfo_manager())
 
     def show(self, current: Settings) -> None:
-        """What is missing, and whether it is the default: both change on a save."""
-        self.state.configure(text=presentation.llm_state(self.cls, current))
+        """Whether it is the default: it changes on a save."""
         default = current.analysis_llm == self.name
         if default:
             self.default_chip.grid(

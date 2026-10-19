@@ -6,7 +6,6 @@ import pytest
 from builders import analysis, job
 
 from peao_bilingue import factories
-from peao_bilingue.config import Settings
 from peao_bilingue.domain.analysis import SavedAnalysis
 from peao_bilingue.domain.collection import Run, RunStatus, Trigger
 from peao_bilingue.domain.jobs import JobStatus, ListedJob, Posting
@@ -320,26 +319,3 @@ def test_short_source_label(name: str, short: str) -> None:
 )
 def test_short_llm_label(name: str, short: str) -> None:
     assert presentation.short_llm_label(name) == short
-
-
-def test_llm_features_tell_paid_from_free() -> None:
-    assert presentation.llm_features(factories.llms.class_of("anthropic")) == [
-        "paid, your API key"
-    ]
-    assert presentation.llm_features(factories.llms.class_of("ollama")) == [
-        "free, on your PC"
-    ]
-
-
-def test_llm_state_says_what_is_missing() -> None:
-    openai = factories.llms.class_of("openai")
-    current = Settings(openai_api_key="", openai_model="")
-    assert presentation.llm_state(openai, current) == "no API key yet"
-    current = Settings(openai_api_key="sk-test", openai_model="")
-    assert presentation.llm_state(openai, current) == "no model yet"
-    current = Settings(openai_api_key="sk-test", openai_model="gpt-x")
-    assert presentation.llm_state(openai, current) == "model gpt-x"
-    ollama = factories.llms.class_of("ollama")
-    assert presentation.llm_state(ollama, Settings(ollama_model="qwen3:8b")) == (
-        "model qwen3:8b"
-    )

@@ -5,14 +5,11 @@ import webbrowser
 from collections.abc import Callable
 from typing import Any
 
-import customtkinter as ctk
-
 from peao_bilingue import factories
 from peao_bilingue.config import SECRETS, settings
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.modal import EntityDialog
-from peao_bilingue.ui.tabs.llms.llm_card import chip
 from peao_bilingue.ui.widgets import Form, Heading, Hint, OutlineButton, adapter_fields
 
 
@@ -31,10 +28,6 @@ class LLMDialog(EntityDialog):
         self._on_save = on_save
 
         self.description = self._paragraph(cls.description, theme.TEXT)
-        chips = ctk.CTkFrame(self.body, fg_color="transparent")
-        chips.pack(fill="x", pady=(0, 10))
-        for feature in presentation.llm_features(cls):
-            chip(chips, feature).pack(side="left", padx=(0, 6), ipadx=6)
         self.about = self._paragraph(cls.about, theme.MUTED) if cls.about else None
         if cls.site:
             OutlineButton(
