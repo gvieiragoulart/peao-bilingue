@@ -378,7 +378,8 @@ def _analysis_footer(analysis: SavedAnalysis) -> str:
     footer = _("Analysis by {provider} ({model}) on {when}").format(
         provider=analysis.provider,
         model=analysis.model,
-        when=f"{analysis.created_at:%d/%m/%Y %H:%M}",
+        # The repository gives it back in UTC: shown in the user's timezone.
+        when=f"{analysis.created_at.astimezone(ZoneInfo(settings.timezone)):%d/%m/%Y %H:%M}",
     )
     if analysis.profile_source:
         footer += _(", with the {source} profile").format(
