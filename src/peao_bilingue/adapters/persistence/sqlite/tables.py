@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON, Column, text
 from sqlmodel import Field, SQLModel
 
 from peao_bilingue.config import settings
@@ -52,6 +52,10 @@ class JobTable(SQLModel, table=True):
     # Key of the same job already saved from another source: this one stays off the
     # list.
     duplicate_of: str | None = None
+    # Whether the user opened its panel. True is what rows from before the column
+    # (and the legacy migration's inserts) get, so the jobs already there count as
+    # seen; `save_job` creates every new row with False.
+    viewed: bool = Field(default=True, sa_column_kwargs={"server_default": text("1")})
 
 
 class ProfileTable(SQLModel, table=True):

@@ -166,6 +166,83 @@ def test_changing_several_with_a_missing_job_changes_none(
     assert repository.list_jobs(status=JobStatus.discarded) == []
 
 
+def test_a_new_job_is_unviewed_until_opened(repository: SQLiteRepository) -> None:
+    first = _with_analysis(repository, "1")
+    _with_analysis(repository, "2")
+    assert [item.viewed for item in repository.list_jobs()] == [False, False]
+    assert repository.count_unviewed() == 2
+
+    repository.mark_viewed(first.key)
+    # Saving it again (a later collection) doesn't make it unseen.
+    repository.save_job(first, ["Other"])
+
+    viewed = {item.job.key: item.viewed for item in repository.list_jobs()}
+    assert viewed == {"vanhack:1": True, "vanhack:2": False}
+    assert repository.count_unviewed() == 1
+
+
+def test_unviewed_count_leaves_out_other_statuses_and_duplicates(
+    repository: SQLiteRepository,
+) -> None:
+    original = job("1", company="Lemon.io", source="remotive")
+    repository.save_job(original, ["Python"])
+    copy = job("2", company="Lemon.io", source="himalayas")
+    repository.save_job(copy, ["Python"], duplicate_of=original.key)
+    discarded = _with_analysis(repository, "3")
+    repository.change_status(discarded.key, JobStatus.discarded)
+
+    assert repository.count_unviewed() == 1
+
+
+def test_marking_a_missing_job_viewed_raises(repository: SQLiteRepository) -> None:
+    with pytest.raises(LookupError):
+        repository.mark_viewed("vanhack:999")
+
+
+def test_deletes_jobs_with_their_analyses_and_copies(
+    repository: SQLiteRepository,
+) -> None:
+    original = job("1", company="Lemon.io", source="remotive")
+    repository.save_job(original, ["Python"])
+    repository.save_analysis(
+        original.key, analysis(70), provider="fake", model="m", profile_id=None
+    )
+    copy = job("2", company="Lemon.io", source="himalayas")
+    repository.save_job(copy, ["Python"], duplicate_of=original.key)
+    kept = _with_analysis(repository, "3", fit=80)
+
+    repository.delete_jobs([original.key])
+
+    assert not repository.job_exists(original.key)
+    assert not repository.job_exists(copy.key)
+    assert repository.current_analysis(original.key) is None
+    assert [item.job.key for item in repository.list_jobs()] == [kept.key]
+    assert repository.current_analysis(kept.key) is not None
+
+
+def test_a_deleted_job_comes_back_new_when_collected_again(
+    repository: SQLiteRepository,
+) -> None:
+    deleted = _with_analysis(repository, "1")
+    repository.mark_viewed(deleted.key)
+    repository.change_status(deleted.key, JobStatus.discarded)
+    repository.delete_jobs([deleted.key])
+
+    repository.save_job(deleted, ["Python"])
+
+    [back] = repository.list_jobs()
+    assert (back.status, back.viewed) == (JobStatus.new, False)
+
+
+def test_deleting_with_a_missing_job_deletes_none(
+    repository: SQLiteRepository,
+) -> None:
+    first = _with_analysis(repository, "1")
+    with pytest.raises(LookupError):
+        repository.delete_jobs([first.key, "vanhack:999"])
+    assert repository.job_exists(first.key)
+
+
 def test_text_search_ignores_accents(
     repository: SQLiteRepository,
 ) -> None:
@@ -301,6 +378,32 @@ def test_runs_from_before_the_sources_column_list_none() -> None:
 
     assert old.sources == []
     assert old.listed_jobs == 4
+
+
+def test_jobs_from_before_the_viewed_column_count_as_seen() -> None:
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+    # The job table as it was before the column.
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            'CREATE TABLE "job" (key VARCHAR PRIMARY KEY, source VARCHAR NOT NULL, '
+            "data JSON, searches JSON, status VARCHAR NOT NULL, seen_at DATETIME NOT "
+            "NULL, fingerprint VARCHAR, duplicate_of VARCHAR)"
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO job VALUES ('vanhack:1', 'vanhack', ?, '[\"Python\"]', "
+            "'new', '2026-10-06 09:30:00', NULL, NULL)",
+            (job("1").model_dump_json(),),
+        )
+    repository = SQLiteRepository(engine)
+
+    [old] = repository.list_jobs()
+
+    assert old.viewed is True
+    assert repository.count_unviewed() == 0
+    repository.save_job(job("2"), ["Python"])
+    assert repository.count_unviewed() == 1
 
 
 def test_only_running_runs_are_closed_as_orphans(

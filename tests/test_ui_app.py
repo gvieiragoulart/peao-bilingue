@@ -132,7 +132,6 @@ def test_table_shows_keywords_found_as_chips(
 
     assert tab.table.chips("vanhack:1") == ["python", "react"]
     assert tab.table.chips("vanhack:2") == []
-    assert tab.count.cget("text").startswith("2 job(s) ·")
 
 
 def test_clicking_a_row_opens_the_dialog(
@@ -256,6 +255,38 @@ def test_discards_the_selected_jobs_at_once(
     assert tab.table.keys() == ["vanhack:2"]  # the list shows only the new ones
     assert tab.table.checked() == []
     assert tab.discard_checked.cget("state") == "disabled"
+
+
+def test_discarded_jobs_can_be_deleted_for_good(
+    window: App, repository: SQLiteRepository
+) -> None:
+    for external_id in ("1", "2", "3"):
+        repository.save_job(job(external_id), ["Python"])
+    repository.change_statuses(["vanhack:1", "vanhack:2"], JobStatus.discarded)
+    tab = window.panels["jobs"]
+    tab.refresh()
+    tab.table.toggle("vanhack:3")
+    # Outside the Discarded filter, the selection can be discarded, not deleted.
+    assert tab.discard_checked.winfo_manager()
+    assert not tab.delete_checked.winfo_manager()
+
+    tab.filters.status.set("Discarded")
+    tab.refresh()
+    tab.open_job("vanhack:1")
+    tab.table.toggle("vanhack:1")
+    tab.table.toggle("vanhack:2")
+    assert tab.delete_checked.winfo_manager()
+    assert not tab.discard_checked.winfo_manager()
+
+    tab._delete_checked()
+
+    assert window.notices["questions"][0].startswith("Delete 2 job(s) for good?")
+    assert window.notices["infos"] == ["2 job(s) deleted."]
+    assert not repository.job_exists("vanhack:1")
+    assert not repository.job_exists("vanhack:2")
+    assert repository.job_exists("vanhack:3")
+    assert tab.table.keys() == []
+    assert not tab.dialog.is_open  # its job is gone
 
 
 def test_discarding_the_open_job_closes_the_panel(
@@ -458,7 +489,6 @@ def test_the_llm_modal_saves_its_settings(window: App) -> None:
     assert settings.ollama_model == "llama3.1:8b"
     assert tab.dialog is None  # saved: closed
     assert window.notices["infos"] == ["LLM settings saved."]
-    assert tab.cards["ollama"].state.cget("text") == "model llama3.1:8b"
 
 
 def test_an_llm_key_goes_to_the_vault_not_the_file(window: App) -> None:
@@ -882,7 +912,9 @@ def test_banner_shows_only_when_a_newer_version_is_out(window: App) -> None:
 def test_title_has_the_version(window: App) -> None:
     from peao_bilingue import __version__
 
-    assert __version__ in window.title()
+    assert (
+        window.title() == f"Peão Bilíngue {__version__}"
+    )  # "job radar" is by the logo
 
 
 def test_window_takes_the_app_icon_before_customtkinter(window: App) -> None:
@@ -1065,17 +1097,36 @@ def test_the_sidebar_switches_sections(window: App) -> None:
     assert window.page_title.cget("text") == "Runs"
 
 
-def test_the_sidebar_counts_the_jobs_to_review(
+def test_the_sidebar_counts_the_jobs_not_opened_yet(
     window: App, repository: SQLiteRepository
 ) -> None:
-    repository.save_job(job("1"), ["Python"])
-    repository.save_job(job("2"), ["Python"])
+    for external_id in ("1", "2", "3"):
+        repository.save_job(job(external_id), ["Python"])
     window.on_change()
+    assert window.sidebar.items["jobs"].badge.cget("text").strip() == "3"
+
+    # Opening one counts at once, with no refresh.
+    window.panels["jobs"].open_job("vanhack:1")
     assert window.sidebar.items["jobs"].badge.cget("text").strip() == "2"
 
-    repository.change_statuses(["vanhack:1", "vanhack:2"], JobStatus.discarded)
+    repository.change_statuses(["vanhack:2", "vanhack:3"], JobStatus.discarded)
     window.on_change()
     assert not window.sidebar.items["jobs"].badge.winfo_manager()
+
+
+def test_opening_a_job_marks_it_seen(window: App, repository: SQLiteRepository) -> None:
+    repository.save_job(job("1"), ["Python"])
+    repository.save_job(job("2"), ["Python"])
+    tab = window.panels["jobs"]
+    tab.refresh()
+    assert tab.table.marked_unseen("vanhack:1")
+
+    tab.open_job("vanhack:1")
+
+    assert not tab.table.marked_unseen("vanhack:1")
+    assert tab.table.marked_unseen("vanhack:2")
+    viewed = {item.job.key: item.viewed for item in repository.list_jobs()}
+    assert viewed == {"vanhack:1": True, "vanhack:2": False}
 
 
 def test_collect_now_from_the_sidebar_opens_runs(

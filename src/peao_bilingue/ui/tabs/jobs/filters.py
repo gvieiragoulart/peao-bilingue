@@ -31,7 +31,8 @@ class JobFilters(ctk.CTkFrame):
     def __init__(self, master: Any, on_apply: Callable[[], None]) -> None:
         super().__init__(master, fg_color="transparent")
 
-        # The top row: the tab puts the count on its left.
+        # The top row: the search box on the right; the tab puts the selection's actions
+        # on its left.
         self.top = ctk.CTkFrame(self, fg_color="transparent")
         self.top.pack(fill="x", pady=(0, 12))
         box = ctk.CTkFrame(
@@ -62,7 +63,7 @@ class JobFilters(ctk.CTkFrame):
         self.search_text.pack(side="left", fill="x", expand=True, padx=(0, 8), pady=2)
         self.search_text.bind("<Return>", lambda _event: on_apply())
 
-        # The second row: the tab puts the selection's actions on its right.
+        # The second row: the status and the other pickers.
         self.controls = ctk.CTkFrame(self, fg_color="transparent")
         self.controls.pack(fill="x")
         self.status = ctk.CTkSegmentedButton(

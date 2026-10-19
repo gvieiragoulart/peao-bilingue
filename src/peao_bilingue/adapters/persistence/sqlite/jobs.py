@@ -1,11 +1,15 @@
 """Jobs, their duplicates across sources and the text search."""
 
-from sqlalchemy import Engine
+from sqlalchemy import Engine, delete, func
 from sqlmodel import Session, col, select
 
 from peao_bilingue.adapters.persistence.sqlite.analyses import last_analysis
 from peao_bilingue.adapters.persistence.sqlite.database import BaseSQLite
-from peao_bilingue.adapters.persistence.sqlite.tables import JobTable, local
+from peao_bilingue.adapters.persistence.sqlite.tables import (
+    AnalysisTable,
+    JobTable,
+    local,
+)
 from peao_bilingue.domain.jobs import (
     Job,
     JobRepository,
@@ -30,7 +34,7 @@ class JobsSQLite(BaseSQLite, JobRepository):
     ) -> None:
         with self._session() as session:
             row = session.get(JobTable, job.key) or JobTable(
-                key=job.key, source=job.source
+                key=job.key, source=job.source, viewed=False
             )
             row.data = job.model_dump(mode="json")
             row.searches = sorted(set(row.searches or []) | set(searches))
@@ -99,6 +103,7 @@ class JobsSQLite(BaseSQLite, JobRepository):
                         fit_score=fit,
                         searches=row.searches or [],
                         seen_at=local(row.seen_at),
+                        viewed=row.viewed,
                         also_on=_duplicates(session, row.key),
                     )
                 )
@@ -121,6 +126,40 @@ class JobsSQLite(BaseSQLite, JobRepository):
                     raise LookupError(_("Job {key} not found.").format(key=key))
                 row.status = status
                 session.add(row)
+            session.commit()
+
+    def mark_viewed(self, key: str) -> None:
+        with self._session() as session:
+            row = session.get(JobTable, key)
+            if row is None:
+                raise LookupError(_("Job {key} not found.").format(key=key))
+            row.viewed = True
+            session.add(row)
+            session.commit()
+
+    def count_unviewed(self) -> int:
+        with self._session() as session:
+            return session.exec(
+                select(func.count())
+                .select_from(JobTable)
+                .where(
+                    col(JobTable.viewed).is_(False),
+                    JobTable.status == JobStatus.new,
+                    col(JobTable.duplicate_of).is_(None),
+                )
+            ).one()
+
+    def delete_jobs(self, keys: list[str]) -> None:
+        with self._session() as session:
+            for key in keys:
+                if session.get(JobTable, key) is None:
+                    raise LookupError(_("Job {key} not found.").format(key=key))
+            copies = select(JobTable.key).where(col(JobTable.duplicate_of).in_(keys))
+            doomed = [*keys, *session.exec(copies)]
+            session.exec(
+                delete(AnalysisTable).where(col(AnalysisTable.job_key).in_(doomed))
+            )
+            session.exec(delete(JobTable).where(col(JobTable.key).in_(doomed)))
             session.commit()
 
 

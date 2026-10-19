@@ -19,7 +19,6 @@ from peao_bilingue.composition import (
     build_scheduler,
 )
 from peao_bilingue.config import settings
-from peao_bilingue.domain.jobs import JobStatus
 from peao_bilingue.domain.repository import Repository
 from peao_bilingue.domain.schedule import Scheduler
 from peao_bilingue.domain.updates import Release, ReleaseFeed
@@ -40,8 +39,6 @@ from peao_bilingue.ui.widgets import OutlineButton, Toast
 
 LOG_INTERVAL_MS = 200
 PAGE_PADDING = 24
-# The badge says 99+ past that: no need to load more jobs to count them.
-BADGE_LIMIT = 100
 logger = logging.getLogger(__name__)
 
 
@@ -71,9 +68,8 @@ class App(ctk.CTk):
         super().__init__()
         chrome.set_icon(self)
         theme.choose_fonts(self)
-        self.title(
-            _("{app} {version} — job radar").format(app=APP_NAME, version=__version__)
-        )
+        # "job radar" is by the logo, in the sidebar: not repeated here.
+        self.title(f"{APP_NAME} {__version__}")
         self.geometry("1280x800")
         self.minsize(1000, 640)
 
@@ -264,12 +260,16 @@ class App(ctk.CTk):
     def on_change(self) -> None:
         for panel in self.panels.values():
             panel.refresh()
-        to_review = self.repository.list_jobs(status=JobStatus.new, limit=BADGE_LIMIT)
-        self.sidebar.items["jobs"].set_badge(presentation.badge(len(to_review)))
+        self.refresh_badge()
         runs = self.repository.list_runs(1)
         self.sidebar.show_last_run(
             presentation.last_run_line(runs[0] if runs else None)
         )
+
+    def refresh_badge(self) -> None:
+        """The Jobs item's badge: the new jobs not opened yet."""
+        unseen = self.repository.count_unviewed()
+        self.sidebar.items["jobs"].set_badge(presentation.badge(unseen))
 
     def show_error(self, failure: BaseException) -> None:
         # In the log too: what the user saw is what support will ask about.
