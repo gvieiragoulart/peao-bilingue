@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- 6 · "P geométrico". -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#3A86F7"/>
+  <g fill="#FFFFFF" transform="translate(-8 0)">
+    <circle cx="136" cy="108" r="64"/>
+    <path d="M72 108H116V190A22 22 0 0 1 72 190Z"/>
+  </g>
+  <circle cx="132" cy="108" r="22" fill="#3A86F7"/>
+</svg>

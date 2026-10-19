@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- 1 · "Peão-antena". -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#3A86F7"/>
+  <g fill="none" stroke-width="14" stroke-linecap="round">
+    <path d="M83 97A52 52 0 0 1 173 97" stroke="#FFFFFF"/>
+    <path d="M53.5 80A86 86 0 0 1 202.5 80" stroke="#A6C9FB"/>
+  </g>
+  <g fill="#FFFFFF" transform="translate(128 123) scale(0.786) translate(-128 -78)">
+    <circle cx="128" cy="78" r="28"/>
+    <rect x="94" y="104" width="68" height="16" rx="8"/>
+    <path d="M110 118H146C146 148 156 170 176 186H80C100 170 110 148 110 118Z"/>
+    <rect x="68" y="182" width="120" height="26" rx="10"/>
+  </g>
+</svg>

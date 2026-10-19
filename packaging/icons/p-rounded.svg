@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- 5 · "P arredondado". -->
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#3A86F7"/>
+  <path d="M100 196V72H138A30 30 0 0 1 138 132H100" fill="none" stroke="#FFFFFF" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" transform="translate(-6 -6)"/>
+</svg>
