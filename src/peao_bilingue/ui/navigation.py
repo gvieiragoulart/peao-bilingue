@@ -42,6 +42,8 @@ class NavItem(ctk.CTkFrame):
         self._on_click = on_click
         self._active = False
         self._hovered = False
+        self._painted_active: bool | None = None
+        self._painted_background: theme.Pair | None = None
 
         self.indicator = ctk.CTkFrame(self, width=3, height=20, corner_radius=2)
         self.indicator.pack(side="left", padx=(0, 9))
@@ -70,6 +72,8 @@ class NavItem(ctk.CTkFrame):
         self._on_click()
 
     def set_active(self, active: bool) -> None:
+        if self._active == active:
+            return
         self._active = active
         self._paint()
 
@@ -93,6 +97,8 @@ class NavItem(ctk.CTkFrame):
             self._hover(False)
 
     def _hover(self, hovered: bool) -> None:
+        if self._hovered == hovered:
+            return
         self._hovered = hovered
         self._paint()
 
@@ -103,11 +109,19 @@ class NavItem(ctk.CTkFrame):
             background, text = theme.RAISED, theme.TEXT
         else:
             background, text = theme.SIDEBAR, theme.TEXT
-        self.configure(fg_color=background)
-        self.indicator.configure(fg_color=theme.ACCENT if self._active else background)
-        weight = "bold" if self._active else "normal"
-        self.title.configure(text_color=text, font=ctk.CTkFont(weight=weight))
-        self.icon.configure(text_color=text if self._active else theme.MUTED)
+        background_changed = background != self._painted_background
+        active_changed = self._active != self._painted_active
+        if background_changed:
+            self.configure(fg_color=background)
+            self._painted_background = background
+        if active_changed:
+            self.title.configure(text_color=text)
+            self.icon.configure(text_color=text if self._active else theme.MUTED)
+            self._painted_active = self._active
+        if background_changed or active_changed:
+            self.indicator.configure(
+                fg_color=theme.ACCENT if self._active else background
+            )
 
 
 class Sidebar(ctk.CTkFrame):
