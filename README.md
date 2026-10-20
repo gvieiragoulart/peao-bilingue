@@ -191,6 +191,10 @@ with their SHA-256 files in one GitHub Release. The repository's Actions setting
 allow the workflow token to write repository contents. No AWS variables or secrets are
 needed.
 
+While the repository is private, GitHub downloads require repository access and the
+app's unauthenticated update check cannot see new releases. Make the repository public
+before relying on public downloads or update notifications.
+
 With no arguments it opens the app; with arguments it is the same command
 line (`PeaoBilingue.exe run`, `PeaoBilingue.exe login`...). Scheduling the collection from the
 .exe's window makes the task call the .exe itself.
