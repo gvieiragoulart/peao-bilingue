@@ -67,9 +67,6 @@ MESSAGES: dict[str, str] = {
     "daily collection through the Linux user scheduler": (
         "coleta diária pelo agendador do usuário do Linux"
     ),
-    "daily collection through the Windows Task Scheduler": (
-        "coleta diária pelo Agendador de Tarefas do Windows"
-    ),
     "Couldn't control the Linux user scheduler: {error}": (
         "Não foi possível controlar o agendador do usuário do Linux: {error}"
     ),

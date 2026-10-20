@@ -1,4 +1,5 @@
 import json
+import sys
 from collections.abc import Iterator
 from contextlib import suppress
 from pathlib import Path
@@ -31,8 +32,10 @@ def test_defaults() -> None:
     default = Settings(_env_file=None)
     assert default.vanhack_login_url == "https://auth.vanhack.com"
     assert default.timezone == "America/Sao_Paulo"
-    # Windows needs no setup; email and WhatsApp are turned on by hand, filled in
-    assert default.notifiers == ["windows"]
+    # The current desktop's notification channel starts on by default.
+    assert default.notifiers == [
+        "linux" if sys.platform.startswith("linux") else "windows"
+    ]
 
 
 def test_save_puts_public_in_json_and_secrets_in_vault() -> None:
@@ -104,8 +107,18 @@ def test_frozen_base_dir_is_user_folder(
 ) -> None:
     # the .exe can be opened from any folder: the data can't depend on it
     monkeypatch.setattr("sys.frozen", True, raising=False)
+    monkeypatch.setattr("sys.platform", "win32")
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
     assert config.base_dir() == tmp_path / "PeaoBilingue"
+
+
+def test_frozen_linux_base_dir_uses_xdg_data_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("sys.frozen", True, raising=False)
+    monkeypatch.setattr("sys.platform", "linux")
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path))
+    assert config.base_dir() == tmp_path / "peao-bilingue"
 
 
 # --- names from before the code was in English ---------------------------------------
