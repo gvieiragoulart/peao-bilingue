@@ -87,14 +87,12 @@ def main() -> None:
         "--source", action="append", default=[], help=_("none = every source")
     )
 
-    schedule = commands.add_parser(
-        "schedule",
-        help=_(
-            "daily collection through the Linux user scheduler"
-            if sys.platform.startswith("linux")
-            else "daily collection through Windows Task Scheduler"
-        ),
+    schedule_help = (
+        _("daily collection through the Linux user scheduler")
+        if sys.platform.startswith("linux")
+        else _("daily collection through Windows Task Scheduler")
     )
+    schedule = commands.add_parser("schedule", help=schedule_help)
     schedule_actions = schedule.add_subparsers(dest="action")
     enable = schedule_actions.add_parser(
         "enable", help=_("schedule (or reschedule) the daily collection")
