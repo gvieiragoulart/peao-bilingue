@@ -426,7 +426,6 @@ MESSAGES: dict[str, str] = {
     ),
     "The details are on the app's Runs tab.": "Os detalhes ficam na aba Execuções do app.",
     # --- window: shared -----------------------------------------------------------
-    "{app} {version} — job radar": "{app} {version} — radar de vagas",
     "Version {version} of {app} is available.": (
         "A versão {version} do {app} está disponível."
     ),
@@ -499,14 +498,17 @@ MESSAGES: dict[str, str] = {
     "Analyze": "Analisar",
     "Open job": "Abrir vaga",
     "Mark as:": "Marcar como:",
-    "{count} job(s) · click one to open it; tick the boxes to act on several.": (
-        "{count} vaga(s) · clique em uma para abrir; marque as caixas para agir em "
-        "várias."
-    ),
     "found {when}": "encontrada {when}",
     "Mark as…": "Marcar como…",
     "{count} job(s) marked as {status}.": "{count} vaga(s) marcada(s) como {status}.",
     "Job discarded.": "Vaga descartada.",
+    "Delete for good": "Excluir de vez",
+    "Delete {count} job(s) for good? This can't be undone; if a source still lists a "
+    "job, it comes back on the next collection.": (
+        "Excluir {count} vaga(s) de vez? Não dá para desfazer; se uma fonte ainda "
+        "publicar a vaga, ela volta na próxima coleta."
+    ),
+    "{count} job(s) deleted.": "{count} vaga(s) excluída(s).",
     "Undo": "Desfazer",
     # --- LLMs: cards and modal ---------------------------------------------------------
     "Claude, Anthropic's models, through its API. Paid per use, with your API key.": (
@@ -547,11 +549,6 @@ MESSAGES: dict[str, str] = {
         "GPU de 6 GB cabem modelos 7–8B quantizados. O app sempre define o tamanho do "
         "contexto: o padrão pequeno do Ollama cortaria o prompt sem avisar."
     ),
-    "paid, your API key": "pago, com sua chave de API",
-    "free, on your PC": "grátis, no seu PC",
-    "no API key yet": "sem chave de API",
-    "no model yet": "sem modelo",
-    "model {model}": "modelo {model}",
     "Default": "Padrão",
     "Configure the LLMs you want to use to analyze jobs; which one is picked by "
     "default is in Settings.": (
