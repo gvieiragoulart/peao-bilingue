@@ -11,7 +11,20 @@ The app's screens are in **Brazilian Portuguese**; the code and these docs are i
 Every user-facing text lives in [`src/peao_bilingue/locales/`](src/peao_bilingue/locales), so
 another language is a new catalog away.
 
-## Install
+## Download
+
+For Windows 10 and 11 (64-bit): download the installer, `PeaoBilingue-Setup-<version>.exe`,
+from the [download site](https://REPLACE-WITH-CLOUDFRONT-DOMAIN.cloudfront.net). It installs for
+your user only (no administrator rights), in `%LOCALAPPDATA%\Programs\PeaoBilingue`, with a Start
+menu shortcut; uninstall it from Windows' Settings → Apps, which also removes the daily
+collection (your data stays in `%LOCALAPPDATA%\PeaoBilingue`). The app tells you when a new
+version is out.
+
+The installer isn't digitally signed yet, so Windows may show "Windows protected your PC": click
+"More info" → "Run anyway". The site shows each installer's SHA-256, to check with
+`Get-FileHash .\PeaoBilingue-Setup-<version>.exe`.
+
+## Running from source
 
 ```bash
 uv sync
@@ -131,7 +144,17 @@ uv run --group packaging pyinstaller packaging/peao_bilingue.spec --noconfirm
 ```
 
 It builds `dist/PeaoBilingue/` (one folder, ~170 MB): take the whole folder and open
-`PeaoBilingue.exe`. With no arguments it opens the app; with arguments it is the same command
+`PeaoBilingue.exe`. The installer wraps that folder (Inno Setup 6, `winget install
+JRSoftware.InnoSetup`):
+
+```bash
+powershell -ExecutionPolicy Bypass -File packaging\build_installer.ps1
+```
+
+which builds `dist/PeaoBilingue-Setup-<version>.exe` (~57 MB), with the license and the
+third-party notices. Releases are published by pushing a version tag (`v0.2.0`, the same as
+`pyproject.toml`): `.github/workflows/release.yml` builds, installs and uninstalls it on a
+runner, and uploads it to the download site (`infra/` describes the site's AWS resources). With no arguments it opens the app; with arguments it is the same command
 line (`PeaoBilingue.exe run`, `PeaoBilingue.exe login`...). Scheduling the collection from the
 .exe's window makes the task call the .exe itself.
 
@@ -177,9 +200,9 @@ a hard crash to `data/logs/crash.log` (in the .exe, under `%LOCALAPPDATA%\PeaoBi
 **Configurações → Sobre e suporte** (Settings → About and support) shows the version and opens
 the logs folder: that folder is what to send when asking for help.
 
-When the app opens it asks GitHub Releases whether there's a newer version and, if there is,
-shows a banner with a download button. It sends nothing about you; turn it off in the same
-section.
+When the app opens it asks the download site (`latest.json`) whether there's a newer version
+and, if there is, shows a banner with a download button. It sends nothing about you; turn it
+off in the same section.
 
 ## Expired session
 
@@ -212,4 +235,18 @@ Portuguese slipped into the code.
 
 **CI** (`.github/workflows/ci.yml`): every PR and every push to `main` runs three jobs: lint
 and typing (ruff and mypy, on Linux), unit tests and integration tests (on Windows, the app's
-OS; the integration job installs Playwright's Chromium, with a cache).
+OS; the integration job installs Playwright's Chromium, with a cache). `release.yml` publishes a
+version tag (see "The .exe") and `site.yml` publishes `site/` to the download site whenever it
+changes on `main`.
+
+## License
+
+Peão Bilíngue is **source available** under the
+[PolyForm Noncommercial License 1.0.0](LICENSE.md): you may use, change and share it for any
+noncommercial purpose (personal use, study, hobby projects, nonprofit and public organizations).
+Commercial use needs a separate license from the author; open an issue to ask. The bundled
+third-party software keeps its own licenses, listed in `THIRD_PARTY_NOTICES.txt` in the
+installed folder (written by `packaging/third_party_notices.py`).
+
+Since the author may also license the app commercially, outside contributions need a
+contributor agreement first: open an issue before sending a pull request.

@@ -1,0 +1,23 @@
+Peão Bilíngue: termos de uso
+
+Resumo em português, só para orientar. O que vale é o texto oficial em inglês, logo abaixo.
+
+- O Peão Bilíngue é distribuído sob a PolyForm Noncommercial License 1.0.0.
+- Você pode usar, copiar e modificar o programa para fins não comerciais: uso pessoal (como
+  acompanhar vagas para você mesmo), estudo, pesquisa e hobby, além do uso por organizações
+  sem fins lucrativos, instituições de ensino e órgãos públicos.
+- Qualquer uso comercial precisa de uma licença à parte, combinada com o autor.
+- Quem repassar o programa a outra pessoa deve repassar também estes termos e a linha
+  "Required Notice".
+- O programa é oferecido "como está", sem garantia de qualquer tipo. O autor não responde por
+  danos decorrentes do uso (veja "No Liability").
+- O programa inclui software de terceiros com licenças próprias (MIT, BSD, Apache e outras).
+  Elas estão em THIRD_PARTY_NOTICES.txt, na pasta de instalação.
+- Os sites de vagas e o serviço de LLM que você escolher têm termos próprios. Sua conta neles
+  e o uso que você faz deles são responsabilidade sua.
+
+Seus dados ficam no seu computador, em %LOCALAPPDATA%\PeaoBilingue, e continuam lá mesmo se
+você desinstalar o programa.
+
+------------------------------------------------------------------------------------------------
+

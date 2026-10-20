@@ -45,7 +45,7 @@ def open_window(repository: SQLiteRepository, monkeypatch: pytest.MonkeyPatch) -
         return True
 
     monkeypatch.setattr(App, "confirm", confirm)
-    # Fakes: the tests never touch Windows Task Scheduler or call GitHub.
+    # Fakes: the tests never touch Windows Task Scheduler or call the download site.
     app = App(
         repository=repository,
         scheduler=FakeScheduler(),

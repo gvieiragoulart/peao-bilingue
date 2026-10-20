@@ -53,7 +53,8 @@ class SettingsTab(ctk.CTkScrollableFrame):
 
     @staticmethod
     def _open_project_page() -> None:
-        webbrowser.open(f"https://github.com/{settings.update_repository}")
+        # The download site: it links to the source code too.
+        webbrowser.open(settings.site_url)
 
     def _sections(
         self,

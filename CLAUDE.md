@@ -19,9 +19,10 @@ interview questions, gaps, and what to improve in the profile (CV, LinkedIn, Van
   2026-10-06 it became multi-source and multi-LLM with ports and adapters; on 2026-10-17 the
   code moved to English. The approved plan is in
   `~/.claude/plans/quero-alterar-o-nosso-resilient-patterson.md`.
-- **Repository:** `gvieiragoulart/peao-bilingue` (private for now). `gh` is installed but **not on
-  PATH** (`"/c/Program Files/GitHub CLI/gh.exe"`) and the PAT can't create repositories or change
-  visibility.
+- **Repository:** `gvieiragoulart/peao-bilingue`, private until Gabriel makes it public (decided
+  on 2026-10-19: source available under PolyForm Noncommercial 1.0.0, see "Distribution"). `gh`
+  is installed but **not on PATH** (`"/c/Program Files/GitHub CLI/gh.exe"`) and the PAT can't
+  create repositories or change visibility.
 - **Hardware:** an RTX 3050 Laptop with 6 GB of VRAM, which limits Ollama to quantized 7–8B
   models.
 
@@ -147,6 +148,9 @@ adds an action, e.g. Undo; errors and confirmations stay modal. `widgets.Card` /
 `section_card` for page sections; `widgets.Table` (ttk) is a card restyled on every fill.
 Screenshots of the real window: `PrintWindow` on the window's HWND, from a script that opens
 `App` with the test fakes (`FakeScheduler`, `FakeReleaseFeed`) and `PEAO_DATA_DIR` pointing at a
+copy of `data/`. `packaging/site_screenshots.py` does it for the download site, over an
+in-memory database of **fictitious** jobs and analyses (never the real data), in both themes,
+into `site/img/` (PNG written with zlib: no Pillow).
 copy of `data/`. The window title is only "Peão Bilíngue <version>": "radar de vagas" is
 under the name, in the sidebar (2026-10-19).
 
@@ -382,18 +386,19 @@ columns, the settings and the CLI commands were in Portuguese. The update migrat
   window overrides `report_callback_exception` (Tk would print to a console the app doesn't
   have) and logs every error it shows. Tests patch the hooks: they are process-wide.
 - **Settings → About and support:** the version, the update switch, "open the logs folder"
-  (`os.startfile`) and the project page.
+  (`os.startfile`) and the project page (the download site, `site_url`).
 - **The CLI in the .exe:** a GUI .exe has no stdout, so `launcher.attach_parent_console()`
   attaches to the terminal it was started from (`AttachConsole(-1)`, UTF-8 code page, `CONOUT$`).
   Under Task Scheduler there's no parent console and printing stays silent.
 - **Version:** `peao_bilingue.__version__` from the package metadata (the spec copies
   `peao-bilingue`'s metadata, or the .exe would show 0.0.0); in the window title.
-- **Updates:** the `ReleaseFeed` port (`domain/updates.py`), `GitHubReleases` adapter
-  (`GET /repos/{repo}/releases/latest`, no token; 404 = none or private repo; offline = None),
-  `application/updates.newer_release`. The window checks once when it opens (if
-  `check_for_updates`) and shows a banner with "Baixar"/"Depois". `update_repository` lets a
-  fork point at itself. Nothing is downloaded or installed automatically: that needs a signed
-  installer first.
+- **Updates:** the `ReleaseFeed` port (`domain/updates.py`), `SiteManifest` adapter
+  (`adapters/updates/manifest.py`, 2026-10-19: `GET {site_url}/latest.json`, written by the
+  release workflow; missing, offline or malformed = None), `application/updates.newer_release`.
+  It replaced `GitHubReleases`: the installers live on the download site, not on GitHub Releases.
+  The window checks once when it opens (if `check_for_updates`) and shows a banner with
+  "Baixar"/"Depois", which opens the site. `site_url` lets a fork point at its own site. Nothing
+  is downloaded or installed automatically: that needs a signed installer first.
 
 ---
 
@@ -478,6 +483,79 @@ columns, the settings and the CLI commands were in Portuguese. The update migrat
   opening the browser (expired session, challenge), `async with` didn't call `__aexit__` and
   Chrome + the driver held the process open: a scheduled collection with an expired session
   never ended (until the 2 h limit). Now `__aenter__` closes everything before re-raising.
+
+---
+
+## Distribution (2026-10-19)
+
+Anyone can download the app from a **download site with a product preview**; the plan is in
+`~/.claude/plans/agora-com-um-projeto-luminous-key.md`. Gabriel's decisions:
+
+- **Hosting:** a static site (`site/`, Brazilian Portuguese, no framework or build) and the
+  installers in a **private S3 bucket behind CloudFront** (OAC), described by
+  `infra/site.yaml` (CloudFormation, us-east-1), which **Gabriel applies** with his own AWS
+  credentials (`infra/README.md`). No domain yet: the `dxxxx.cloudfront.net` address. When one
+  comes, it is added as an alias **to the same distribution**, so the old address (baked into
+  every installed version as `SITE_URL` in `config.py`) keeps working. A US$ 5 budget alarm
+  guards the account.
+- **The site** (`site/`): one page in Brazilian Portuguese (pitch, download button, screenshots
+  in light and dark through `<picture>`, features, privacy, requirements, the SmartScreen how-to,
+  FAQ) plus `404.html`. No framework, no build, no third-party script, font or analytics: the
+  CloudFront CSP is `default-src 'self'`, so **no inline script or style** (SVG presentation
+  attributes are fine). The buttons are plain links to `/download/PeaoBilingue-Setup.exe`;
+  `app.js` only fills in the version, size and SHA-256 from `/latest.json`. Never commit a
+  `site/latest.json`: the release writes it (site.yml excludes it anyway). To preview, serve a
+  copy of `site/` with a fake `latest.json` from the scratchpad (`python -m http.server`).
+- **Layout on the bucket:** `releases/<v>/PeaoBilingue-Setup-<v>.exe` (+ `.sha256`, cached
+  for a year as immutable: a version is never published twice), `download/PeaoBilingue-Setup.exe`
+  (the site's button: the latest, `max-age=300`, `Content-Disposition` with the versioned name)
+  and `latest.json` (`{version, page, installer, sha256, size, published}`, `max-age=300`),
+  which the app reads for updates. Everything else is `site/`.
+- **Only an installer** (`packaging/installer.iss`, Inno Setup 6.7.3): per user, no admin, into
+  `{autopf}\PeaoBilingue` = `%LOCALAPPDATA%\Programs\PeaoBilingue` (deploy.ps1's folder, so a
+  hand-made installation is updated in place), Brazilian Portuguese, a Start menu shortcut
+  (desktop optional), the license page and `THIRD_PARTY_NOTICES.txt`. `[InstallDelete]` clears
+  `{app}\_internal` first (old PyInstaller libraries). The `AppId` GUID must never change: it is
+  how Windows knows a new version updates the installed one. **Uninstalling runs
+  `PeaoBilingue.exe schedule disable`**, which removes the daily task: never test an uninstall
+  on Gabriel's machine (the CI does it on a runner). The `.iss` is UTF-8 **with a BOM** (Inno
+  needs it for the accents).
+- `packaging/build_installer.ps1` (ASCII, like deploy.ps1): PyInstaller → stages
+  `dist/installer/license.txt` (`packaging/installer_license.txt`, a summary in Portuguese,
+  followed by LICENSE.md; CRLF and a BOM) and `THIRD_PARTY_NOTICES.txt`
+  (`packaging/third_party_notices.py`: the runtime dependencies walked from the project's own
+  metadata, with their license files, plus Python, Tk and PyInstaller's bootloader; Playwright's
+  driver carries its own notices) → `iscc` → `dist/PeaoBilingue-Setup-<v>.exe` (~57 MB). The
+  version is pyproject.toml's (x.y.z only: Windows' file version takes numbers). The CI runs this
+  same script.
+- **Releases:** push a tag `v<version>` (equal to pyproject.toml's; bump with `uv version x.y.z`,
+  which updates uv.lock too). `.github/workflows/release.yml` (Windows) checks the tag, the
+  repository variables and that `config.py` holds `vars.SITE_URL`, runs the unit tests, installs
+  Inno Setup from its official installer (checked by SHA-256; Chocolatey stops at 6.7.1),
+  builds, **installs silently, runs `PeaoBilingue.exe adapters` and uninstalls** on the runner,
+  writes the checksum and `latest.json`, keeps them as a workflow artifact, refuses a version
+  already on the bucket, uploads (the versioned file first, then the alias and `latest.json`)
+  and invalidates `/latest.json` and `/download/*`. `.github/workflows/site.yml` syncs `site/`
+  on pushes to main (`--delete`, excluding what the release uploads) and invalidates `/*`; it
+  also runs by hand (`workflow_dispatch`). **AWS through OIDC**: the role trusts only
+  `refs/tags/v*` and `refs/heads/main` of this repository; repository *variables* (not
+  secrets) `AWS_RELEASE_ROLE_ARN`, `SITE_BUCKET`, `SITE_DISTRIBUTION_ID`, `SITE_URL`. A tag
+  publishes to the world: push one only when Gabriel says so.
+- **Unsigned for now:** SmartScreen shows "O Windows protegeu o computador" and the site explains
+  "Mais informações → Executar assim mesmo" and the SHA-256. The free SignPath Foundation needs
+  an OSI license (this isn't one) and Azure Artifact Signing doesn't take individuals in Brazil:
+  signing means buying an OV certificate (cloud HSM), signed in release.yml.
+- **License: PolyForm Noncommercial 1.0.0** (`LICENSE.md`, with the "Required Notice" line;
+  `license`/`license-files` in pyproject.toml). Source available, free for noncommercial use;
+  Gabriel wants to sell the app someday, and as the only author he can license it commercially.
+  Published versions stay under PolyForm NC forever. Outside contributions need a contributor
+  agreement first (README). Before selling, reread the sources' terms (Remotive, Himalayas and
+  Strider speak of personal use or of not republishing). The bundled libraries are MIT/BSD/
+  Apache/MPL (certifi), all fine for this as long as their notices ship.
+- **Before the repository went public** (2026-10-19) the whole history was searched for keys,
+  tokens and private keys (none) and for data files (none ever committed). The personal email
+  (hotmail) stays visible in old commits and old pyproject.toml versions; the author email is
+  now the GitHub noreply. `profile_notes.md` is in `.gitignore`.
 
 ---
 
@@ -796,6 +874,10 @@ commit and push.
 - [x] **A more modern look** (2026-10-18, branch `modern-ui`, on top of `add-job-sources`): own
       theme and fonts, title bar in the app's color, sidebar, the Jobs table and side panel
       redesigned, toasts with Undo, cards on the other sections (see "Look" above).
+- [~] **Public download** (2026-10-19, branch `distribution`): the installer, the release and
+      site workflows, the AWS stack, the site and the update check through `latest.json` (see
+      "Distribution"). Waits for Gabriel: applying the stack, the repository variables,
+      `SITE_URL` (config.py and README), making the repository public, the first tag.
 
 Waiting on Gabriel (costs money or needs him): the first real analysis with the Analyze button
 (Claude spends credit; Ollama is free but needs installing), a real email notice (fill in SMTP,
@@ -821,6 +903,7 @@ uv run peao schedule enable --time 08:00             # or `schedule disable`
 uv run pytest
 uv run ruff check . && uv run ruff format .
 uv run mypy                          # strict on src/ and tests/ (configured in pyproject)
+powershell -ExecutionPolicy Bypass -File packaging\build_installer.ps1   # dist/PeaoBilingue-Setup-<v>.exe
 ```
 
 ## Tests

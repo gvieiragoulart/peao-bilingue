@@ -13,3 +13,4 @@ wheels/
 .env
 data/
 artifacts/
+profile_notes.md

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Peão Bilíngue · seu radar de vagas para Windows</title>
+  <meta name="description" content="Junta vagas de mais de dez sites, filtra pelas suas buscas e avisa das novas todo dia. A análise de aderência com o LLM que você escolher sai na hora em que você pedir. Grátis para uso pessoal.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#F4F5F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#15171C" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="/">
+        <img src="/favicon.svg" alt="" width="32" height="32">
+        <span>Peão Bilíngue</span>
+      </a>
+      <nav aria-label="Seções">
+        <a href="#recursos">Recursos</a>
+        <a href="#privacidade">Privacidade</a>
+        <a href="#requisitos">Requisitos</a>
+        <a href="#perguntas">Perguntas</a>
+      </nav>
+      <a class="button small" href="/download/PeaoBilingue-Setup.exe">Baixar</a>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-text">
+          <p class="eyebrow">Para Windows 10 e 11 · grátis para uso pessoal</p>
+          <h1>Seu radar de vagas, rodando no seu computador.</h1>
+          <p class="lede">
+            O Peão Bilíngue junta vagas de mais de dez sites, filtra pelas suas buscas e avisa
+            das novas todo dia. Quando uma vaga interessar, o LLM que você escolher compara a
+            vaga com o seu perfil e devolve a nota de aderência, o que estudar e 20 perguntas
+            de entrevista.
+          </p>
+          <div class="download">
+            <a class="button primary" href="/download/PeaoBilingue-Setup.exe">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Baixar para Windows
+            </a>
+            <p class="release" data-release hidden>
+              Versão <strong data-field="version"></strong> · <span data-field="size"></span>
+            </p>
+          </div>
+          <p class="hint">
+            Instala só para o seu usuário, sem pedir administrador.
+            <a href="#smartscreen">O Windows pode mostrar um aviso: veja o motivo.</a>
+          </p>
+        </div>
+        <figure class="shot hero-shot">
+          <picture>
+            <source srcset="/img/analysis-dark.png" media="(prefers-color-scheme: dark)">
+            <img src="/img/analysis-light.png" width="1282" height="832"
+                 alt="A janela do Peão Bilíngue com a lista de vagas e, ao lado, a análise de uma vaga: nota 88 de aderência, o resumo e os passos de preparação.">
+          </picture>
+        </figure>
+      </div>
+    </section>
+
+    <section id="recursos" class="section">
+      <div class="container">
+        <h2>O que ele faz</h2>
+        <div class="features">
+          <article class="card">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <h3>Vagas de vários sites num lugar só</h3>
+            <p>
+              VanHack (com o seu login, feito à mão), Remotive, Remote OK, Himalayas, We Work
+              Remotely, Jobicy, Get on Board, Strider, Arbeitnow, vagas direto das empresas
+              (Greenhouse, Lever e Ashby), repositórios de vagas no GitHub e o "Who is hiring?"
+              do Hacker News. A mesma vaga em dois sites aparece uma vez só.
+            </p>
+          </article>
+          <article class="card">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 8 8" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>
+            <h3>Análise na hora em que você pedir</h3>
+            <p>
+              Nota de 0 a 100, um resumo do encaixe, passos de preparação, exatamente 20
+              perguntas de entrevista, as lacunas e o que melhorar no CV, no LinkedIn e na
+              VanHack. Com Claude, OpenAI, Gemini ou Ollama, que roda no seu PC e é grátis.
+              Nada é gasto até você clicar em Analisar.
+            </p>
+          </article>
+          <article class="card">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <h3>Coleta diária automática</h3>
+            <p>
+              Pelo Agendador de Tarefas do Windows, com o app fechado. Se o PC estava desligado
+              na hora marcada, a coleta roda assim que ele ligar.
+            </p>
+          </article>
+          <article class="card">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <h3>Avisos das vagas novas</h3>
+            <p>
+              Uma notificação do Windows, ligada de fábrica. E-mail e WhatsApp são opcionais.
+              Se algo der errado, como uma sessão expirada, o aviso diz o que foi.
+            </p>
+          </article>
+        </div>
+
+        <div class="gallery">
+          <figure class="shot wide">
+            <picture>
+              <source srcset="/img/jobs-dark.png" media="(prefers-color-scheme: dark)">
+              <img src="/img/jobs-light.png" width="1282" height="832" loading="lazy"
+                   alt="A lista de vagas: nota de aderência, título, empresa, palavras-chave das buscas, data de publicação e status de cada uma.">
+            </picture>
+            <figcaption>As vagas com a nota, as palavras-chave de cada busca e o status: nova, estudando, aplicada ou descartada.</figcaption>
+          </figure>
+          <figure class="shot">
+            <picture>
+              <source srcset="/img/sources-dark.png" media="(prefers-color-scheme: dark)">
+              <img src="/img/sources-light.png" width="1282" height="832" loading="lazy"
+                   alt="A tela de fontes: um card por site de vagas, cada um com uma chave para ligar ou desligar.">
+            </picture>
+            <figcaption>Cada fonte é ligada ou desligada separadamente.</figcaption>
+          </figure>
+          <figure class="shot">
+            <picture>
+              <source srcset="/img/llms-dark.png" media="(prefers-color-scheme: dark)">
+              <img src="/img/llms-light.png" width="1282" height="832" loading="lazy"
+                   alt="A tela de LLMs: cards de Claude, Gemini, Ollama e OpenAI, com o custo de cada um.">
+            </picture>
+            <figcaption>Você escolhe quem analisa: um serviço pago ou o Ollama, de graça.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="privacidade" class="section alt">
+      <div class="container narrow">
+        <h2>Seus dados ficam com você</h2>
+        <ul class="checks">
+          <li>As vagas, o seu perfil e as configurações ficam neste computador. Chaves e senhas vão para o Gerenciador de Credenciais do Windows.</li>
+          <li>A coleta não chama nenhum LLM. O seu perfil só sai do PC quando você clica em Analisar, e vai só para o LLM que você escolheu.</li>
+          <li>E-mails, telefones, links e CPF são tirados do currículo antes de ele ser salvo.</li>
+          <li>Nos sites que pedem conta, o login é seu, feito à mão. O app nunca digita senha nem resolve verificação humana.</li>
+          <li>Este site não usa cookies nem analytics. Para saber se há versão nova, o app só lê um arquivo público daqui.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="requisitos" class="section">
+      <div class="container narrow">
+        <h2>Requisitos</h2>
+        <ul class="plain">
+          <li><strong>Windows 10 ou 11, 64 bits.</strong> O app é em português.</li>
+          <li><strong>Google Chrome</strong>, para a VanHack: o app usa o Chrome instalado.</li>
+          <li><strong>Para analisar vagas:</strong> uma chave de API da Anthropic, OpenAI ou Google, ou o <a href="https://ollama.com" rel="noopener">Ollama</a> instalado.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="smartscreen" class="section alt">
+      <div class="container narrow">
+        <h2>"O Windows protegeu o computador"</h2>
+        <p>
+          O instalador ainda não tem assinatura digital, que custa caro para um projeto
+          pessoal. Por isso o Windows SmartScreen avisa na primeira vez. Para instalar:
+        </p>
+        <ol class="steps">
+          <li>Clique em <strong>Mais informações</strong>.</li>
+          <li>Confira se o aplicativo é <code>PeaoBilingue-Setup-&lt;versão&gt;.exe</code>.</li>
+          <li>Clique em <strong>Executar assim mesmo</strong>.</li>
+        </ol>
+        <p>Para ter certeza de que o arquivo é o publicado aqui, compare o SHA-256 no PowerShell:</p>
+        <pre><code>Get-FileHash .\PeaoBilingue-Setup-&lt;versão&gt;.exe -Algorithm SHA256</code></pre>
+        <p class="hash" data-release hidden>
+          SHA-256 da versão <span data-field="version"></span>:
+          <code data-field="sha256"></code>
+        </p>
+      </div>
+    </section>
+
+    <section id="perguntas" class="section">
+      <div class="container narrow">
+        <h2>Perguntas frequentes</h2>
+        <details>
+          <summary>É grátis?</summary>
+          <p>Sim, para uso pessoal e não comercial. As análises com um LLM pago são cobradas por esse serviço, na sua conta. Com o Ollama, não custam nada.</p>
+        </details>
+        <details>
+          <summary>Onde ficam os meus dados?</summary>
+          <p>Em <code>%LOCALAPPDATA%\PeaoBilingue</code>, no seu usuário do Windows. O programa fica em <code>%LOCALAPPDATA%\Programs\PeaoBilingue</code>.</p>
+        </details>
+        <details>
+          <summary>Como desinstalo?</summary>
+          <p>Em Configurações do Windows → Aplicativos. A desinstalação também remove a coleta diária. Os seus dados ficam, caso você instale de novo.</p>
+        </details>
+        <details>
+          <summary>Como fico sabendo de uma versão nova?</summary>
+          <p>O app avisa quando abre e mostra um botão para baixar. Instale por cima: os seus dados continuam lá.</p>
+        </details>
+        <details>
+          <summary>O app se candidata às vagas por mim?</summary>
+          <p>Não. Ele encontra, organiza e analisa. A candidatura é sempre sua, no site da vaga.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="section cta">
+      <div class="container cta-inner">
+        <h2>Pronto para testar?</h2>
+        <a class="button primary" href="/download/PeaoBilingue-Setup.exe">Baixar para Windows</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <p>
+        Peão Bilíngue · <a href="https://github.com/gvieiragoulart/peao-bilingue" rel="noopener">código no GitHub</a>
+        · <a href="https://github.com/gvieiragoulart/peao-bilingue/blob/main/LICENSE.md" rel="noopener">licença PolyForm Noncommercial 1.0.0</a>
+        (grátis para uso pessoal e não comercial)
+      </p>
+      <p class="muted">
+        Projeto independente, sem vínculo com a VanHack nem com os outros sites de vagas.
+        Cada vaga mantém o link e o crédito da sua fonte.
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -166,7 +166,7 @@ class FakeApi:
 
 
 class FakeReleaseFeed(ReleaseFeed):
-    """No new version, unless the test says so: the tests never call GitHub."""
+    """No new version, unless the test says so: the tests never call the download site."""
 
     def __init__(self, release: Release | None = None) -> None:
         self.release = release

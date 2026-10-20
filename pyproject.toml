@@ -1,10 +1,13 @@
 [project]
 name = "peao-bilingue"
-version = "0.1.0"
+version = "0.2.0"
 description = "A desktop job radar: collects jobs from several sites, analyzes the fit with LLMs and notifies you."
 readme = "README.md"
+# Source available, free for noncommercial use; commercial use needs a separate license.
+license = "PolyForm-Noncommercial-1.0.0"
+license-files = ["LICENSE.md"]
 authors = [
-    { name = "gabriel vieira", email = "116896794+gvieiragoulart@users.noreply.github.com" }
+    { name = "Gabriel Vieira", email = "116896794+gvieiragoulart@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
@@ -62,6 +65,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # The environment (data folder, keyring) is set up before importing the project.
 "tests/conftest.py" = ["E402"]
+"packaging/site_screenshots.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.12"
