@@ -76,6 +76,29 @@ jobs:
       - name: pytest — unit
         run: uv run pytest -m "not integration"
 
+  linux-package:
+    name: Linux release bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Tk for the desktop bundle
+        run: sudo apt-get update && sudo apt-get install -y python3-tk
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version: "0.12.5"
+          python-version: "3.12"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked --group packaging
+      - name: Build and package Linux bundle
+        run: bash packaging/build_linux.sh
+      - name: Check bundled CLI and archive checksum
+        run: |
+          ./dist/PeaoBilingue/PeaoBilingue adapters
+          version="$(uv version --short)"
+          (cd dist && sha256sum -c "PeaoBilingue-linux-x86_64-${version}.tar.gz.sha256")
+
   integration:
     name: Integration tests
     # Playwright's Chromium, a Tk window, PowerShell and another process: Windows.
