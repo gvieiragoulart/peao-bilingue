@@ -1,14 +1,21 @@
 """Importing this package registers every adapter in the factories."""
 
+import sys
+
 from peao_bilingue.adapters.llm import anthropic as _anthropic  # noqa: F401
 from peao_bilingue.adapters.llm import gemini as _gemini  # noqa: F401
 from peao_bilingue.adapters.llm import ollama as _ollama  # noqa: F401
 from peao_bilingue.adapters.llm import openai as _openai  # noqa: F401
 from peao_bilingue.adapters.notification import email as _email  # noqa: F401
-from peao_bilingue.adapters.notification import whatsapp as _whatsapp  # noqa: F401
 from peao_bilingue.adapters.notification import (
-    windows_toast as _windows_toast,  # noqa: F401
+    linux_desktop as _linux_desktop,  # noqa: F401
 )
+from peao_bilingue.adapters.notification import whatsapp as _whatsapp  # noqa: F401
+
+if sys.platform.startswith("win"):
+    from peao_bilingue.adapters.notification import (
+        windows_toast as _windows_toast,  # noqa: F401
+    )
 from peao_bilingue.adapters.sources import arbeitnow as _arbeitnow  # noqa: F401
 from peao_bilingue.adapters.sources import (
     company_boards as _company_boards,  # noqa: F401

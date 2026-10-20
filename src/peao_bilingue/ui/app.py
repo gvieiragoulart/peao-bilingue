@@ -241,7 +241,7 @@ class App(ctk.CTk):
 
     def toggle_mode(self) -> None:
         """The sidebar's button: light to dark and back, saved like Settings' choice
-        (which then reads "Light" or "Dark" instead of "Same as Windows")."""
+        (which then reads "Light" or "Dark" instead of "System default")."""
         mode = "light" if ctk.get_appearance_mode() == "Dark" else "dark"
         config.save({"appearance": mode})
         ctk.set_appearance_mode(mode)

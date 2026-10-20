@@ -1,6 +1,6 @@
 # Peão Bilíngue
 
-A personal job radar for Windows: it collects jobs from several sites, filters them by your
+A personal job radar for Windows and Linux: it collects jobs from several sites, filters them by your
 searches and lets you know about the new ones. You pick which to analyze, with which LLM and
 with which source's profile.
 
@@ -24,7 +24,29 @@ The installer isn't digitally signed yet, so Windows may show "Windows protected
 "More info" → "Run anyway". The site shows each installer's SHA-256, to check with
 `Get-FileHash .\PeaoBilingue-Setup-<version>.exe`.
 
-## Running from source
+## Running on Linux
+
+On Debian or Ubuntu, install the desktop dependencies first:
+
+```bash
+sudo apt install python3-tk gnome-keyring libnotify-bin
+```
+
+Install [uv](https://docs.astral.sh/uv/), then from the project folder:
+
+```bash
+uv sync
+uv run peao-ui
+```
+
+The app uses your desktop's Secret Service through GNOME Keyring for API keys. Make sure
+your desktop session has unlocked the keyring. Linux desktop notifications use
+`notify-send` from `libnotify-bin`. Daily collection uses a per-user systemd timer; it
+runs while the user systemd session is available, and catches up after a missed run.
+The **VanHack** source and manual login need Google Chrome installed. Other public job
+sources do not need a browser.
+
+## Running from source on Windows
 
 ```bash
 uv sync
@@ -36,8 +58,9 @@ are looked up in the current folder. **The first time**, a six-step guide takes 
 tabs: what the app does with your data, a first search, the sources, your CV, the LLM, and the
 daily collection with its notices. Nothing is saved until "Concluir"; it can be skipped, and
 reopened from Settings. After that, everything is configured on its tabs: sources, searches,
-LLM providers, notices and limits. **Keys and passwords live in Windows Credential Manager**,
-not in a file; the rest goes to `data/config.json`. `.env` (copied from `.env.example`) still
+LLM providers, notices and limits. **Keys and passwords live in the system keyring**
+(Windows Credential Manager on Windows, Secret Service on Linux), not in a file; the rest
+goes to `data/config.json`. `.env` (copied from `.env.example`) still
 works as an alternative for the command line.
 
 | Tab (in the app) | What it's for |
@@ -163,7 +186,7 @@ Differences from running the project:
 - **The data lives in `%LOCALAPPDATA%\PeaoBilingue`** (`data/`, `.env`, `profile_notes.md`,
   `artifacts/`), not next to the program: the .exe can be anywhere. To bring existing data, copy
   the project's `data/` there (with the app closed). `PEAO_DATA_DIR` still points elsewhere.
-- The LLM keys live in Windows Credential Manager, shared with the project: what was saved on
+- The LLM keys live in the system keyring, shared with the project: what was saved on
   the LLMs tab works in both. A key only in the project's `.env` does **not** reach the .exe;
   save it on the tab.
 - It uses **the installed Chrome** (Playwright's Chromium isn't bundled).

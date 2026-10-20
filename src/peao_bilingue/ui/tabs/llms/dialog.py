@@ -44,7 +44,7 @@ class LLMDialog(EntityDialog):
         if any(field in SECRETS for field in cls.fields):
             Hint(
                 self.body,
-                _("The keys live in Windows Credential Manager, not in a file."),
+                _("The keys live in the system keyring, not in a file."),
             ).pack(anchor="w", pady=(0, 10))
 
         self._finish(save=True)

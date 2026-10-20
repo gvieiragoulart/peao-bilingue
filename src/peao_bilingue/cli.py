@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import logging
+import sys
 
 from peao_bilingue import factories
 from peao_bilingue.application.collect import run_collection
@@ -87,7 +88,12 @@ def main() -> None:
     )
 
     schedule = commands.add_parser(
-        "schedule", help=_("daily collection through Windows Task Scheduler")
+        "schedule",
+        help=_(
+            "daily collection through the Linux user scheduler"
+            if sys.platform.startswith("linux")
+            else "daily collection through Windows Task Scheduler"
+        ),
     )
     schedule_actions = schedule.add_subparsers(dest="action")
     enable = schedule_actions.add_parser(

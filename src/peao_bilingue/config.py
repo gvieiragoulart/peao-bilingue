@@ -1,8 +1,9 @@
-"""Configuration: config.json + the Windows vault, with `.env` as a fallback.
+"""Configuration: config.json + the system keyring, with `.env` as a fallback.
 
-The window writes to `data/config.json` (whatever isn't secret) and to the keyring (on
-Windows, Credential Manager). Both beat `.env`; otherwise a change made on screen
-would be silently ignored. The CLI and the scheduled task read the same things.
+The window writes to `data/config.json` (whatever isn't secret) and to the system
+keyring (Credential Manager on Windows, Secret Service on Linux). Both beat `.env`;
+otherwise a change made on screen would be silently ignored. The CLI and scheduled
+collection read the same things.
 """
 
 import json
@@ -13,7 +14,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import keyring
-from keyring.errors import PasswordDeleteError
+from keyring.errors import NoKeyringError, PasswordDeleteError
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
@@ -38,6 +39,9 @@ def base_dir() -> Path:
     was opened from.
     """
     if is_frozen():
+        if sys.platform.startswith("linux"):
+            data_home = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
+            return Path(data_home) / "peao-bilingue"
         local = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
         return Path(local) / "PeaoBilingue"
     return Path.cwd()
@@ -124,15 +128,25 @@ class _Vault(PydanticBaseSettingsSource):
     ) -> tuple[Any, str, bool]:
         if field_name not in SECRETS:
             return None, field_name, False
-        return keyring.get_password(KEYRING_SERVICE, field_name), field_name, False
+        return _get_secret(field_name), field_name, False
 
     def __call__(self) -> dict[str, Any]:
         values = {}
         for name in SECRETS:
-            value = keyring.get_password(KEYRING_SERVICE, name)
+            value = _get_secret(name)
             if value:
                 values[name] = value
         return values
+
+
+def _get_secret(name: str) -> str | None:
+    """Read a saved key when this session has a configured OS keyring."""
+    try:
+        return keyring.get_password(KEYRING_SERVICE, name)
+    except NoKeyringError:
+        # Headless Linux sessions and minimal desktops may not have Secret Service.
+        # The rest of the app should still be usable; saving a key reports the issue.
+        return None
 
 
 class Settings(BaseSettings):
@@ -164,10 +178,10 @@ class Settings(BaseSettings):
     enabled_sources: list[str] = ["vanhack"]
     # The LLM preselected on the jobs screen; analysis is requested job by job.
     analysis_llm: str = "anthropic"
-    # Notices after the scheduled collection. The Windows notification needs no setup,
+    # Notices after the scheduled collection. The native notification needs no setup,
     # so it starts on; email and WhatsApp start off: turned on before being filled in,
     # they would record a failed notice on every collection.
-    notifiers: list[str] = ["windows"]
+    notifiers: list[str] = ["linux" if sys.platform.startswith("linux") else "windows"]
 
     # VanHack
     # Login is passwordless (magic link / Google / LinkedIn) and guarded by
