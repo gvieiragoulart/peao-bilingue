@@ -14,10 +14,7 @@ from peao_bilingue.domain.collection import ManualSession
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import theme
 from peao_bilingue.ui.modal import EntityDialog
-from peao_bilingue.ui.presentation import source_features
 from peao_bilingue.ui.widgets import Form, Heading, Hint, OutlineButton, adapter_fields
-
-CHIP_COLOR = theme.CONTROL
 
 
 class SourceDialog(EntityDialog):
@@ -47,18 +44,6 @@ class SourceDialog(EntityDialog):
         self.set_enabled(enabled)
 
         self.description = self._paragraph(cls.description, theme.TEXT)
-        chips = ctk.CTkFrame(self.body, fg_color="transparent")
-        chips.pack(fill="x", pady=(0, 10))
-        for feature in source_features(cls):
-            ctk.CTkLabel(
-                chips,
-                text=feature,
-                fg_color=CHIP_COLOR,
-                corner_radius=8,
-                height=22,
-                font=theme.small(),
-                text_color=theme.MUTED,
-            ).pack(side="left", padx=(0, 6), ipadx=6)
         self.about = self._paragraph(cls.about, theme.MUTED) if cls.about else None
         if cls.site:
             OutlineButton(

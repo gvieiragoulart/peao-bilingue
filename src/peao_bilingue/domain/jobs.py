@@ -152,6 +152,7 @@ class ListedJob(BaseModel):
     fit_score: int | None
     searches: list[str]
     seen_at: datetime  # when we found it (timezone-aware)
+    viewed: bool = True  # whether the user opened it
     # The same job on other sites: kept once, with the other links here.
     also_on: list[Posting] = []
 
@@ -209,3 +210,18 @@ class JobRepository(ABC):
     @abstractmethod
     def change_statuses(self, keys: list[str], status: JobStatus) -> None:
         """Several jobs at once, all or none: an unknown key changes nothing."""
+
+    @abstractmethod
+    def mark_viewed(self, key: str) -> None:
+        """The user opened the job: it no longer counts as unseen."""
+
+    @abstractmethod
+    def count_unviewed(self) -> int:
+        """Jobs still `new` the user hasn't opened (duplicates left out): the
+        sidebar's badge."""
+
+    @abstractmethod
+    def delete_jobs(self, keys: list[str]) -> None:
+        """Deletes the jobs for good, with their analyses and their copies from other
+        sources; all or none: an unknown key deletes nothing. A source that still
+        lists one brings it back, new, on the next collection."""

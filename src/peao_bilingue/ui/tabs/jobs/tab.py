@@ -20,7 +20,6 @@ from peao_bilingue.ui.presentation import KeywordGroup
 from peao_bilingue.ui.tabs.jobs.dialog import JobDialog
 from peao_bilingue.ui.tabs.jobs.filters import JobFilters
 from peao_bilingue.ui.tabs.jobs.table import JobTable
-from peao_bilingue.ui.widgets import Hint
 
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
@@ -41,13 +40,12 @@ class JobsTab(ctk.CTkFrame):
 
         self.filters = JobFilters(self, on_apply=self.refresh)
         self.filters.pack(fill="x", pady=(0, 14))
-        self.count = Hint(self.filters.top, text="", anchor="w")
-        self.count.pack(side="left", fill="x", expand=True)
         app.bind("<Control-f>", lambda _event: self._focus_search())
 
-        # What the ticked boxes are for: only on screen while some are ticked.
+        # What the ticked boxes are for: only on screen while some are ticked, left of
+        # the search box (the pickers' row has no room left at the minimum width).
         self.selection_bar = ctk.CTkFrame(
-            self.filters.controls,
+            self.filters.top,
             fg_color=theme.ACCENT_SOFT,
             corner_radius=8,
             height=34,
@@ -80,6 +78,17 @@ class JobsTab(ctk.CTkFrame):
             command=self._discard_checked,
         )
         self.discard_checked.pack(side="left", padx=(0, 4))
+        # In the Discarded filter it takes Discard's place.
+        self.delete_checked = ctk.CTkButton(
+            self.selection_bar,
+            text=_("Delete for good"),
+            width=120,
+            height=28,
+            fg_color=theme.DANGER_SOFT,
+            hover_color=theme.DANGER_SOFT_HOVER,
+            text_color=theme.DANGER_TEXT,
+            command=self._delete_checked,
+        )
         self.clear_checked = ctk.CTkButton(
             self.selection_bar,
             text=_("Clear"),
@@ -137,7 +146,6 @@ class JobsTab(ctk.CTkFrame):
         }
         self._colors = presentation.search_colors([search.name for search in searches])
         self.table.show(jobs, self._keywords, self._colors)
-        self.count.configure(text=presentation.job_count(len(jobs)))
 
     def open_job(self, key: str) -> None:
         """Opens the job's dialog (a click on its row)."""
@@ -146,6 +154,11 @@ class JobsTab(ctk.CTkFrame):
             item = self._current  # left the filtered list, but still open
         if item is None:
             return
+        if not item.viewed:
+            self.app.repository.mark_viewed(key)
+            item = item.model_copy(update={"viewed": True})
+            self.table.mark_viewed(item)
+            self.app.refresh_badge()
         self._current = item
         self.dialog.show(
             item,
@@ -192,10 +205,22 @@ class JobsTab(ctk.CTkFrame):
         count = len(self.table.checked())
         self.checked_count.configure(text=_("{count} selected").format(count=count))
         state = "normal" if count else "disabled"
-        for button in (self.mark_checked, self.discard_checked, self.clear_checked):
+        for button in (
+            self.mark_checked,
+            self.discard_checked,
+            self.delete_checked,
+            self.clear_checked,
+        ):
             button.configure(state=state)
+        # Discarded jobs can only be deleted; the others, only discarded.
+        shown, hidden = (self.discard_checked, self.delete_checked)
+        if self._listing_discarded():
+            shown, hidden = hidden, shown
+        hidden.pack_forget()
+        if not shown.winfo_manager():
+            shown.pack(side="left", padx=(0, 4), before=self.clear_checked)
         if count and not self.selection_bar.winfo_manager():
-            self.selection_bar.pack(side="right")
+            self.selection_bar.pack(side="left")
         elif not count:
             self.selection_bar.pack_forget()
 
@@ -255,6 +280,32 @@ class JobsTab(ctk.CTkFrame):
             return
         self._current = current.model_copy(update={"status": status})
         self.open_job(current.job.key)
+
+    def _listing_discarded(self) -> bool:
+        label = self.filters.status.get()
+        return presentation.status_from_label(label) is JobStatus.discarded
+
+    def _delete_checked(self) -> None:
+        """The selection bar's "Delete for good", in the Discarded filter: asks first,
+        and there is no Undo."""
+        keys = self.table.checked()
+        if not keys:
+            return
+        question = _(
+            "Delete {count} job(s) for good? This can't be undone; if a source still "
+            "lists a job, it comes back on the next collection."
+        ).format(count=len(keys))
+        if not self.app.confirm(question):
+            return
+        self.app.repository.delete_jobs(keys)
+        logger.info("Deleted %d job(s).", len(keys))
+        current = self._current
+        if current and current.job.key in keys:
+            self.dialog.close()
+            self._current = None
+        self.table.clear_checked()
+        self.app.on_change()
+        self.app.inform(_("{count} job(s) deleted.").format(count=len(keys)))
 
     def _clear_checked(self) -> None:
         self.table.clear_checked()

@@ -140,7 +140,8 @@ tables repaint on refresh). Settings → "Aparência" (`appearance`: system/ligh
 the sun/moon button at the top of the sidebar (`App.toggle_mode`) flips light and dark and
 saves the same setting.
 **Sidebar** (`ui/navigation.py`) instead of a `CTkTabview`: `App.show(id)` swaps the section,
-the Jobs item shows a badge with the jobs still `new` (99+), and a card shows the daily
+the Jobs item shows a badge with the jobs not opened yet (`App.refresh_badge`, 99+; see
+"Seen jobs"), and a card shows the daily
 collection, the last run and "Coletar agora" (`App.collect_now` → `RunsTab.collect`).
 `App.inform` is an in-window `Toast` (no click needed); `App.notify(message, (label, action))`
 adds an action, e.g. Undo; errors and confirmations stay modal. `widgets.Card` /
@@ -150,6 +151,8 @@ Screenshots of the real window: `PrintWindow` on the window's HWND, from a scrip
 copy of `data/`. `packaging/site_screenshots.py` does it for the download site, over an
 in-memory database of **fictitious** jobs and analyses (never the real data), in both themes,
 into `site/img/` (PNG written with zlib: no Pillow).
+copy of `data/`. The window title is only "Peão Bilíngue <version>": "radar de vagas" is
+under the name, in the sidebar (2026-10-19).
 
 **Jobs tab (2026-10-17, redesigned 2026-10-18):** a card with the table; each row is two lines
 (the title over `presentation.job_meta`: company · place · short source name · found when) and
@@ -159,7 +162,7 @@ the fit's color by range (`presentation.fit_color`: ≥75, 50–74, <50). It is 
 `tk.Canvas`** (`ui/tabs/jobs/table.py`): a `ttk.Treeview` only colors whole rows, and a row of
 CustomTkinter widgets per job took 45 s for 500 jobs (the Canvas: 0.24 s). The filters apply on
 every change (status as a `CTkSegmentedButton`, starting on "New": what's left to review; Enter
-in the search box, Ctrl+F focuses it).
+in the search box, Ctrl+F focuses it). No count line above the table (removed 2026-10-19).
 A click opens the job's **side panel** (`ui/tabs/jobs/dialog.py`, still `JobDialog`) **inside the
 window**, placed on the right (`WIDTH` of the tab; not a `CTkToplevel`, for the same reason as
 the guide); the table stays usable and a click on another row shows that job. It shows
@@ -173,7 +176,8 @@ and key events don't reach the hidden test window: the tests call the click hand
 the Esc binding.
 **Selection and status colors (2026-10-18):** the first column is a box per row (the header's
 ticks every listed job); a click on the box only toggles it, elsewhere it opens the panel. A
-refresh keeps the boxes of jobs still listed. While boxes are ticked, a selection bar shows
+refresh keeps the boxes of jobs still listed. While boxes are ticked, a selection bar (on the top
+row, left of the search box, since 2026-10-19: the pickers' row cut it off at 1280 px) shows
 "Marcar como…" (any status), Descartar (asks first, `App.confirm`) and Limpar; both call
 `JobRepository.change_statuses` (one transaction, all or none) and offer Undo in the toast,
 which gives each job back its own old status. Each `JobStatus` carries its base color
@@ -181,9 +185,22 @@ which gives each job back its own old status. Each `JobStatus` carries its base 
 A click on the Published header cycles ↕ (the
 repository's order, newest found first) → ▼ newest at the source → ▲ oldest → ↕, sorted in the
 table (`JobTable.sort_by_published`), kept across refreshes; jobs with no date go last.
+**Seen jobs (2026-10-19):** `job.viewed` (`ListedJob.viewed`) says whether the user opened
+the job's panel. `save_job` creates new rows with False; the column's default (also its
+`server_default`, for the legacy migration's raw inserts) is True, so the jobs saved before
+the column count as seen. Opening a job calls `JobRepository.mark_viewed` and
+`App.refresh_badge` (no full refresh); the badge is `count_unviewed()` (status `new`, no
+duplicates, a SQL COUNT). An unseen row has an accent bar on its left edge and a bold title
+(a bar, not a dot: the accent dot in Published means "new at the source").
+**Deleting (2026-10-19):** in the Discarded filter the selection bar's Descartar becomes
+"Excluir de vez" (`_delete_checked`): asks first, no Undo, `JobRepository.delete_jobs`
+(all or none) removes the jobs, their analyses and their copies from other sources
+(`duplicate_of`). Nothing remembers a deleted job: a source still listing it brings it back,
+new and unseen, on the next collection (Gabriel's choice).
 
 **Sources tab (2026-10-18):** one card per source (logo, name, switch with no text: the
-switch says on/off, the descriptions, the chips); a click anywhere but the switch opens the
+switch says on/off, the description; no chips since 2026-10-19:
+`presentation.source_features` is left only for the guide's hint); a click anywhere but the switch opens the
 source's **dialog** (`ui/tabs/sources/dialog.py`, `SourceDialog`), inside the window like the
 job's panel, centered over the content with a `grab_set` (best effort: the hidden test window
 takes none), Esc or ✕ closes it. It shows `JobSource.description`, `about` (how the app uses
@@ -210,9 +227,8 @@ fill `body` and call `_finish(save=...)`. Cards reflow through `widgets.CardGrid
 `widgets.clickable` makes a whole card open its modal.
 **LLMs tab (2026-10-18):** the same pattern as Sources, with no switch: one card per LLM
 (`ui/tabs/llms/llm_card.py`: official logo, the short name from
-`presentation.short_llm_label`, `LLMProvider.description`, chips for the cost and what is
-missing, `presentation.llm_features`/`llm_state`, a "Padrão" chip and accent border on the
-default) and its modal (`ui/tabs/llms/dialog.py`, `LLMDialog`: `about`, `site`, the
+`presentation.short_llm_label`, `LLMProvider.description`, a "Padrão" chip and accent
+border on the default; the cost and "what is missing" chips were removed on 2026-10-19) and its modal (`ui/tabs/llms/dialog.py`, `LLMDialog`: `about`, `site`, the
 adapter's form). **Save is only in the modal**; there is no Save on the tab. The LLMs'
 logos are `ui/llm_logos.py` (`packaging/source_icons.py --llms`, from the icons of
 claude.ai, openai.com, gemini.google.com and ollama.com), looked up by `source_icons` after

@@ -1,5 +1,5 @@
-"""One source on the Sources tab, as a card: its logo, name and on/off switch, what it
-brings and what it needs. A click anywhere but the switch opens the source's dialog,
+"""One source on the Sources tab, as a card: its logo, name and on/off switch and what
+it brings. A click anywhere but the switch opens the source's dialog,
 where it is configured (and logged in, for those that need it)."""
 
 from collections.abc import Callable
@@ -11,7 +11,6 @@ from peao_bilingue import factories
 from peao_bilingue.domain.collection import ManualSession
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import theme
-from peao_bilingue.ui.presentation import source_features
 from peao_bilingue.ui.source_icons import SourceIcon
 from peao_bilingue.ui.widgets import Hint, clickable
 
@@ -19,7 +18,6 @@ PADDING = 16
 ICON_SIZE = 32
 # Room the logo and the switch take next to the title.
 TITLE_ROOM = 110
-CHIP_COLOR = theme.CONTROL
 CHEVRON_ICON = ""  # ChevronRight
 
 
@@ -70,16 +68,6 @@ class SourceCard(ctk.CTkFrame):
         footer.grid(
             row=2, column=0, columnspan=3, sticky="ew", padx=PADDING, pady=(10, 14)
         )
-        for feature in source_features(self.cls):
-            ctk.CTkLabel(
-                footer,
-                text=feature,
-                fg_color=CHIP_COLOR,
-                corner_radius=8,
-                height=22,
-                font=theme.small(),
-                text_color=theme.MUTED,
-            ).pack(side="left", padx=(0, 6), ipadx=6)
         chevron = theme.icon(CHEVRON_ICON)
         ctk.CTkLabel(
             footer,

@@ -1,7 +1,8 @@
 """The Jobs tab's table: one row per job, the source's icon by its title over a line with
 the company, place, source and when it was found; the fit, the keywords found and the status as soft
-chips; and a box per row to select several jobs at once. A click on the Published
-header sorts by the date at the source.
+chips; and a box per row to select several jobs at once. A job not opened yet has an
+accent bar on its left edge and a bold title. A click on the Published header sorts by
+the date at the source.
 
 Drawn on a Canvas: a ttk.Treeview only colors whole rows, never one cell, and a row
 of CustomTkinter widgets per job is far too slow (500 jobs took 45 s to build; the
@@ -40,6 +41,8 @@ ROW_LINE = ("#EEF0F2", "#272C34")
 CHECK_SIZE = 16
 CHECK_RADIUS = 4
 NEW_DOT = 7
+UNSEEN_BAR = 3  # wide, on the left edge of a job not opened yet
+UNSEEN_INSET = 8  # from the row's top and bottom
 WHEEL_ROWS = 3
 
 # The order by the date at the source; None keeps the repository's (newest found first).
@@ -109,7 +112,8 @@ class JobTable(ctk.CTkFrame):
             )
 
         self._text_font = font(13)
-        self._title_font = font(13, "bold")
+        self._title_font = font(13, "bold")  # a job not opened yet
+        self._seen_title_font = font(13)
         self._meta_font = font(12)
         self._header_font = font(12, "bold")
         self._chip_font = font(12, "bold")
@@ -176,6 +180,12 @@ class JobTable(ctk.CTkFrame):
     def select(self, key: str) -> None:
         if key in self._jobs:
             self._selected = key
+            self._redraw()
+
+    def mark_viewed(self, item: ListedJob) -> None:
+        """The job was opened: its row loses the unseen look, with no refresh."""
+        if item.job.key in self._jobs:
+            self._jobs[item.job.key] = item
             self._redraw()
 
     def on_check_change(self, callback: Callable[[], None]) -> None:
@@ -255,6 +265,9 @@ class JobTable(ctk.CTkFrame):
 
     def box_ticked(self, key: str) -> bool:
         return bool(self.canvas.find_withtag(f"tick{self._keys.index(key)}"))
+
+    def marked_unseen(self, key: str) -> bool:
+        return bool(self.canvas.find_withtag(f"unseen{self._keys.index(key)}"))
 
     def _texts(self, tag: str) -> list[str]:
         return [
@@ -344,6 +357,20 @@ class JobTable(ctk.CTkFrame):
             fill=self._row_color(index),
             tags=("row", f"row{index}"),
         )
+        unseen = not self._jobs[key].viewed
+        if unseen:
+            # A bar, not a dot: the accent dot already means "new at the source".
+            inset = self._px(UNSEEN_INSET)
+            self.canvas.create_rectangle(
+                0,
+                top + inset,
+                self._px(UNSEEN_BAR),
+                top + row_height - inset,
+                width=0,
+                fill=pick(theme.ACCENT),
+                tags=("unseen", f"unseen{index}"),
+            )
+        title_font = self._title_font if unseen else self._seen_title_font
         fit, title, meta, published, status = presentation.job_row(self._jobs[key])
         x = 0
         for column, width in zip(self._columns, widths, strict=True):
@@ -371,7 +398,7 @@ class JobTable(ctk.CTkFrame):
                 )
                 shift = icon + self._px(ICON_GAP)
                 for line, y, font, ink in (
-                    (title, 0.36, self._title_font, text),
+                    (title, 0.36, title_font, text),
                     (meta, 0.68, self._meta_font, pick(theme.MUTED)),
                 ):
                     self.canvas.create_text(
