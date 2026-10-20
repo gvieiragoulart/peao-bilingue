@@ -3,6 +3,8 @@ components together and runs the collection and the scheduler through the execut
 
 import asyncio
 import os
+import subprocess
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -99,7 +101,13 @@ class RunsTab(ctk.CTkFrame):
             )
             return
         self.app.log(_("Screenshots saved in {path}.").format(path=folder))
-        os.startfile(folder)
+        path = str(folder.resolve())
+        if sys.platform.startswith("win"):
+            os.startfile(path)
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", path])
+        else:
+            subprocess.Popen(["xdg-open", path])
 
     def refresh(self) -> None:
         self.history.show(self.app.repository.list_runs(50))

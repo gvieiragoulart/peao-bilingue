@@ -3,6 +3,8 @@ about/support. The sections load and read their own fields; the tab saves them
 together and does what the support buttons ask."""
 
 import os
+import subprocess
+import sys
 import webbrowser
 from typing import TYPE_CHECKING, Any
 
@@ -49,7 +51,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
     def _open_logs() -> None:
         # What support asks for first: app.log, collection.log and crash.log.
         LOG_DIR.mkdir(parents=True, exist_ok=True)
-        os.startfile(LOG_DIR)
+        _open_folder(LOG_DIR)
 
     @staticmethod
     def _open_project_page() -> None:
@@ -78,3 +80,13 @@ class SettingsTab(ctk.CTkScrollableFrame):
         self.app.inform(_("Settings saved."))
         # The Jobs tab's picker and the LLMs tab's Default follow the default LLM.
         self.app.on_change()
+
+
+def _open_folder(folder: os.PathLike[str]) -> None:
+    path = os.fspath(folder)
+    if sys.platform.startswith("win"):
+        os.startfile(path)
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", path])
+    else:
+        subprocess.Popen(["xdg-open", path])

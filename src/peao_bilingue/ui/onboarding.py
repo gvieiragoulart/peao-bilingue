@@ -6,6 +6,7 @@ leaves everything as it was. Settings → "Run the setup guide again" reopens it
 """
 
 import asyncio
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,7 +31,7 @@ from peao_bilingue.ui.widgets import Form, OutlineButton, adapter_fields
 if TYPE_CHECKING:
     from peao_bilingue.ui.app import App
 
-WINDOWS_NOTICE = "windows"
+DEFAULT_NOTICE = "linux" if sys.platform.startswith("linux") else "windows"
 WRAP = 760
 
 
@@ -174,7 +175,7 @@ class Onboarding(ctk.CTkFrame):
         for line in (
             _(
                 "Everything stays on this computer: the jobs, your profile and the "
-                "settings. Keys and passwords go to Windows Credential Manager."
+                "settings. Keys and passwords go to the system keyring."
             ),
             _(
                 "The collection calls no LLM. Your profile only goes to the LLM you "
@@ -335,7 +336,7 @@ class Onboarding(ctk.CTkFrame):
         self._show_llm_form()
         self._text(
             page,
-            _("The keys live in Windows Credential Manager, not in a file."),
+            _("The keys live in the system keyring, not in a file."),
             text_color=theme.MUTED,
         )
         return page
@@ -367,15 +368,15 @@ class Onboarding(ctk.CTkFrame):
         self._text(
             page,
             _(
-                "Even with the app closed (Windows Task Scheduler). If the computer is "
+                "Even with the app closed (the system scheduler). If the computer is "
                 "off at that time, it collects when it's turned on."
             ),
             text_color=theme.MUTED,
         )
-        notifier = factories.notifiers.class_of(WINDOWS_NOTICE)
+        notifier = factories.notifiers.class_of(DEFAULT_NOTICE)
         self.windows_notice = ctk.CTkSwitch(page, text=notifier.label)
         self.windows_notice.pack(anchor="w", pady=(8, 0))
-        if WINDOWS_NOTICE in settings.notifiers:
+        if DEFAULT_NOTICE in settings.notifiers:
             self.windows_notice.select()
         self._text(
             page,
@@ -449,9 +450,9 @@ class Onboarding(ctk.CTkFrame):
             cleaned = presentation.saved_without_contact_data(removed)
 
         # Email or WhatsApp turned on earlier stay as they are.
-        notifiers = [name for name in settings.notifiers if name != WINDOWS_NOTICE]
+        notifiers = [name for name in settings.notifiers if name != DEFAULT_NOTICE]
         if answers.windows_notice:
-            notifiers.insert(0, WINDOWS_NOTICE)
+            notifiers.insert(0, DEFAULT_NOTICE)
         changes: dict[str, Any] = {
             **answers.llm_settings,
             "enabled_sources": answers.sources,
