@@ -1,5 +1,11 @@
 # The download site's AWS resources
 
+This stack and the CloudFront distribution are retired from the release path. New
+versions are published to GitHub Releases by `.github/workflows/release.yml`.
+The stack is kept here as a record of the previous deployment; it is not created
+or updated by the current workflows. If it was deployed, remove it separately
+after checking whether any older installed version still reads its `latest.json`.
+
 `site.yaml` is a CloudFormation stack with everything the download site needs:
 
 - a **private S3 bucket** (no public access, SSE-S3, versioning with old versions expiring

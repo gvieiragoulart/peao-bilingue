@@ -1,9 +1,9 @@
-"""Writes THIRD_PARTY_NOTICES.txt for the installer: what the .exe bundles, and its terms.
+"""Writes THIRD_PARTY_NOTICES.txt for release packages and their bundled terms.
 
     uv run --no-sync python packaging/third_party_notices.py dist/installer/THIRD_PARTY_NOTICES.txt
 
 The MIT, BSD and Apache licenses of the bundled libraries ask that their notices go
-along with every copy, so the installer ships them next to the program. The list is
+along with every copy, so releases ship them next to the program. The list is
 peao-bilingue's runtime dependencies, walked from its own metadata (markers evaluated
 for this interpreter, so only what this build really has), plus what isn't a Python
 package: the interpreter itself, Tcl/Tk and PyInstaller's bootloader. Playwright's
@@ -103,7 +103,7 @@ def runtime_sections() -> list[str]:
     sections.append(
         section(
             f"Python {sys.version.split()[0]} (the interpreter, its standard library "
-            "and the libraries its Windows build bundles)",
+            "and the libraries this build bundles)",
             python_license.read_text(encoding="utf-8", errors="replace")
             if python_license
             else "PSF License Agreement: https://docs.python.org/3/license.html",

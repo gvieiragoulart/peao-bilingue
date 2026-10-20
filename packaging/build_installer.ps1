@@ -14,8 +14,7 @@ shell; installing the result from the Claude desktop app's shell does not (it is
 MSIX app: see CLAUDE.md), so install it from your own terminal.
 
 .PARAMETER SiteUrl
-The download site, the publisher's link in Windows' list of apps. $env:SITE_URL by
-default; without it, the project page on GitHub.
+The publisher's link in Windows' list of apps. Defaults to GitHub Releases.
 
 .PARAMETER SkipBuild
 Reuses dist\PeaoBilingue as it is instead of running PyInstaller.
@@ -25,7 +24,7 @@ powershell -ExecutionPolicy Bypass -File packaging\build_installer.ps1
 #>
 [CmdletBinding()]
 param(
-    [string]$SiteUrl = $env:SITE_URL,
+    [string]$SiteUrl,
     [switch]$SkipBuild
 )
 

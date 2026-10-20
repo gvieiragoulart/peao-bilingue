@@ -1,24 +1,33 @@
-// Shows the latest version, its size and its SHA-256 next to the download buttons, from
-// /latest.json (written by the release workflow). Without it (offline, nothing released
-// yet, JavaScript off) the page still works: the buttons are plain links.
+// Show the latest GitHub Release. The links already lead to Releases if this
+// request fails or JavaScript is disabled.
 (async () => {
-  let latest;
+  let release;
   try {
-    const response = await fetch("/latest.json", { cache: "no-cache" });
+    const response = await fetch(
+      "https://api.github.com/repos/gvieiragoulart/peao-bilingue/releases/latest",
+      { headers: { Accept: "application/vnd.github+json" } },
+    );
     if (!response.ok) return;
-    latest = await response.json();
+    release = await response.json();
   } catch {
     return;
   }
-  if (!latest || typeof latest.version !== "string") return;
+  if (!release || typeof release.tag_name !== "string") return;
 
+  const asset = release.assets?.find((item) =>
+    /^PeaoBilingue-Setup-\d+\.\d+\.\d+\.exe$/.test(item.name),
+  );
+  if (asset?.browser_download_url) {
+    for (const link of document.querySelectorAll("[data-download]")) {
+      link.href = asset.browser_download_url;
+    }
+  }
   const values = {
-    version: latest.version,
-    size:
-      typeof latest.size === "number"
-        ? `${(latest.size / 1048576).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`
-        : "",
-    sha256: typeof latest.sha256 === "string" ? latest.sha256 : "",
+    version: release.tag_name.replace(/^v/, ""),
+    size: asset?.size
+      ? `${(asset.size / 1048576).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`
+      : "",
+    sha256: asset?.digest?.startsWith("sha256:") ? asset.digest.slice(7) : "",
   };
   for (const element of document.querySelectorAll("[data-field]")) {
     element.textContent = values[element.dataset.field] ?? "";

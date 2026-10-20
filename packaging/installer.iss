@@ -10,7 +10,7 @@
   #error Pass the version: iscc /DAppVersion=x.y.z packaging\installer.iss
 #endif
 #ifndef SiteUrl
-  #define SiteUrl "https://github.com/gvieiragoulart/peao-bilingue"
+  #define SiteUrl "https://github.com/gvieiragoulart/peao-bilingue/releases"
 #endif
 
 #define AppName "Peão Bilíngue"
