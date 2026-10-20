@@ -43,12 +43,30 @@ jobs:
 
   unit:
     name: Unit tests
-    # The app is for Windows: the tests run on the same OS.
+    # Keep Windows-specific behavior covered on its native OS.
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.2.0  # no moving major tag: an exact version
+        with:
+          version: "0.12.5"
+          python-version: "3.12"
+          enable-cache: true
+      - name: Install dependencies (exactly the ones in uv.lock)
+        run: uv sync --locked
+      - name: pytest — unit
+        run: uv run pytest -m "not integration"
+
+  linux-unit:
+    name: Linux unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Tk for the desktop imports
+        run: sudo apt-get update && sudo apt-get install -y python3-tk
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
           version: "0.12.5"
           python-version: "3.12"

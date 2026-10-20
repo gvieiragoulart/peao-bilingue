@@ -256,11 +256,10 @@ adapters use real, anonymized HTML in `tests/fixtures/<source>/`. The tests run 
 English text; `tests/test_i18n.py` checks that every message has a translation and that no
 Portuguese slipped into the code.
 
-**CI** (`.github/workflows/ci.yml`): every PR and every push to `main` runs three jobs: lint
-and typing (ruff and mypy, on Linux), unit tests and integration tests (on Windows, the app's
-OS; the integration job installs Playwright's Chromium, with a cache). `release.yml` publishes a
-version tag (see "The .exe") and `site.yml` publishes `site/` to the download site whenever it
-changes on `main`.
+**CI** (`.github/workflows/ci.yml`): every PR and every push to `main` runs lint and
+typing, unit tests on Windows and Linux, and integration tests on Windows (with
+Playwright's Chromium cached). `release.yml` publishes a version tag (see "The .exe")
+and `site.yml` publishes `site/` to the download site whenever it changes on `main`.
 
 ## License
 
