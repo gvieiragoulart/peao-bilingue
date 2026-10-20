@@ -122,6 +122,12 @@ def test_panel_with_analysis_has_the_fit_and_its_parts() -> None:
     assert panel.outdated == ""
 
 
+def test_analysis_date_is_in_the_users_timezone() -> None:
+    # The repository reads dates back in UTC; 12:30 UTC is 09:30 in São Paulo.
+    in_utc = saved(created_at=NOW.astimezone(ZoneInfo("UTC")))
+    assert "06/10/2026 09:30" in presentation.job_panel(listed(), in_utc).footer
+
+
 def test_panel_warns_when_profile_changed_after_analysis() -> None:
     panel = presentation.job_panel(listed(), saved(profile_outdated=True))
     assert "The vanhack profile changed after this analysis" in panel.outdated

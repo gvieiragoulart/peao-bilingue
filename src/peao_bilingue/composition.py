@@ -12,7 +12,7 @@ from peao_bilingue import factories
 from peao_bilingue.adapters.persistence.lock import FileRunLock
 from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
 from peao_bilingue.adapters.scheduling.windows import WindowsScheduler
-from peao_bilingue.adapters.updates.github import GitHubReleases
+from peao_bilingue.adapters.updates.manifest import SiteManifest
 from peao_bilingue.application.collect import Services
 from peao_bilingue.config import ARTIFACTS_DIR, BASE_DIR, DATA_DIR, settings
 from peao_bilingue.domain.analysis import LLMProvider
@@ -87,4 +87,4 @@ def build_scheduler() -> Scheduler:
 
 
 def build_release_feed() -> ReleaseFeed:
-    return GitHubReleases(settings.update_repository)
+    return SiteManifest(settings.site_url)
