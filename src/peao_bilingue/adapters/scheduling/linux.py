@@ -24,7 +24,9 @@ TIMER = USER_UNITS / f"{UNIT}.timer"
 
 def _unit_quote(value: str) -> str:
     """Quote one systemd ExecStart argument."""
-    return '"' + value.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%") + '"'
+    return (
+        '"' + value.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%") + '"'
+    )
 
 
 class LinuxScheduler(Scheduler):
@@ -113,7 +115,9 @@ class LinuxScheduler(Scheduler):
         active = self._run("is-active", f"{UNIT}.timer", check=False)
         if active.returncode:
             return None
-        output = self._run("show", f"{UNIT}.timer", "--property=TimersCalendar", "--value").stdout.strip()
+        output = self._run(
+            "show", f"{UNIT}.timer", "--property=TimersCalendar", "--value"
+        ).stdout.strip()
         match = re.search(r"\*-\*-\* ([0-2]\d:[0-5]\d):00", output)
         if not match:
             return None
