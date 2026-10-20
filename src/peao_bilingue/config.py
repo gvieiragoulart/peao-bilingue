@@ -62,10 +62,7 @@ ARTIFACTS_DIR = BASE_DIR / "artifacts"
 ENV_PATH = BASE_DIR / ".env"
 
 KEYRING_SERVICE = "peao-bilingue"
-# The download site: CloudFormation's SiteUrl output (infra/site.yaml), no trailing slash.
-# Every installed version checks for updates here, so it never changes: a custom domain is
-# added to the same CloudFront distribution, and this address keeps working.
-SITE_URL = "https://REPLACE-WITH-CLOUDFRONT-DOMAIN.cloudfront.net"
+RELEASE_REPOSITORY = "gvieiragoulart/peao-bilingue"
 # These fields go to the vault, never to config.json.
 SECRETS = frozenset(
     {
@@ -284,10 +281,9 @@ class Settings(BaseSettings):
     # The window: follow Windows' light/dark mode, or force one.
     appearance: Literal["system", "light", "dark"] = "system"
 
-    # Updates: when the app opens, ask the download site whether there's a newer version
-    # ({site_url}/latest.json). The site is also the project page.
+    # Updates: query this repository's latest published GitHub Release on startup.
     check_for_updates: bool = True
-    site_url: str = SITE_URL
+    release_repository: str = RELEASE_REPOSITORY
 
     # Email
     smtp_host: str = "smtp.gmail.com"

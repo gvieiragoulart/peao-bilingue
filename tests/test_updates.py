@@ -1,9 +1,9 @@
-"""Whether a newer version was released, from the site's latest.json, with no network."""
+"""Whether a newer version was published on GitHub, with no network."""
 
 import httpx
 import pytest
 
-from peao_bilingue.adapters.updates.manifest import SiteManifest
+from peao_bilingue.adapters.updates.github import GitHubReleases
 from peao_bilingue.application.updates import newer_release
 from peao_bilingue.domain.updates import Release, ReleaseFeed, is_newer, version_tuple
 
@@ -31,7 +31,7 @@ def test_compares_numbers_not_text() -> None:
 
 
 async def test_only_a_newer_release_is_offered() -> None:
-    page = "https://d123example.cloudfront.net/"
+    page = "https://github.com/owner/repo/releases/tag/v0.2.0"
     assert await newer_release(FixedFeed(Release(version="v0.2.0", url=page)), "0.1.0")
     assert (
         await newer_release(FixedFeed(Release(version="v0.1.0", url=page)), "0.1.0")
@@ -40,44 +40,31 @@ async def test_only_a_newer_release_is_offered() -> None:
     assert await newer_release(FixedFeed(None), "0.1.0") is None
 
 
-SITE = "https://d123example.cloudfront.net"
-# What release.yml writes.
-MANIFEST = {
-    "version": "0.2.0",
-    "page": f"{SITE}/",
-    "installer": f"{SITE}/releases/0.2.0/PeaoBilingue-Setup-0.2.0.exe",
-    "sha256": "a" * 64,
-    "size": 59282241,
-    "published": "2026-10-19T20:00:00Z",
+RELEASE = {
+    "tag_name": "v0.2.0",
+    "html_url": "https://github.com/owner/repo/releases/tag/v0.2.0",
 }
 
 
-def site(handler: httpx.MockTransport, url: str = SITE) -> SiteManifest:
-    return SiteManifest(url, client=httpx.AsyncClient(transport=handler))
+def github(handler: httpx.MockTransport) -> GitHubReleases:
+    return GitHubReleases("owner/repo", client=httpx.AsyncClient(transport=handler))
 
 
 def answering(response: httpx.Response) -> httpx.MockTransport:
     return httpx.MockTransport(lambda _request: response)
 
 
-async def test_reads_the_sites_latest_json() -> None:
+async def test_reads_the_latest_github_release() -> None:
     requested: list[str] = []
 
     def respond(request: httpx.Request) -> httpx.Response:
         requested.append(str(request.url))
-        return httpx.Response(200, json=MANIFEST)
+        return httpx.Response(200, json=RELEASE)
 
-    # A trailing slash in the setting doesn't double the one in the path.
-    release = await site(httpx.MockTransport(respond), f"{SITE}/").latest()
+    release = await github(httpx.MockTransport(respond)).latest()
 
-    assert release == Release(version="0.2.0", url=f"{SITE}/")
-    assert requested == [f"{SITE}/latest.json"]
-
-
-async def test_without_a_page_the_site_is_where_to_download() -> None:
-    manifest = {"version": "0.3.0"}
-    release = await site(answering(httpx.Response(200, json=manifest))).latest()
-    assert release == Release(version="0.3.0", url=f"{SITE}/")
+    assert release == Release(version="v0.2.0", url=RELEASE["html_url"])
+    assert requested == ["https://api.github.com/repos/owner/repo/releases/latest"]
 
 
 @pytest.mark.parametrize(
@@ -87,17 +74,18 @@ async def test_without_a_page_the_site_is_where_to_download() -> None:
         httpx.Response(500),
         httpx.Response(200, text="<html>not json</html>"),
         httpx.Response(200, json=["0.2.0"]),
-        httpx.Response(200, json={"page": f"{SITE}/"}),
-        httpx.Response(200, json={"version": 2}),
+        httpx.Response(200, json={"html_url": RELEASE["html_url"]}),
+        httpx.Response(200, json={"tag_name": 2, "html_url": RELEASE["html_url"]}),
+        httpx.Response(200, json={"tag_name": "v0.2.0"}),
     ],
-    ids=["404", "500", "not-json", "not-an-object", "no-version", "number-version"],
+    ids=["404", "500", "not-json", "not-an-object", "no-tag", "number-tag", "no-page"],
 )
-async def test_anything_but_a_valid_manifest_is_none(response: httpx.Response) -> None:
-    assert await site(answering(response)).latest() is None
+async def test_anything_but_a_valid_release_is_none(response: httpx.Response) -> None:
+    assert await github(answering(response)).latest() is None
 
 
 async def test_offline_is_none_not_an_error() -> None:
     def offline(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("no network", request=request)
 
-    assert await site(httpx.MockTransport(offline)).latest() is None
+    assert await github(httpx.MockTransport(offline)).latest() is None
