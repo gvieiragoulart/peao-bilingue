@@ -40,7 +40,9 @@ def base_dir() -> Path:
     """
     if is_frozen():
         if sys.platform.startswith("linux"):
-            data_home = os.environ.get("XDG_DATA_HOME") or str(Path.home() / ".local" / "share")
+            data_home = os.environ.get("XDG_DATA_HOME") or str(
+                Path.home() / ".local" / "share"
+            )
             return Path(data_home) / "peao-bilingue"
         local = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
         return Path(local) / "PeaoBilingue"
