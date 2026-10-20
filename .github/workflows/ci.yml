@@ -72,7 +72,7 @@ jobs:
           python-version: "3.12"
           enable-cache: true
       - name: Install dependencies (exactly the ones in uv.lock)
-        run: uv sync --locked
+        run: uv sync --locked --python /usr/bin/python3.12
       - name: pytest — unit
         run: uv run pytest -m "not integration"
 
