@@ -265,6 +265,15 @@ daily task is registered again under its new name and command.
 
 ## Development
 
+Enable the repository's pre-commit checks once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Each commit then runs Ruff's rules, Ruff's formatting check, and mypy before
+Git writes the commit. These are the same lint and typing checks used by CI.
+
 ```bash
 uv run pytest                          # all offline: no site, no SMTP, no LLM
 uv run pytest -m "not integration"     # unit tests only: seconds

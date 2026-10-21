@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+
+cd "$(git rev-parse --show-toplevel)"
+
+if ! command -v uv >/dev/null 2>&1; then
+    printf 'pre-commit: uv is required to run Ruff and mypy\n' >&2
+    exit 1
+fi
+
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv run --locked mypy
