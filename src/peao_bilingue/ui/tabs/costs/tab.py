@@ -25,6 +25,18 @@ PROVIDER_LABELS = {
     "ollama": "Ollama",
     "Jev": "Jev",
 }
+TASK_KIND_LABELS = {"analysis": _("Analysis")}
+TASK_STATUS_LABELS = {
+    "running": _("Running"),
+    "succeeded": _("Succeeded"),
+    "failed": _("Failed"),
+}
+CALL_STATUS_LABELS = {
+    "succeeded": _("Succeeded"),
+    "invalid": _("Invalid"),
+    "refused": _("Refused"),
+    "error": _("Error"),
+}
 
 
 def money(amount: Decimal | None) -> str:
@@ -95,11 +107,12 @@ class CostsTab(ctk.CTkScrollableFrame):
                 ("provider", _("Provider"), 160),
                 ("cost", _("Estimated cost"), 130),
                 ("tasks", _("Tasks"), 80),
-                ("calls", _("API calls"), 90),
+                ("calls", _("API calls"), 120),
                 ("unknown", _("Unpriced"), 100),
             ],
             height=150,
         )
+        self.providers.tree.configure(height=4)
         self.providers.pack(fill="x", pady=(0, 16))
         self.providers.on_select(self._pick_provider)
         Heading(self, text=_("By requested model")).pack(anchor="w", pady=(0, 8))
@@ -109,11 +122,12 @@ class CostsTab(ctk.CTkScrollableFrame):
                 ("provider", _("Provider"), 150),
                 ("model", _("Model"), 220),
                 ("cost", _("Estimated cost"), 130),
-                ("calls", _("API calls"), 90),
+                ("calls", _("API calls"), 120),
                 ("unknown", _("Unpriced"), 100),
             ],
             height=140,
         )
+        self.models.tree.configure(height=5)
         self.models.pack(fill="x", pady=(0, 16))
         self.models.on_select(self._pick_model)
 
@@ -127,14 +141,15 @@ class CostsTab(ctk.CTkScrollableFrame):
             self,
             [
                 ("when", _("When"), 130),
-                ("task", _("Task"), 230),
-                ("provider", _("Provider / model"), 180),
-                ("calls", _("Calls"), 58),
+                ("task", _("Task"), 200),
+                ("provider", _("Provider / model"), 220),
+                ("calls", _("Calls"), 90),
                 ("cost", _("Estimated cost"), 132),
                 ("status", _("Status"), 80),
             ],
             height=220,
         )
+        self.tasks.tree.configure(height=6)
         self.tasks.pack(fill="x", pady=(0, 16))
         self.tasks.on_select(self._pick_task)
 
@@ -146,16 +161,17 @@ class CostsTab(ctk.CTkScrollableFrame):
         self.calls = Table(
             self,
             [
-                ("attempt", _("Call"), 55),
-                ("model", _("Model used"), 170),
+                ("attempt", _("Call"), 80),
+                ("model", _("Model used"), 150),
                 ("status", _("Status"), 100),
-                ("input", _("Input tokens"), 95),
-                ("output", _("Output tokens"), 100),
-                ("cached", _("Cached input"), 100),
+                ("input", _("Input tokens"), 125),
+                ("output", _("Output tokens"), 125),
+                ("cached", _("Cached input"), 130),
                 ("cost", _("Estimated cost"), 125),
             ],
             height=135,
         )
+        self.calls.tree.configure(height=4)
         self.calls.pack(fill="x", pady=(0, 20))
         self.calls.on_select(self._pick_call)
         self.call_rate_hint = Hint(self, text="", anchor="w", wraplength=720)
@@ -259,11 +275,11 @@ class CostsTab(ctk.CTkScrollableFrame):
                     task.id,
                     (
                         task.started_at.strftime("%Y-%m-%d %H:%M"),
-                        f"{_(task.kind.capitalize())}: {task.title}",
+                        f"{TASK_KIND_LABELS.get(task.kind, task.kind.capitalize())}: {task.title}",
                         f"{task.provider} · {task.model}",
                         str(task.calls),
                         money(task.cost_usd) + (" *" if task.unknown_calls else ""),
-                        _(task.status.capitalize()),
+                        TASK_STATUS_LABELS.get(task.status, task.status.capitalize()),
                     ),
                 )
                 for task in shown
@@ -317,7 +333,7 @@ class CostsTab(ctk.CTkScrollableFrame):
                     (
                         str(call.sequence),
                         call.model,
-                        _(call.status.capitalize()),
+                        CALL_STATUS_LABELS.get(call.status, call.status.capitalize()),
                         str(call.usage.input_tokens)
                         if call.usage and call.usage.input_tokens is not None
                         else "—",

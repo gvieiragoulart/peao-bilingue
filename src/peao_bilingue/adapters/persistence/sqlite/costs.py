@@ -101,18 +101,14 @@ class CostsSQLite(BaseSQLite, CostRepository):
         with self._session() as session:
             query = select(CostTaskTable).order_by(col(CostTaskTable.started_at).desc())
             if since is not None:
-                query = query.where(
-                    CostTaskTable.started_at >= since.replace(tzinfo=None)
-                )
+                query = query.where(CostTaskTable.started_at >= since)
             rows = session.exec(query).all()
             if not rows:
                 return []
             identifiers = [row.id for row in rows]
             call_query = select(CostCallTable).join(CostTaskTable)
             if since is not None:
-                call_query = call_query.where(
-                    CostTaskTable.started_at >= since.replace(tzinfo=None)
-                )
+                call_query = call_query.where(CostTaskTable.started_at >= since)
             calls = session.exec(call_query).all()
         totals: dict[str, tuple[int, int, Decimal]] = {
             identifier: (0, 0, Decimal("0")) for identifier in identifiers

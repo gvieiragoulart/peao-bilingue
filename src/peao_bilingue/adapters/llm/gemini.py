@@ -75,7 +75,7 @@ class Gemini(LLMProvider):
                 response_json_schema=schema.model_json_schema(),
             ),
         )
-        billed = response.usage_metadata
+        billed = getattr(response, "usage_metadata", None)
         usage = (
             TokenUsage(
                 input_tokens=billed.prompt_token_count,
@@ -97,12 +97,12 @@ class Gemini(LLMProvider):
                 text="",
                 refused=True,
                 reason=block,
-                model=response.model_version or self.model,
+                model=getattr(response, "model_version", None) or self.model,
                 usage=usage,
             )
         return LLMResponse(
             text=response.text or "",
-            model=response.model_version or self.model,
+            model=getattr(response, "model_version", None) or self.model,
             usage=usage,
         )
 
