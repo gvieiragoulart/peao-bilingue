@@ -27,7 +27,9 @@ MODEL_FIELDS = {
 
 _NON_TEXT_FEATURES = (
     "image",
+    "nano-banana",
     "audio",
+    "omni",
     "realtime",
     "transcrib",
     "tts",
@@ -36,6 +38,7 @@ _NON_TEXT_FEATURES = (
     "search",
     "deep-research",
     "computer",
+    "robotics",
     "video",
     "veo",
     "imagen",
