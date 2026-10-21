@@ -1,6 +1,7 @@
 """Every SQLite repository in one object."""
 
 from peao_bilingue.adapters.persistence.sqlite.analyses import AnalysesSQLite
+from peao_bilingue.adapters.persistence.sqlite.costs import CostsSQLite
 from peao_bilingue.adapters.persistence.sqlite.jobs import JobsSQLite
 from peao_bilingue.adapters.persistence.sqlite.profiles import ProfilesSQLite
 from peao_bilingue.adapters.persistence.sqlite.runs import RunsSQLite
@@ -14,6 +15,7 @@ class SQLiteRepository(
     AnalysesSQLite,
     ProfilesSQLite,
     RunsSQLite,
+    CostsSQLite,
     Repository,
 ):
     """The five ports on the same database: one object, each part in its own file."""

@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import LLMProvider, LLMResponse, Message
+from peao_bilingue.domain.costs import TokenUsage
 from peao_bilingue.domain.errors import ProviderUnavailable
 from peao_bilingue.factories import llms
 from peao_bilingue.i18n import _
@@ -80,6 +81,26 @@ class OpenAI(LLMProvider):
             },
         )
         message = response.choices[0].message
+        billed = response.usage
+        details = billed.prompt_tokens_details if billed else None
+        usage = (
+            TokenUsage(
+                input_tokens=billed.prompt_tokens,
+                output_tokens=billed.completion_tokens,
+                cached_input_tokens=(details.cached_tokens or 0) if details else 0,
+                cache_write_tokens=(details.cache_write_tokens or 0) if details else 0,
+            )
+            if billed
+            else None
+        )
         if message.refusal:
-            return LLMResponse(text="", refused=True, reason=message.refusal)
-        return LLMResponse(text=message.content or "")
+            return LLMResponse(
+                text="",
+                refused=True,
+                reason=message.refusal,
+                model=response.model,
+                usage=usage,
+            )
+        return LLMResponse(
+            text=message.content or "", model=response.model, usage=usage
+        )

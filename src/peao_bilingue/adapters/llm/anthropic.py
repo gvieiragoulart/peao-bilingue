@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import LLMProvider, LLMResponse, Message
+from peao_bilingue.domain.costs import TokenUsage
 from peao_bilingue.factories import llms
 from peao_bilingue.i18n import _
 
@@ -80,7 +81,22 @@ class Anthropic(LLMProvider):
             betas=[BETA_FALLBACK] if with_fallback else omit,
             fallbacks="default" if with_fallback else omit,
         )
+        billed = response.usage
+        cache_read = billed.cache_read_input_tokens or 0
+        cache_write = billed.cache_creation_input_tokens or 0
+        usage = TokenUsage(
+            input_tokens=billed.input_tokens + cache_read + cache_write,
+            output_tokens=billed.output_tokens,
+            cached_input_tokens=cache_read,
+            cache_write_tokens=cache_write,
+        )
         if response.stop_reason == "refusal":
-            return LLMResponse(text="", refused=True, reason=str(response.stop_details))
+            return LLMResponse(
+                text="",
+                refused=True,
+                reason=str(response.stop_details),
+                model=response.model,
+                usage=usage,
+            )
         text = "".join(block.text for block in response.content if block.type == "text")
-        return LLMResponse(text=text)
+        return LLMResponse(text=text, model=response.model, usage=usage)

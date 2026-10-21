@@ -9,6 +9,7 @@ from abc import ABC
 
 from peao_bilingue.domain.analysis import AnalysisRepository
 from peao_bilingue.domain.collection import RunRepository
+from peao_bilingue.domain.costs import CostRepository
 from peao_bilingue.domain.jobs import JobRepository
 from peao_bilingue.domain.profile import ProfileRepository
 from peao_bilingue.domain.searches import SearchRepository
@@ -20,6 +21,7 @@ class Repository(
     AnalysisRepository,
     ProfileRepository,
     RunRepository,
+    CostRepository,
     ABC,
 ):
     pass
