@@ -110,6 +110,10 @@ Cloudflare rejects unusual browsers.
 
 ## Command line
 
+On Linux, an agent or script can inspect and configure the open window through
+`peao control state` and `peao control apply`. See the
+[local control guide](docs/local-control.md) for the JSON operations and examples.
+
 The CLI logs in, manages searches, collects and schedules; it is what the scheduled collection
 uses. Analysis happens in the app.
 
@@ -260,6 +264,15 @@ is moved to the new schema (a copy of the old file is left next to it as
 daily task is registered again under its new name and command.
 
 ## Development
+
+Enable the repository's pre-commit checks once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Each commit then runs Ruff's rules, Ruff's formatting check, and mypy before
+Git writes the commit. These are the same lint and typing checks used by CI.
 
 ```bash
 uv run pytest                          # all offline: no site, no SMTP, no LLM
