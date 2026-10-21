@@ -7,6 +7,7 @@ import sys
 import time
 import tkinter as tk
 from collections.abc import Callable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from peao_bilingue.domain.collection import Run, RunStatus, Trigger
 from peao_bilingue.domain.jobs import Job, JobStatus
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.domain.updates import Release
+from peao_bilingue.local_control import request
 from peao_bilingue.ui.app import App, tabs
 from peao_bilingue.ui.onboarding import Onboarding
 from peao_bilingue.ui.tabs.jobs import tab as jobs_tab
@@ -696,6 +698,25 @@ def test_the_dialog_switch_is_the_card_switch(window: App) -> None:
     tab.dialog.switch.toggle()  # what a click does: flips it and calls back
     assert tab.cards["remotive"].enabled
     assert "remotive" in settings.enabled_sources
+    assert REMOTIVE in window.panels["runs"].collect_bar.source.cget("values")
+
+
+@pytest.mark.skipif(not sys.platform.startswith("linux"), reason="Linux local control")
+def test_local_control_refreshes_the_open_window(window: App) -> None:
+    assert window.local_control is not None
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(
+            request,
+            {"op": "settings.patch", "changes": {"enabled_sources": ["remotive"]}},
+            window.local_control.path,
+        )
+        deadline = time.monotonic() + 3
+        while not future.done() and time.monotonic() < deadline:
+            window.update()
+            time.sleep(0.01)
+        response = future.result(timeout=1)
+    assert response["ok"]
+    assert window.panels["sources"].cards["remotive"].enabled
     assert REMOTIVE in window.panels["runs"].collect_bar.source.cget("values")
 
 

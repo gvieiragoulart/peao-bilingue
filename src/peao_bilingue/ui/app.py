@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import queue
+import sys
 import webbrowser
 from collections.abc import Callable, Coroutine
 from tkinter import messagebox
@@ -23,6 +24,7 @@ from peao_bilingue.domain.repository import Repository
 from peao_bilingue.domain.schedule import Scheduler
 from peao_bilingue.domain.updates import Release, ReleaseFeed
 from peao_bilingue.i18n import _
+from peao_bilingue.local_control import ControlService, LocalControl
 from peao_bilingue.logs import log_to_file, record_uncaught_exceptions
 from peao_bilingue.ui import chrome, presentation, theme
 from peao_bilingue.ui.executor import AsyncExecutor, LogQueue, track
@@ -74,6 +76,7 @@ class App(ctk.CTk):
         self.minsize(1000, 640)
 
         self.repository = repository or build_repository()
+        self.local_control: LocalControl | None = None
         self.executor = executor or AsyncExecutor()
         self.scheduler = scheduler or build_scheduler()
         self.release_feed = release_feed or build_release_feed()
@@ -140,6 +143,16 @@ class App(ctk.CTk):
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.after(100, lambda: chrome.paint_title_bar(self))
         self.after(LOG_INTERVAL_MS, self._drain_log)
+        if sys.platform.startswith("linux"):
+            self.local_control = LocalControl()
+            try:
+                self.local_control.start()
+            except (OSError, RuntimeError) as failure:
+                logger.warning("Local control unavailable: %s", failure)
+                self.local_control = None
+            else:
+                self._control_service = ControlService(self.repository)
+                self.after(50, self._drain_control)
         self._upgrade_legacy_task()
         if settings.check_for_updates:
             self._check_for_updates()
@@ -191,6 +204,25 @@ class App(ctk.CTk):
                 break
             self.panels["runs"].add_log(line)
         self.after(LOG_INTERVAL_MS, self._drain_log)
+
+    def _drain_control(self) -> None:
+        if self.local_control is None:
+            return
+        self.local_control.drain(self._control_service, self._refresh_from_control)
+        self.after(50, self._drain_control)
+
+    def _refresh_from_control(self, payload: object) -> None:
+        self.on_change()
+        if not isinstance(payload, dict):
+            return
+        if payload.get("op") == "notes.set":
+            from peao_bilingue.composition import read_profile_notes
+
+            self.panels["profile"].notes.show(read_profile_notes())
+        elif payload.get("op") == "settings.patch":
+            changes = payload.get("changes", {})
+            if "appearance" in changes:
+                ctk.set_appearance_mode(settings.appearance)
 
     def _upgrade_legacy_task(self) -> None:
         """A daily task registered before the code was in English calls an old
@@ -312,6 +344,8 @@ class App(ctk.CTk):
         return bool(messagebox.askyesno(APP_NAME, question, parent=self))
 
     def close(self) -> None:
+        if self.local_control is not None:
+            self.local_control.close()
         logging.getLogger().removeHandler(self._log)
         self.executor.close()
         # Pending timers (the log's and CustomTkinter's) would fire after destroy, and
