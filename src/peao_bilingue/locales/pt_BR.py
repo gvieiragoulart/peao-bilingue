@@ -854,4 +854,88 @@ MESSAGES: dict[str, str] = {
         "Antes da primeira coleta, faça login nas fontes que pedem, na aba Fontes."
     ),
     "Your CV:": "Seu currículo:",
+    # --- local API costs ---------------------------------------------------------
+    "Costs": "Custos",
+    "This month": "Este mês",
+    "Last 30 days": "Últimos 30 dias",
+    "All time": "Todo o período",
+    "Estimated API spend on this device, in USD. Provider bills may differ.": (
+        "Gasto estimado com APIs neste dispositivo, em USD. As faturas podem diferir."
+    ),
+    "Estimated spend": "Gasto estimado",
+    "Activity": "Atividade",
+    "Unpriced calls": "Chamadas sem preço",
+    "By provider": "Por provedor",
+    "By requested model": "Por modelo solicitado",
+    "Totals include priced calls only. Unpriced calls may add to your bill.": (
+        "Os totais incluem apenas chamadas com preço. As demais podem aumentar a fatura."
+    ),
+    "Your API usage will appear here after you analyze a job.": (
+        "Seu uso de API aparecerá aqui após analisar uma vaga."
+    ),
+    "Provider": "Provedor",
+    "Estimated cost": "Custo estimado",
+    "Tasks": "Tarefas",
+    "API calls": "Chamadas de API",
+    "Unpriced": "Sem preço",
+    "Activity by task": "Atividade por tarefa",
+    "Show all": "Mostrar tudo",
+    "When": "Quando",
+    "Task": "Tarefa",
+    "Provider / model": "Provedor / modelo",
+    "Calls": "Chamadas",
+    "Call details": "Detalhes das chamadas",
+    "Select a task to see each API call and retry.": (
+        "Selecione uma tarefa para ver cada chamada de API e tentativa."
+    ),
+    "Call": "Chamada",
+    "Model used": "Modelo usado",
+    "Input tokens": "Tokens de entrada",
+    "Output tokens": "Tokens de saída",
+    "Cached input": "Entrada em cache",
+    "Cost unavailable": "Custo indisponível",
+    "No price was available for this call.": (
+        "Não havia preço disponível para esta chamada."
+    ),
+    "The provider returned no usable token counts for this call.": (
+        "O provedor não retornou uma contagem de tokens utilizável nesta chamada."
+    ),
+    "This call needs a cached-token or long-context price that is not configured.": (
+        "Esta chamada precisa de um preço para tokens em cache ou contexto longo que não foi configurado."
+    ),
+    "Rates for this call (USD / million): input {input}, output {output}, cached {cached}, write {write}. Source: {source}": (
+        "Tarifas desta chamada (USD / milhão): entrada {input}, saída {output}, "
+        "cache {cached}, gravação {write}. Fonte: {source}"
+    ),
+    "{tasks} tasks · {calls} calls": "{tasks} tarefas · {calls} chamadas",
+    "{title} · {provider} · {count} calls": ("{title} · {provider} · {count} chamadas"),
+    "Succeeded": "Concluída",
+    "Analysis": "Análise",
+    "Quick_score": "Pontuação rápida",
+    "Failed": "Falhou",
+    "Running": "Em andamento",
+    "Invalid": "Inválida",
+    "Refused": "Recusada",
+    "Model prices": "Preços dos modelos",
+    "USD per million tokens. Saved prices apply to future calls; earlier estimates stay as recorded.": (
+        "USD por milhão de tokens. Os preços salvos valem para chamadas futuras; "
+        "as estimativas anteriores ficam como foram registradas."
+    ),
+    "Input": "Entrada",
+    "Output": "Saída",
+    "Cache write": "Gravação em cache",
+    "Save prices": "Salvar preços",
+    "Price source: {source}": "Fonte do preço: {source}",
+    "No price for this model yet. Enter its published rates above.": (
+        "Ainda não há preço para este modelo. Informe as tarifas publicadas acima."
+    ),
+    "Provider and model are required.": "Provedor e modelo são obrigatórios.",
+    "Prices cannot be negative.": "Os preços não podem ser negativos.",
+    "Model prices saved for future calls.": (
+        "Preços do modelo salvos para chamadas futuras."
+    ),
+    "US$0 API spend": "US$0 em gastos com API",
+    "Typical: {cost} / analysis": "Típico: {cost} / análise",
+    "Set model price in Costs": "Defina o preço em Custos",
+    "Cost history starts after 3 analyses": ("Histórico de custos após 3 análises"),
 }

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import LLMProvider, LLMResponse, Message
+from peao_bilingue.domain.costs import TokenUsage
 from peao_bilingue.domain.errors import ProviderUnavailable
 from peao_bilingue.factories import llms
 from peao_bilingue.i18n import _
@@ -74,11 +75,36 @@ class Gemini(LLMProvider):
                 response_json_schema=schema.model_json_schema(),
             ),
         )
+        billed = response.usage_metadata
+        usage = (
+            TokenUsage(
+                input_tokens=billed.prompt_token_count,
+                output_tokens=(
+                    (billed.candidates_token_count or 0)
+                    + (billed.thoughts_token_count or 0)
+                    if billed.candidates_token_count is not None
+                    else None
+                ),
+                cached_input_tokens=billed.cached_content_token_count or 0,
+            )
+            if billed
+            else None
+        )
         # A safety block isn't an exception: it arrives as a response with no text.
         block = _block_reason(response)
         if block:
-            return LLMResponse(text="", refused=True, reason=block)
-        return LLMResponse(text=response.text or "")
+            return LLMResponse(
+                text="",
+                refused=True,
+                reason=block,
+                model=response.model_version or self.model,
+                usage=usage,
+            )
+        return LLMResponse(
+            text=response.text or "",
+            model=response.model_version or self.model,
+            usage=usage,
+        )
 
 
 def _block_reason(response: types.GenerateContentResponse) -> str | None:

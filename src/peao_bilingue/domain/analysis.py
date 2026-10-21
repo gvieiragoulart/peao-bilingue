@@ -6,6 +6,8 @@ from typing import ClassVar, Literal
 
 from pydantic import BaseModel, Field
 
+from peao_bilingue.domain.costs import TokenUsage
+
 
 class JobAnalysis(BaseModel):
     """The output of a job analysis.
@@ -41,6 +43,8 @@ class LLMResponse(BaseModel):
     text: str
     refused: bool = False
     reason: str | None = None
+    model: str | None = None
+    usage: TokenUsage | None = None
 
 
 class LLMProvider(ABC):

@@ -228,6 +228,24 @@ ollama pull qwen3:8b
 Local 7–8B models are weaker at the finer parts (the 20 questions and the profile
 improvements): good for a first look, with Claude for the jobs that really matter.
 
+## API costs
+
+The **Costs** tab records each analysis as one task and each provider response as a
+separate call. Retries and refusals appear in the task's call details. Usage, the
+price used, and its estimated USD cost are saved in the local SQLite database; job
+prompts and API keys are never stored in the cost history. Deleting a job does not
+delete its cost record.
+
+Prices are estimates, not provider invoices. The app includes a small, dated catalog
+for exact model names and lets you enter other models' published USD prices per
+million tokens on the Costs tab. Calls without usable token counts or a price remain
+marked **Cost unavailable** and are excluded from the displayed total. Changing a
+model price affects future calls only. Ollama is shown as $0 in API spend; local
+electricity and hardware are not counted.
+
+After three priced analyses with the same provider and model, the Analyze control
+shows the median past cost as a rough preview.
+
 ## How it works
 
 Ports and adapters: the core only knows interfaces (`JobSource`, `LLMProvider`, `Notifier`,

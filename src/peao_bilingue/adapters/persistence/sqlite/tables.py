@@ -81,6 +81,52 @@ class AnalysisTable(SQLModel, table=True):
     created_at: datetime = Field(default_factory=now)
 
 
+class CostTaskTable(SQLModel, table=True):
+    __tablename__ = "cost_task"
+
+    id: str = Field(primary_key=True)
+    kind: str
+    title: str
+    provider: str = Field(index=True)
+    model: str
+    status: str = "running"
+    started_at: datetime = Field(default_factory=now, index=True)
+    finished_at: datetime | None = None
+
+
+class CostCallTable(SQLModel, table=True):
+    __tablename__ = "cost_call"
+
+    id: int | None = Field(default=None, primary_key=True)
+    task_id: str = Field(foreign_key="cost_task.id", index=True)
+    sequence: int
+    provider: str
+    model: str
+    status: str
+    created_at: datetime = Field(default_factory=now)
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cached_input_tokens: int = 0
+    cache_write_tokens: int = 0
+    # Decimal strings avoid floating point drift for fractions of a cent.
+    cost_usd: str | None = None
+    cost_reason: str | None = None
+    rate_source: str | None = None
+    rate_snapshot: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+
+
+class ModelRateTable(SQLModel, table=True):
+    __tablename__ = "model_rate"
+
+    provider: str = Field(primary_key=True)
+    model: str = Field(primary_key=True)
+    input_per_million: str
+    output_per_million: str
+    cached_input_per_million: str | None = None
+    cache_write_per_million: str | None = None
+    updated_at: datetime = Field(default_factory=now)
+
+
 class RunTable(SQLModel, table=True):
     __tablename__ = "run"
 

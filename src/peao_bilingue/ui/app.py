@@ -30,6 +30,7 @@ from peao_bilingue.ui import chrome, presentation, theme
 from peao_bilingue.ui.executor import AsyncExecutor, LogQueue, track
 from peao_bilingue.ui.navigation import Sidebar
 from peao_bilingue.ui.onboarding import Onboarding, needs_onboarding
+from peao_bilingue.ui.tabs.costs import CostsTab
 from peao_bilingue.ui.tabs.jobs import JobsTab
 from peao_bilingue.ui.tabs.llms import LLMsTab
 from peao_bilingue.ui.tabs.profile import ProfileTab
@@ -52,6 +53,7 @@ def tabs() -> list[tuple[str, str, type[Any]]]:
         ("searches", _("Searches"), SearchesTab),
         ("sources", _("Sources"), SourcesTab),
         ("llms", _("LLMs"), LLMsTab),
+        ("costs", _("Costs"), CostsTab),
         ("profile", _("Profile"), ProfileTab),
         ("runs", _("Runs"), RunsTab),
         ("settings", _("Settings"), SettingsTab),
@@ -168,6 +170,8 @@ class App(ctk.CTk):
         if self.current is not None:
             self.panels[self.current].pack_forget()
         self.panels[identifier].pack(fill="both", expand=True)
+        if identifier == "costs":
+            self.panels[identifier].refresh()
         self.current = identifier
         self.page_title.configure(text=self._titles[identifier])
         self.sidebar.set_active(identifier)
