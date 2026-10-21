@@ -90,9 +90,9 @@ class Ollama(LLMProvider):
             )
         return LLMResponse(
             text=response.message.content or "",
-            model=response.model or self.model,
+            model=getattr(response, "model", None) or self.model,
             usage=TokenUsage(
-                input_tokens=response.prompt_eval_count,
-                output_tokens=response.eval_count,
+                input_tokens=getattr(response, "prompt_eval_count", None),
+                output_tokens=getattr(response, "eval_count", None),
             ),
         )

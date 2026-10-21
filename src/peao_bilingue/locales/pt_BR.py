@@ -911,7 +911,6 @@ MESSAGES: dict[str, str] = {
     "{title} · {provider} · {count} calls": ("{title} · {provider} · {count} chamadas"),
     "Succeeded": "Concluída",
     "Analysis": "Análise",
-    "Quick_score": "Pontuação rápida",
     "Failed": "Falhou",
     "Running": "Em andamento",
     "Invalid": "Inválida",

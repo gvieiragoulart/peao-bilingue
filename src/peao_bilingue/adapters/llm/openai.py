@@ -81,14 +81,14 @@ class OpenAI(LLMProvider):
             },
         )
         message = response.choices[0].message
-        billed = response.usage
-        details = billed.prompt_tokens_details if billed else None
+        billed = getattr(response, "usage", None)
+        details = getattr(billed, "prompt_tokens_details", None) if billed else None
         usage = (
             TokenUsage(
                 input_tokens=billed.prompt_tokens,
                 output_tokens=billed.completion_tokens,
                 cached_input_tokens=(details.cached_tokens or 0) if details else 0,
-                cache_write_tokens=(details.cache_write_tokens or 0) if details else 0,
+                cache_write_tokens=(getattr(details, "cache_write_tokens", None) or 0),
             )
             if billed
             else None
@@ -98,9 +98,11 @@ class OpenAI(LLMProvider):
                 text="",
                 refused=True,
                 reason=message.refusal,
-                model=response.model,
+                model=getattr(response, "model", None) or self.model,
                 usage=usage,
             )
         return LLMResponse(
-            text=message.content or "", model=response.model, usage=usage
+            text=message.content or "",
+            model=getattr(response, "model", None) or self.model,
+            usage=usage,
         )
