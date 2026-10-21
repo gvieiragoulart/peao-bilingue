@@ -1,6 +1,6 @@
 # Peão Bilíngue
 
-A personal job radar for Windows: it collects jobs from several sites, filters them by your
+A personal job radar for Windows and Linux: it collects jobs from several sites, filters them by your
 searches and lets you know about the new ones. You pick which to analyze, with which LLM and
 with which source's profile.
 
@@ -14,17 +14,45 @@ another language is a new catalog away.
 ## Download
 
 For Windows 10 and 11 (64-bit): download the installer, `PeaoBilingue-Setup-<version>.exe`,
-from the [download site](https://REPLACE-WITH-CLOUDFRONT-DOMAIN.cloudfront.net). It installs for
+from [GitHub Releases](https://github.com/gvieiragoulart/peao-bilingue/releases/latest). It installs for
 your user only (no administrator rights), in `%LOCALAPPDATA%\Programs\PeaoBilingue`, with a Start
 menu shortcut; uninstall it from Windows' Settings → Apps, which also removes the daily
 collection (your data stays in `%LOCALAPPDATA%\PeaoBilingue`). The app tells you when a new
 version is out.
 
 The installer isn't digitally signed yet, so Windows may show "Windows protected your PC": click
-"More info" → "Run anyway". The site shows each installer's SHA-256, to check with
-`Get-FileHash .\PeaoBilingue-Setup-<version>.exe`.
+"More info" → "Run anyway". Each release includes a `.sha256` file; compare it with
+`Get-FileHash .\PeaoBilingue-Setup-<version>.exe -Algorithm SHA256`.
 
-## Running from source
+For Linux x86_64, download `PeaoBilingue-linux-x86_64-<version>.tar.gz` from the same
+release. Extract it and run `./PeaoBilingue/PeaoBilingue`. The archive is built on
+Ubuntu 24.04 and needs a compatible glibc-based desktop. It contains the license,
+third-party notices, and a `README.txt` with the runtime requirements. Verify it with
+`sha256sum -c PeaoBilingue-linux-x86_64-<version>.tar.gz.sha256`.
+
+## Running from source on Linux
+
+On Debian or Ubuntu, install the desktop dependencies first:
+
+```bash
+sudo apt install python3-tk gnome-keyring libnotify-bin
+```
+
+Install [uv](https://docs.astral.sh/uv/), then from the project folder:
+
+```bash
+uv sync
+uv run peao-ui
+```
+
+The app uses your desktop's Secret Service through GNOME Keyring for API keys. Make sure
+your desktop session has unlocked the keyring. Linux desktop notifications use
+`notify-send` from `libnotify-bin`. Daily collection uses a per-user systemd timer; it
+runs while the user systemd session is available, and catches up after a missed run.
+The **VanHack** source and manual login need Google Chrome installed. Other public job
+sources do not need a browser.
+
+## Running from source on Windows
 
 ```bash
 uv sync
@@ -36,8 +64,9 @@ are looked up in the current folder. **The first time**, a six-step guide takes 
 tabs: what the app does with your data, a first search, the sources, your CV, the LLM, and the
 daily collection with its notices. Nothing is saved until "Concluir"; it can be skipped, and
 reopened from Settings. After that, everything is configured on its tabs: sources, searches,
-LLM providers, notices and limits. **Keys and passwords live in Windows Credential Manager**,
-not in a file; the rest goes to `data/config.json`. `.env` (copied from `.env.example`) still
+LLM providers, notices and limits. **Keys and passwords live in the system keyring**
+(Windows Credential Manager on Windows, Secret Service on Linux), not in a file; the rest
+goes to `data/config.json`. `.env` (copied from `.env.example`) still
 works as an alternative for the command line.
 
 | Tab (in the app) | What it's for |
@@ -152,9 +181,21 @@ powershell -ExecutionPolicy Bypass -File packaging\build_installer.ps1
 ```
 
 which builds `dist/PeaoBilingue-Setup-<version>.exe` (~57 MB), with the license and the
-third-party notices. Releases are published by pushing a version tag (`v0.2.0`, the same as
-`pyproject.toml`): `.github/workflows/release.yml` builds, installs and uninstalls it on a
-runner, and uploads it to the download site (`infra/` describes the site's AWS resources). With no arguments it opens the app; with arguments it is the same command
+third-party notices. The Linux bundle uses the same PyInstaller spec and can be built
+with `bash packaging/build_linux.sh`. To publish a version, bump `pyproject.toml` and
+`uv.lock` with `uv version <version>` and merge that change to `main`. Then tag the
+merged commit and push the tag, for example `git tag v0.2.1 && git push origin v0.2.1`.
+The tag must match the version in `pyproject.toml`. `.github/workflows/release.yml`
+builds and checks both platforms, then publishes the Windows installer and Linux bundle
+with their SHA-256 files in one GitHub Release. The repository's Actions settings must
+allow the workflow token to write repository contents. No AWS variables or secrets are
+needed.
+
+While the repository is private, GitHub downloads require repository access and the
+app's unauthenticated update check cannot see new releases. Make the repository public
+before relying on public downloads or update notifications.
+
+With no arguments it opens the app; with arguments it is the same command
 line (`PeaoBilingue.exe run`, `PeaoBilingue.exe login`...). Scheduling the collection from the
 .exe's window makes the task call the .exe itself.
 
@@ -163,7 +204,7 @@ Differences from running the project:
 - **The data lives in `%LOCALAPPDATA%\PeaoBilingue`** (`data/`, `.env`, `profile_notes.md`,
   `artifacts/`), not next to the program: the .exe can be anywhere. To bring existing data, copy
   the project's `data/` there (with the app closed). `PEAO_DATA_DIR` still points elsewhere.
-- The LLM keys live in Windows Credential Manager, shared with the project: what was saved on
+- The LLM keys live in the system keyring, shared with the project: what was saved on
   the LLMs tab works in both. A key only in the project's `.env` does **not** reach the .exe;
   save it on the tab.
 - It uses **the installed Chrome** (Playwright's Chromium isn't bundled).
@@ -200,7 +241,7 @@ a hard crash to `data/logs/crash.log` (in the .exe, under `%LOCALAPPDATA%\PeaoBi
 **Configurações → Sobre e suporte** (Settings → About and support) shows the version and opens
 the logs folder: that folder is what to send when asking for help.
 
-When the app opens it asks the download site (`latest.json`) whether there's a newer version
+When the app opens it asks GitHub for the latest published release to check for a newer version
 and, if there is, shows a banner with a download button. It sends nothing about you; turn it
 off in the same section.
 
@@ -233,11 +274,11 @@ adapters use real, anonymized HTML in `tests/fixtures/<source>/`. The tests run 
 English text; `tests/test_i18n.py` checks that every message has a translation and that no
 Portuguese slipped into the code.
 
-**CI** (`.github/workflows/ci.yml`): every PR and every push to `main` runs three jobs: lint
-and typing (ruff and mypy, on Linux), unit tests and integration tests (on Windows, the app's
-OS; the integration job installs Playwright's Chromium, with a cache). `release.yml` publishes a
-version tag (see "The .exe") and `site.yml` publishes `site/` to the download site whenever it
-changes on `main`.
+**CI** (`.github/workflows/ci.yml`): every PR and every push to `main` runs lint and
+typing on Linux, unit tests on Windows and Linux, integration tests on Windows (with
+Playwright's Chromium cached), and a Linux release bundle build and smoke check.
+`release.yml` builds Windows and Linux packages from a version tag and publishes them
+to GitHub Releases.
 
 ## License
 

@@ -29,7 +29,7 @@ class ScheduleStatus(BaseModel):
 
 
 class Scheduler(ABC):
-    """Starts the daily collection outside the app (on Windows, Task Scheduler)."""
+    """Starts the daily collection outside the app using the platform scheduler."""
 
     @abstractmethod
     def schedule(self, time: str) -> None:

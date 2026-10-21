@@ -1,11 +1,5 @@
-# Publishes a release. On a version tag (v1.2.3, matching pyproject.toml) it builds the
-# installer, checks that it installs, runs and uninstalls, and uploads it to the download
-# site (a private S3 bucket behind CloudFront, infra/site.yaml) together with
-# latest.json, which the app reads to tell its users about the new version.
-#
-# AWS is reached through OIDC: the role (infra/site.yaml) trusts only this repository's
-# version tags and main, and no AWS key is stored anywhere. Repository variables (not
-# secrets): AWS_RELEASE_ROLE_ARN, SITE_BUCKET, SITE_DISTRIBUTION_ID, SITE_URL.
+# On a version tag matching pyproject.toml, build and check Windows and Linux
+# packages, then publish both with checksums in one GitHub Release.
 name: Release
 
 on:
@@ -14,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # the OIDC token that assumes the AWS role
 
 # Two tags pushed together publish one after the other, never interleaved.
 concurrency:
@@ -23,17 +16,13 @@ concurrency:
 
 env:
   PYTHONIOENCODING: utf-8
-  AWS_REGION: us-east-1
   # The official installer, checked against the hash winget publishes for it.
   INNO_SETUP_VERSION: "6.7.3"
   INNO_SETUP_SHA256: "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732"
-  SITE_URL: ${{ vars.SITE_URL }}
-  SITE_BUCKET: ${{ vars.SITE_BUCKET }}
-  SITE_DISTRIBUTION_ID: ${{ vars.SITE_DISTRIBUTION_ID }}
 
 jobs:
-  release:
-    name: Build, check and publish the installer
+  windows:
+    name: Build and check Windows installer
     runs-on: windows-latest
     timeout-minutes: 45
     defaults:
@@ -47,24 +36,12 @@ jobs:
           python-version: "3.12"
           enable-cache: true
 
-      - name: Check the tag, the version and the site's address
+      - name: Check the tag and version
         run: |
           $version = (Select-String pyproject.toml -Pattern '^version\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
           if ("v$version" -ne $env:GITHUB_REF_NAME) {
             throw "Tag $env:GITHUB_REF_NAME doesn't match pyproject.toml's version ($version)."
           }
-          foreach ($name in 'SITE_URL', 'SITE_BUCKET', 'SITE_DISTRIBUTION_ID') {
-            if (-not [Environment]::GetEnvironmentVariable($name)) {
-              throw "Repository variable $name is not set (see infra/README.md)."
-            }
-          }
-          # The app checks for updates at the address it was built with.
-          if (-not (Select-String src/peao_bilingue/config.py -SimpleMatch "`"$env:SITE_URL`"" -Quiet)) {
-            throw "config.py's SITE_URL isn't the site's address ($env:SITE_URL)."
-          }
-          $placeholders = git grep -l 'REPLACE-WITH-CLOUDFRONT-DOMAIN' -- ':!.github'
-          if ($placeholders) { throw "The site's address is still a placeholder in: $placeholders" }
-          $global:LASTEXITCODE = 0  # git grep exits with 1 when it finds nothing: the good case
           Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$version"
           Add-Content -Path $env:GITHUB_ENV -Value "SETUP=PeaoBilingue-Setup-$version.exe"
 
@@ -114,20 +91,11 @@ jobs:
           while ((Test-Path -LiteralPath $exe) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
           if (Test-Path -LiteralPath $exe) { throw 'The uninstaller left PeaoBilingue.exe behind.' }
 
-      - name: Write the checksum and latest.json
+      - name: Write the checksum
         run: |
           $file = Get-Item "dist\$env:SETUP"
           $sha256 = (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant()
           "$sha256  $env:SETUP" | Set-Content "dist\$env:SETUP.sha256" -Encoding ascii
-          [ordered]@{
-            version   = $env:VERSION
-            page      = "$env:SITE_URL/"
-            installer = "$env:SITE_URL/releases/$env:VERSION/$env:SETUP"
-            sha256    = $sha256
-            size      = $file.Length
-            published = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
-          } | ConvertTo-Json | Set-Content dist\latest.json -Encoding utf8NoBOM
-          Get-Content dist\latest.json
 
       - name: Keep the installer with the run
         uses: actions/upload-artifact@v7
@@ -136,35 +104,71 @@ jobs:
           path: |
             dist/${{ env.SETUP }}
             dist/${{ env.SETUP }}.sha256
-            dist/latest.json
           if-no-files-found: error
 
-      - name: AWS credentials (OIDC, no stored key)
-        uses: aws-actions/configure-aws-credentials@v6.3.0  # third party: an exact version
+  linux:
+    name: Build and check Linux bundle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Tk for the desktop bundle
+        run: sudo apt-get update && sudo apt-get install -y python3-tk
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
-          role-to-assume: ${{ vars.AWS_RELEASE_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          version: "0.12.5"
+          python-version: "3.12"
+          enable-cache: true
 
-      - name: Refuse to publish a version twice
+      - name: Check the tag and version
         run: |
-          # A published installer is immutable (cached for a year): a new build needs a new version.
-          # Here a failure (404: not there yet) is the good outcome, so it must not throw.
-          $PSNativeCommandUseErrorActionPreference = $false
-          aws s3api head-object --bucket $env:SITE_BUCKET --key "releases/$env:VERSION/$env:SETUP" 2>$null | Out-Null
-          if ($LASTEXITCODE -eq 0) { throw "Version $env:VERSION is already on the site." }
-          $global:LASTEXITCODE = 0
+          version="$(uv version --short)"
+          test "v$version" = "$GITHUB_REF_NAME"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
 
-      - name: Upload to the site
+      - name: Install dependencies
+        run: uv sync --locked --group packaging --python /usr/bin/python3.12
+      - name: pytest — unit
+        run: uv run pytest -m "not integration"
+
+      - name: Build and package Linux bundle
+        run: bash packaging/build_linux.sh
+      - name: Check bundled CLI
+        run: ./dist/PeaoBilingue/PeaoBilingue adapters
+
+      - name: Keep the Linux bundle with the run
+        uses: actions/upload-artifact@v7
+        with:
+          name: PeaoBilingue-Linux-${{ env.VERSION }}
+          path: |
+            dist/PeaoBilingue-linux-x86_64-${{ env.VERSION }}.tar.gz
+            dist/PeaoBilingue-linux-x86_64-${{ env.VERSION }}.tar.gz.sha256
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: [windows, linux]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: PeaoBilingue-*
+          path: dist
+          merge-multiple: true
+      - name: Check assets and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $PSNativeCommandUseErrorActionPreference = $true
-          $bucket = "s3://$env:SITE_BUCKET"
-          $release = "$bucket/releases/$env:VERSION"
-          $forever = 'public, max-age=31536000, immutable'
-          aws s3 cp "dist\$env:SETUP" "$release/$env:SETUP" --cache-control $forever --content-type application/octet-stream
-          aws s3 cp "dist\$env:SETUP.sha256" "$release/$env:SETUP.sha256" --cache-control $forever --content-type 'text/plain; charset=utf-8'
-          # Then what points at it: the site's button and the apps never see a missing file.
-          aws s3 cp "dist\$env:SETUP" "$bucket/download/PeaoBilingue-Setup.exe" --cache-control 'public, max-age=300' `
-            --content-type application/octet-stream --content-disposition "attachment; filename=`"$env:SETUP`""
-          aws s3 cp dist\latest.json "$bucket/latest.json" --cache-control 'public, max-age=300' --content-type application/json
-          aws cloudfront create-invalidation --distribution-id $env:SITE_DISTRIBUTION_ID --paths /latest.json '/download/*'
-          "Published $env:SITE_URL/releases/$env:VERSION/$env:SETUP" | Add-Content $env:GITHUB_STEP_SUMMARY
+          version="${GITHUB_REF_NAME#v}"
+          setup="dist/PeaoBilingue-Setup-$version.exe"
+          linux="dist/PeaoBilingue-linux-x86_64-$version.tar.gz"
+          for file in "$setup" "$setup.sha256" "$linux" "$linux.sha256"; do
+            test -s "$file"
+          done
+          gh release create "$GITHUB_REF_NAME" \
+            "$setup" "$setup.sha256" "$linux" "$linux.sha256" \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes
+          echo "Published https://github.com/$GITHUB_REPOSITORY/releases/tag/$GITHUB_REF_NAME" >> "$GITHUB_STEP_SUMMARY"

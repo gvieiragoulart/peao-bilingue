@@ -64,6 +64,12 @@ MESSAGES: dict[str, str] = {
     "daily collection through Windows Task Scheduler": (
         "coleta diária pelo Agendador do Windows"
     ),
+    "daily collection through the Linux user scheduler": (
+        "coleta diária pelo agendador do usuário do Linux"
+    ),
+    "Couldn't control the Linux user scheduler: {error}": (
+        "Não foi possível controlar o agendador do usuário do Linux: {error}"
+    ),
     "schedule (or reschedule) the daily collection": (
         "agenda (ou reagenda) a coleta diária"
     ),
@@ -413,6 +419,12 @@ MESSAGES: dict[str, str] = {
     "Windows notification (new jobs and problems)": (
         "Notificação do Windows (vagas novas e problemas)"
     ),
+    "Linux desktop notification (new jobs and problems)": (
+        "Notificação da área de trabalho do Linux (vagas novas e problemas)"
+    ),
+    "Install the libnotify-bin package to enable desktop notifications.": (
+        "Instale o pacote libnotify-bin para ativar as notificações da área de trabalho."
+    ),
     "Peão Bilíngue — {count} new job(s)": "Peão Bilíngue — {count} vaga(s) nova(s)",
     "Open the app to analyze the ones you're interested in.": (
         "Abra o app para analisar as que interessarem."
@@ -627,9 +639,10 @@ MESSAGES: dict[str, str] = {
         "com o LLM escolhido lá. O padrão abaixo é o que já vem selecionado."
     ),
     "Default LLM": "LLM padrão",
-    "The keys live in Windows Credential Manager, not in a file.": (
-        "As chaves ficam no Cofre de Credenciais do Windows, não em arquivo."
+    "The keys live in the system keyring, not in a file.": (
+        "As chaves ficam no cofre de credenciais do sistema, não em arquivo."
     ),
+    "System default": "Padrão do sistema",
     "LLM settings saved.": "Configuração dos LLMs salva.",
     # --- window: Profile tab ------------------------------------------------------
     "Read profile now": "Ler perfil agora",
@@ -734,7 +747,6 @@ MESSAGES: dict[str, str] = {
     "Collecting since {when}": "Coletando desde {when}",
     "Last: {when} · {status}": "Última: {when} · {status}",
     "Last: {when} · {count} new": "Última: {when} · {count} novas",
-    "Same as Windows": "Igual ao Windows",
     "Light": "Claro",
     "Dark": "Escuro",
     "About and support": "Sobre e suporte",
@@ -766,11 +778,6 @@ MESSAGES: dict[str, str] = {
         "o seu perfil: nota de aderência, o que estudar e 20 perguntas de entrevista."
     ),
     "How your data is treated": "Como seus dados são tratados",
-    "Everything stays on this computer: the jobs, your profile and the settings. Keys "
-    "and passwords go to Windows Credential Manager.": (
-        "Tudo fica neste computador: as vagas, o seu perfil e as configurações. Chaves e "
-        "senhas vão para o Gerenciador de Credenciais do Windows."
-    ),
     "The collection calls no LLM. Your profile only goes to the LLM you pick, when you "
     "click Analyze on a job.": (
         "A coleta não chama nenhum LLM. O seu perfil só vai para o LLM que você escolher, "
@@ -824,10 +831,15 @@ MESSAGES: dict[str, str] = {
         "em Analisar numa vaga."
     ),
     "Collect every day at": "Coletar todo dia às",
-    "Even with the app closed (Windows Task Scheduler). If the computer is off at that "
+    "Even with the app closed (the system scheduler). If the computer is off at that "
     "time, it collects when it's turned on.": (
-        "Mesmo com o app fechado (Agendador de Tarefas do Windows). Se o computador "
+        "Mesmo com o app fechado (agendador do sistema). Se o computador "
         "estiver desligado nesse horário, coleta quando for ligado."
+    ),
+    "Everything stays on this computer: the jobs, your profile and the settings. Keys "
+    "and passwords go to the system keyring.": (
+        "Tudo fica neste computador: vagas, perfil e configurações. Chaves e senhas vão "
+        "para o cofre de credenciais do sistema."
     ),
     "Email and WhatsApp can be set up later, on the Settings tab.": (
         "Email e WhatsApp podem ser configurados depois, na aba Configurações."
