@@ -563,9 +563,14 @@ Anyone can download the app from a **download site with a product preview**; the
   Strider speak of personal use or of not republishing). The bundled libraries are MIT/BSD/
   Apache/MPL (certifi), all fine for this as long as their notices ship.
 - **Before the repository went public** (2026-10-19) the whole history was searched for keys,
-  tokens and private keys (none) and for data files (none ever committed). The personal email
-  (hotmail) stays visible in old commits and old pyproject.toml versions; the author email is
-  now the GitHub noreply. `profile_notes.md` is in `.gitignore`.
+  tokens and private keys (none) and for data files (none ever committed). `profile_notes.md` is
+  in `.gitignore`.
+- **History rewritten** (2026-10-21, after going public): `git filter-repo` swapped the commit
+  emails (Gabriel's hotmail, Erlon's university address) for each one's GitHub noreply, the
+  hotmail in old pyproject.toml versions, a Windows user path in an old README, and the
+  VanHack profile fixture's personal data (employers, descriptions, salaries...) for fictitious
+  data, in every commit. Commit with the noreply email (`git config user.email`), or the next
+  push exposes it again.
 
 ---
 

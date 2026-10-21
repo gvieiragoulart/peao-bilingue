@@ -12,14 +12,18 @@ Captured from `https://app.vanhack.com/profile` on 2026-10-05. It is the `.pf-ma
   has a URL signed with a SAS token and the transcript carries a name and a personal story;
 - **anonymized:** the name ("Fulano De Tal"), email, phone, country code, passport expiration,
   visa status and the LinkedIn/GitHub links;
-- **kept:** the rest of the structure and the professional data (role, skills, experience), which
-  is what the tests check.
+- **made fictitious** (2026-10-21, across the whole history): the employers, the role
+  descriptions and dates, the salary expectations, the countries after the first two, the notice
+  period, the English test's scores, date and attempt id, and the resume's file name;
+- **kept:** the rest of the structure and the generic answers (role, skills and their years,
+  languages, industries, the skill chips), which is what the tests check.
 
 `input` values live in the DOM property, not the attribute, so the capture copies
 `value`/`checked` into attributes; without that the fixture would open with every field empty.
 
 To capture again after the site changes: open `/profile` with a valid session, repeat this
-treatment and **audit the file** (`sig=`, `skoid`, `blob.core`, email, name) before committing.
+treatment and **audit the file** (`sig=`, `skoid`, `blob.core`, email, name, employers,
+salaries) before committing.
 
 ## `listing.html`, `detail_12030.html`, `detail_12018.html`
 
