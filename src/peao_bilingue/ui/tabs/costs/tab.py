@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 import customtkinter as ctk
 
 from peao_bilingue.adapters.pricing.official import PRICE_URLS, fetch_published_models
+from peao_bilingue.application.model_catalog import record_model_list_call
 from peao_bilingue.config import settings
 from peao_bilingue.domain.costs import CostCall, CostTask, PublishedModel
 from peao_bilingue.domain.models import is_usable_model
@@ -34,7 +35,7 @@ PROVIDER_LABELS = {
     "ollama": "Ollama",
     "Jev": "Jev",
 }
-TASK_KIND_LABELS = {"analysis": _("Analysis")}
+TASK_KIND_LABELS = {"analysis": _("Analysis"), "catalog": _("Model catalog")}
 TASK_STATUS_LABELS = {
     "running": _("Running"),
     "succeeded": _("Succeeded"),
@@ -469,6 +470,13 @@ class CostsTab(ctk.CTkFrame):
         call = self._calls_by_id.get(selected or "")
         if call is None:
             return
+        if call.model == "models.list":
+            self.call_rate_hint.configure(
+                text=_(
+                    "The model-list API returned no token usage; its request cost is unavailable."
+                )
+            )
+            return
         if call.cost_reason == "usage":
             self.call_rate_hint.configure(
                 text=_("The provider returned no usable token counts for this call.")
@@ -628,7 +636,19 @@ class CostsTab(ctk.CTkFrame):
             for provider in providers or list(PRICE_URLS):
                 try:
                     cached = self.app.repository.list_published_models(provider)
-                    models = fetch_published_models(provider, cached_models=cached)
+
+                    def logged(
+                        succeeded: bool, current_provider: str = provider
+                    ) -> None:
+                        record_model_list_call(
+                            self.app.repository, current_provider, succeeded=succeeded
+                        )
+
+                    models = fetch_published_models(
+                        provider,
+                        cached_models=cached,
+                        on_model_list=logged,
+                    )
                     self.app.repository.replace_published_models(provider, models)
                 except Exception as failure:  # noqa: BLE001 - keep cached prices
                     errors.append(f"{provider}: {failure}")

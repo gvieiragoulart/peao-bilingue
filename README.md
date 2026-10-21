@@ -235,6 +235,8 @@ as a separate call. Retries, errors, and refusals appear in the task's call deta
 price used, and its estimated USD cost are saved in the local SQLite database; job
 prompts and API keys are never stored in the cost history. Deleting a job does not
 delete its cost record.
+Authenticated model-list requests are recorded as catalog tasks, including failed
+requests. They return no token usage, so their request cost is shown as unavailable.
 
 Prices are estimates, not provider invoices. The Costs tab has separate **Overview**
 and **Models and prices** views, so scrolling the model table does not scroll the

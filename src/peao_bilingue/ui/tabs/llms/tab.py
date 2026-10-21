@@ -8,6 +8,7 @@ import customtkinter as ctk
 
 from peao_bilingue import config, factories
 from peao_bilingue.adapters.pricing.official import PRICE_URLS, fetch_published_models
+from peao_bilingue.application.model_catalog import record_model_list_call
 from peao_bilingue.config import settings
 from peao_bilingue.domain.models import AIProvider, model_values
 from peao_bilingue.i18n import _
@@ -84,7 +85,14 @@ class LLMsTab(ctk.CTkScrollableFrame):
 
         def load() -> list[str]:
             cached = self.app.repository.list_published_models(provider)
-            models = fetch_published_models(provider, api_key=key, cached_models=cached)
+            models = fetch_published_models(
+                provider,
+                api_key=key,
+                cached_models=cached,
+                on_model_list=lambda succeeded: record_model_list_call(
+                    self.app.repository, provider, succeeded=succeeded
+                ),
+            )
             self.app.repository.replace_published_models(provider, models)
             return model_values(AIProvider(provider), self.app.repository)
 
@@ -105,6 +113,7 @@ class LLMsTab(ctk.CTkScrollableFrame):
                     dialog.model_status.configure(
                         text=_("Could not load provider models. Try again later.")
                     )
+            self.app.panels["costs"].refresh()
 
         self.app.run(asyncio.to_thread(load), on_done=done, on_error=failed)
 
