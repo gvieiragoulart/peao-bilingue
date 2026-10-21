@@ -111,6 +111,14 @@ class JobPreview(ctk.CTkFrame):
             command=on_analyze,
         )
         self.analyze_button.pack(side="right")
+        self.cost_hint = ctk.CTkLabel(
+            choice,
+            text="",
+            font=theme.small(),
+            text_color=theme.MUTED,
+            anchor="e",
+        )
+        self.cost_hint.pack(side="right", padx=(0, 12))
 
         actions = ctk.CTkFrame(footer, fg_color="transparent")
         actions.pack(fill="x", padx=PADDING, pady=(10, 0))
@@ -260,6 +268,9 @@ class JobPreview(ctk.CTkFrame):
 
     def chosen_llm(self) -> str:
         return self._llms[self.llm.get()]
+
+    def show_cost_hint(self, text: str) -> None:
+        self.cost_hint.configure(text=text)
 
     def chosen_profile(self) -> str | None:
         profile: str = self.profile.get()

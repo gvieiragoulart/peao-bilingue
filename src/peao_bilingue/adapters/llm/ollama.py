@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import LLMProvider, LLMResponse, Message
+from peao_bilingue.domain.costs import TokenUsage
 from peao_bilingue.domain.errors import ProviderUnavailable
 from peao_bilingue.factories import llms
 from peao_bilingue.i18n import _
@@ -87,4 +88,11 @@ class Ollama(LLMProvider):
                 "Ollama cut the answer short; raise OLLAMA_CONTEXT (now %d).",
                 self.context,
             )
-        return LLMResponse(text=response.message.content or "")
+        return LLMResponse(
+            text=response.message.content or "",
+            model=getattr(response, "model", None) or self.model,
+            usage=TokenUsage(
+                input_tokens=getattr(response, "prompt_eval_count", None),
+                output_tokens=getattr(response, "eval_count", None),
+            ),
+        )

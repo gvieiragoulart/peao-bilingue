@@ -4,6 +4,8 @@ the repository, the settings or an LLM."""
 
 import logging
 import webbrowser
+from decimal import Decimal
+from statistics import median
 from typing import TYPE_CHECKING, Any
 
 import customtkinter as ctk
@@ -14,9 +16,11 @@ from peao_bilingue.composition import build_llm, read_profile_notes
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import JobAnalysis
 from peao_bilingue.domain.jobs import JobStatus, ListedJob
+from peao_bilingue.domain.models import MODEL_FIELDS, AIProvider
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.presentation import KeywordGroup
+from peao_bilingue.ui.tabs.costs.tab import money
 from peao_bilingue.ui.tabs.jobs.dialog import JobDialog
 from peao_bilingue.ui.tabs.jobs.filters import JobFilters
 from peao_bilingue.ui.tabs.jobs.table import JobTable
@@ -126,6 +130,7 @@ class JobsTab(ctk.CTkFrame):
         )
         self.preview.set_profiles(repository.sources_with_profile())
         self.preview.set_llm(settings.analysis_llm)
+        self._show_cost_hint()
 
         try:
             chosen = self.filters.current()
@@ -170,6 +175,24 @@ class JobsTab(ctk.CTkFrame):
     def _remember_llm(self, name: str) -> None:
         # The last one picked becomes the default next time.
         config.save({"analysis_llm": name})
+        self._show_cost_hint()
+
+    def _show_cost_hint(self) -> None:
+        name = self.preview.chosen_llm()
+        model = getattr(settings, MODEL_FIELDS[AIProvider(name)])
+        if name == "ollama":
+            self.preview.show_cost_hint(_("US$0 API spend"))
+            return
+        samples = self.app.repository.recent_task_costs(name, model)
+        if len(samples) >= 3:
+            typical = Decimal(str(median(samples)))
+            self.preview.show_cost_hint(
+                _("Typical: {cost} / analysis").format(cost=money(typical))
+            )
+        elif self.app.repository.configured_rate(name, model) is None:
+            self.preview.show_cost_hint(_("Refresh provider prices in Costs"))
+        else:
+            self.preview.show_cost_hint(_("Cost history starts after 3 analyses"))
 
     def _open(self) -> None:
         if self._current is not None:
@@ -340,6 +363,7 @@ class JobsTab(ctk.CTkFrame):
 
         def finish(analysis: JobAnalysis) -> None:
             self.preview.set_busy(False)
+            self._show_cost_hint()
             self.app.log(
                 _("Analysis ready: {title} — fit {score}.").format(
                     title=job.title, score=analysis.fit_score
@@ -363,6 +387,7 @@ class JobsTab(ctk.CTkFrame):
                 jobs=self.app.repository,
                 profiles=self.app.repository,
                 analyses=self.app.repository,
+                costs=self.app.repository,
                 profile_source=profile,
                 notes=read_profile_notes(),
             ),

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import LLMProvider, LLMResponse, Message
+from peao_bilingue.domain.costs import TokenUsage
 from peao_bilingue.factories import llms
 from peao_bilingue.i18n import _
 
@@ -51,7 +52,8 @@ class Anthropic(LLMProvider):
         self.model = model or settings.anthropic_model
         # An empty key becomes None so the SDK finds the credential by itself.
         self._client = client or AsyncAnthropic(
-            api_key=api_key or settings.anthropic_api_key or None
+            api_key=api_key or settings.anthropic_api_key or None,
+            max_retries=0,
         )
 
     async def generate_json(
@@ -80,7 +82,26 @@ class Anthropic(LLMProvider):
             betas=[BETA_FALLBACK] if with_fallback else omit,
             fallbacks="default" if with_fallback else omit,
         )
+        billed = getattr(response, "usage", None)
+        usage = None
+        if billed is not None:
+            cache_read = getattr(billed, "cache_read_input_tokens", None) or 0
+            cache_write = getattr(billed, "cache_creation_input_tokens", None) or 0
+            usage = TokenUsage(
+                input_tokens=billed.input_tokens + cache_read + cache_write,
+                output_tokens=billed.output_tokens,
+                cached_input_tokens=cache_read,
+                cache_write_tokens=cache_write,
+            )
         if response.stop_reason == "refusal":
-            return LLMResponse(text="", refused=True, reason=str(response.stop_details))
+            return LLMResponse(
+                text="",
+                refused=True,
+                reason=str(response.stop_details),
+                model=getattr(response, "model", None) or self.model,
+                usage=usage,
+            )
         text = "".join(block.text for block in response.content if block.type == "text")
-        return LLMResponse(text=text)
+        return LLMResponse(
+            text=text, model=getattr(response, "model", None) or self.model, usage=usage
+        )

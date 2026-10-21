@@ -854,4 +854,109 @@ MESSAGES: dict[str, str] = {
         "Antes da primeira coleta, faça login nas fontes que pedem, na aba Fontes."
     ),
     "Your CV:": "Seu currículo:",
+    # --- local API costs ---------------------------------------------------------
+    "Costs": "Custos",
+    "Overview": "Visão geral",
+    "Models and prices": "Modelos e preços",
+    "Refresh provider models": "Atualizar modelos do provedor",
+    "Checking provider models…": "Consultando modelos do provedor…",
+    "{count} models loaded from the provider.": (
+        "{count} modelos carregados do provedor."
+    ),
+    "The provider returned no models.": "O provedor não retornou modelos.",
+    "Could not refresh. Cached models remain available.": "Não foi possível atualizar. Os modelos em cache continuam disponíveis.",
+    "Could not load provider models. Try again later.": "Não foi possível carregar os modelos do provedor. Tente novamente mais tarde.",
+    "Model catalog": "Catálogo de modelos",
+    "Model catalog refresh": "Atualização do catálogo de modelos",
+    "The model-list API returned no token usage; its request cost is unavailable.": "A API de lista de modelos não retornou uso de tokens; o custo da chamada está indisponível.",
+    "This month": "Este mês",
+    "Last 30 days": "Últimos 30 dias",
+    "All time": "Todo o período",
+    "Estimated API spend on this device, in USD. Provider bills may differ.": (
+        "Gasto estimado com APIs neste dispositivo, em USD. As faturas podem diferir."
+    ),
+    "Estimated spend": "Gasto estimado",
+    "Activity": "Atividade",
+    "Some calls have unavailable costs. Totals and chart include known estimates only.": (
+        "Algumas chamadas têm custo indisponível. O total e o gráfico incluem apenas estimativas conhecidas."
+    ),
+    "Spending over time": "Evolução dos gastos",
+    "Day": "Dia",
+    "Month": "Mês",
+    "Year": "Ano",
+    "No recorded spend in this view yet.": "Ainda não há gastos registrados nesta visualização.",
+    "Last 30 days, 12 months or 5 years. Hover for provider costs; click a bar to filter activities.": (
+        "Últimos 30 dias, 12 meses ou 5 anos. Passe o mouse para ver custos por provedor; clique numa barra para filtrar atividades."
+    ),
+    "By provider": "Por provedor",
+    "By requested model": "Por modelo solicitado",
+    "Your API usage will appear here after you analyze a job.": (
+        "Seu uso de API aparecerá aqui após analisar uma vaga."
+    ),
+    "Provider": "Provedor",
+    "Estimated cost": "Custo estimado",
+    "Tasks": "Tarefas",
+    "API calls": "Chamadas de API",
+    "partial": "parcial",
+    "Activity by task": "Atividade por tarefa",
+    "Activity by task · {period}": "Atividade por tarefa · {period}",
+    "Show all": "Mostrar tudo",
+    "When": "Quando",
+    "Task": "Tarefa",
+    "Provider / model": "Provedor / modelo",
+    "Calls": "Chamadas",
+    "Call details": "Detalhes das chamadas",
+    "Select a task to see each API call and retry.": (
+        "Selecione uma tarefa para ver cada chamada de API e tentativa."
+    ),
+    "Call": "Chamada",
+    "Model used": "Modelo usado",
+    "Input tokens": "Tokens de entrada",
+    "Output tokens": "Tokens de saída",
+    "Cached input": "Entrada em cache",
+    "Cost unavailable": "Custo indisponível",
+    "No price was available for this call.": (
+        "Não havia preço disponível para esta chamada."
+    ),
+    "The provider returned no usable token counts for this call.": (
+        "O provedor não retornou uma contagem de tokens utilizável nesta chamada."
+    ),
+    "This call needs a cached-token or long-context price that is not configured.": (
+        "Esta chamada precisa de um preço para tokens em cache ou contexto longo que não foi configurado."
+    ),
+    "Rates for this call (USD / million): input {input}, output {output}, cached {cached}, write {write}. Source: {source}": (
+        "Tarifas desta chamada (USD / milhão): entrada {input}, saída {output}, "
+        "cache {cached}, gravação {write}. Fonte: {source}"
+    ),
+    "{title} · {provider} · {count} calls": ("{title} · {provider} · {count} chamadas"),
+    "Succeeded": "Concluída",
+    "Analysis": "Análise",
+    "Failed": "Falhou",
+    "Running": "Em andamento",
+    "Invalid": "Inválida",
+    "Refused": "Recusada",
+    "Provider models and prices": "Modelos e preços dos provedores",
+    "Refresh from providers": "Atualizar dos provedores",
+    "Standard paid text-token prices in USD per million. Model list status uses your configured API keys.": (
+        "Preços padrão pagos de tokens de texto em USD por milhão. A lista de modelos usa as chaves de API configuradas."
+    ),
+    "Input": "Entrada",
+    "Output": "Saída",
+    "API model list": "Lista da API",
+    "In model list": "Na lista de modelos",
+    "Not listed": "Não listado",
+    "Not checked": "Não consultado",
+    "Refresh to load current provider models and prices.": (
+        "Atualize para carregar os modelos e preços atuais dos provedores."
+    ),
+    "Last checked: {time}": "Última consulta: {time}",
+    "Official source: {url}": "Fonte oficial: {url}",
+    "Checking official provider sources…": "Consultando fontes oficiais dos provedores…",
+    "Could not refresh: {providers}. Cached prices remain available.": (
+        "Não foi possível atualizar: {providers}. Os preços em cache continuam disponíveis."
+    ),
+    "US$0 API spend": "US$0 em gastos com API",
+    "Typical: {cost} / analysis": "Típico: {cost} / análise",
+    "Refresh provider prices in Costs": "Atualize os preços dos provedores em Custos",
+    "Cost history starts after 3 analyses": ("Histórico de custos após 3 análises"),
 }

@@ -5,6 +5,8 @@ The prompt, validation and retries live here, the same for every provider.
 
 import json
 import re
+from collections.abc import Callable
+from uuid import uuid4
 
 from pydantic import BaseModel, ValidationError
 
@@ -12,8 +14,10 @@ from peao_bilingue.domain.analysis import (
     AnalysisRepository,
     JobAnalysis,
     LLMProvider,
+    LLMResponse,
     Message,
 )
+from peao_bilingue.domain.costs import CallStatus, CostRepository
 from peao_bilingue.domain.errors import InvalidAnalysis, MissingProfile
 from peao_bilingue.domain.jobs import Job, JobRepository
 from peao_bilingue.domain.profile import MANUAL_SOURCE, ProfileRepository
@@ -70,7 +74,12 @@ def _strip_fence(text: str) -> str:
 
 
 async def generate_validated[M: BaseModel](
-    provider: LLMProvider, system: str, prompt: str, schema: type[M]
+    provider: LLMProvider,
+    system: str,
+    prompt: str,
+    schema: type[M],
+    *,
+    on_call: Callable[[int, LLMResponse | None, CallStatus], None] | None = None,
 ) -> M:
     """Asks the provider for JSON and validates it, sending the error back to the
     model when it fails.
@@ -80,17 +89,29 @@ async def generate_validated[M: BaseModel](
     """
     messages = [Message(role="user", content=prompt)]
     error: ValidationError | None = None
-    for _attempt in range(ATTEMPTS):
-        response = await provider.generate_json(system, messages, schema)
+    for attempt in range(1, ATTEMPTS + 1):
+        try:
+            response = await provider.generate_json(system, messages, schema)
+        except Exception:
+            if on_call is not None:
+                on_call(attempt, None, "error")
+            raise
         if response.refused:
+            if on_call is not None:
+                on_call(attempt, response, "refused")
             raise InvalidAnalysis(
                 _("The model refused the analysis: {reason}").format(
                     reason=response.reason
                 )
             )
         try:
-            return schema.model_validate_json(_strip_fence(response.text))
+            result = schema.model_validate_json(_strip_fence(response.text))
+            if on_call is not None:
+                on_call(attempt, response, "succeeded")
+            return result
         except ValidationError as failure:
+            if on_call is not None:
+                on_call(attempt, response, "invalid")
             error = failure
             messages += [
                 Message(role="assistant", content=response.text or "(empty response)"),
@@ -115,11 +136,14 @@ async def analyze(
     provider: LLMProvider,
     *,
     notes: str = "",
+    on_call: Callable[[int, LLMResponse | None, CallStatus], None] | None = None,
 ) -> JobAnalysis:
     """`notes`: what the user writes about themselves (passed in: the application
     layer reads no files and no configuration)."""
     prompt = build_prompt(job, profile_text, notes)
-    return await generate_validated(provider, system_prompt(), prompt, JobAnalysis)
+    return await generate_validated(
+        provider, system_prompt(), prompt, JobAnalysis, on_call=on_call
+    )
 
 
 async def analyze_job(
@@ -129,6 +153,7 @@ async def analyze_job(
     jobs: JobRepository,
     profiles: ProfileRepository,
     analyses: AnalysisRepository,
+    costs: CostRepository | None = None,
     profile_source: str | None = None,
     notes: str = "",
 ) -> JobAnalysis:
@@ -153,12 +178,44 @@ async def analyze_job(
             )
         )
     profile_id, profile = saved
-    analysis = await analyze(job, profile.text, provider, notes=notes)
-    analyses.save_analysis(
-        key,
-        analysis,
-        provider=provider.name,
-        model=provider.model,
-        profile_id=profile_id,
-    )
-    return analysis
+    task_id = uuid4().hex if costs is not None else None
+    if costs is not None and task_id is not None:
+        costs.start_cost_task(
+            task_id,
+            kind="analysis",
+            title=job.title,
+            provider=provider.name,
+            model=provider.model,
+        )
+
+    def record_call(
+        sequence: int, response: LLMResponse | None, status: CallStatus
+    ) -> None:
+        if costs is None or task_id is None:
+            return
+        costs.record_cost_call(
+            task_id,
+            sequence=sequence,
+            provider=provider.name,
+            model=response.model or provider.model if response else provider.model,
+            status=status,
+            usage=response.usage if response else None,
+        )
+
+    succeeded = False
+    try:
+        analysis = await analyze(
+            job, profile.text, provider, notes=notes, on_call=record_call
+        )
+        analyses.save_analysis(
+            key,
+            analysis,
+            provider=provider.name,
+            model=provider.model,
+            profile_id=profile_id,
+        )
+        succeeded = True
+        return analysis
+    finally:
+        if costs is not None and task_id is not None:
+            costs.finish_cost_task(task_id, succeeded=succeeded)

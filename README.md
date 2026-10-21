@@ -228,6 +228,36 @@ ollama pull qwen3:8b
 Local 7–8B models are weaker at the finer parts (the 20 questions and the profile
 improvements): good for a first look, with Claude for the jobs that really matter.
 
+## API costs
+
+The **Costs** tab records each analysis as one task and each provider request attempt
+as a separate call. Retries, errors, and refusals appear in the task's call details. Usage, the
+price used, and its estimated USD cost are saved in the local SQLite database; job
+prompts and API keys are never stored in the cost history. Deleting a job does not
+delete its cost record.
+Authenticated model-list requests are recorded as catalog tasks, including failed
+requests. They return no token usage, so their request cost is shown as unavailable.
+
+Prices are estimates, not provider invoices. The Costs tab has separate **Overview**
+and **Models and prices** views, so scrolling the model table does not scroll the
+spending history. It refreshes standard paid
+text-token rates from the official OpenAI, Anthropic, and Gemini pricing pages and
+lists text generation models from each provider's model API when its key is configured.
+Models for image, audio, embeddings, and other unsupported operations are hidden.
+It keeps a local copy of the source and update time. If a provider refresh fails,
+the cached model list remains selectable. Calls recorded before a rate was fetched
+gain an estimate after refresh; existing cost estimates keep their recorded rate.
+Calls without usable token counts or an unambiguous rate show **Cost unavailable**;
+analysis is still allowed when a price is unavailable.
+Tasks containing those calls show a **partial** total, and the chart and summaries
+include known estimates only. The chart groups local spending by day, month, or year;
+hovering a bar shows provider amounts, and clicking it filters task activity to that
+period. Click the bar again or **Show all** to clear the filter.
+Ollama is shown as $0 in API spend; local electricity and hardware are not counted.
+
+After three priced analyses with the same provider and model, the Analyze control
+shows the median past cost as a rough preview.
+
 ## How it works
 
 Ports and adapters: the core only knows interfaces (`JobSource`, `LLMProvider`, `Notifier`,

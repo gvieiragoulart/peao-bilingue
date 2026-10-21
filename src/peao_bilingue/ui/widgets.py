@@ -16,7 +16,7 @@ from peao_bilingue.domain.notifications import Notifier
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import theme
 
-FieldKind = Literal["text", "integer", "boolean", "secret", "options", "list"]
+FieldKind = Literal["text", "integer", "boolean", "secret", "options", "combo", "list"]
 # A list field's box grows with its items, up to this many lines.
 LIST_LINES = (3, 8)
 
@@ -353,6 +353,8 @@ class Form(ctk.CTkFrame):
             return ctk.CTkSwitch(self, text="")
         if form_field.kind == "options":
             return ctk.CTkOptionMenu(self, values=form_field.options)
+        if form_field.kind == "combo":
+            return ctk.CTkComboBox(self, values=form_field.options)
         if form_field.kind == "list":
             return ctk.CTkTextbox(
                 self, wrap="none", height=_lines_height(LIST_LINES[0])
@@ -365,7 +367,7 @@ class Form(ctk.CTkFrame):
             widget = self._widgets[form_field.name]
             if form_field.kind == "boolean":
                 widget.select() if value else widget.deselect()
-            elif form_field.kind == "options":
+            elif form_field.kind in {"options", "combo"}:
                 widget.set(str(value) if value else form_field.options[0])
             elif form_field.kind == "list":
                 lines = max(LIST_LINES[0], min(len(value) + 1, LIST_LINES[1]))
@@ -375,6 +377,22 @@ class Form(ctk.CTkFrame):
             else:
                 widget.delete(0, "end")
                 widget.insert(0, "" if value is None else str(value))
+
+    def set_choices(self, name: str, choices: list[str]) -> None:
+        """Turn a text field into a searchable model picker after a catalog refresh."""
+        if not choices:
+            return
+        form_field = next(field for field in self.fields if field.name == name)
+        old = self._widgets[name]
+        current = old.get().strip()
+        form_field.kind = "combo"
+        form_field.options = choices
+        position = old.grid_info()
+        old.destroy()
+        widget = self._create(form_field)
+        widget.grid(**position)
+        widget.set(current or choices[0])
+        self._widgets[name] = widget
 
     def values(self) -> dict[str, Any]:
         """Reads the widgets, already converted; an invalid integer becomes a readable

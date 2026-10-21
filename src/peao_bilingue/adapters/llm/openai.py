@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import LLMProvider, LLMResponse, Message
+from peao_bilingue.domain.costs import TokenUsage
 from peao_bilingue.domain.errors import ProviderUnavailable
 from peao_bilingue.factories import llms
 from peao_bilingue.i18n import _
@@ -51,7 +52,9 @@ class OpenAI(LLMProvider):
         key = api_key or settings.openai_api_key
         if client is None and not key:
             raise ProviderUnavailable(_("Fill in the OpenAI API key on the LLMs tab."))
-        self._client = client or AsyncOpenAI(api_key=key)
+        # The application records each request attempt; hidden SDK retries would
+        # otherwise make one ledger row stand for several HTTP requests.
+        self._client = client or AsyncOpenAI(api_key=key, max_retries=0)
 
     async def generate_json(
         self, system: str, messages: list[Message], schema: type[BaseModel]
@@ -80,6 +83,28 @@ class OpenAI(LLMProvider):
             },
         )
         message = response.choices[0].message
+        billed = getattr(response, "usage", None)
+        details = getattr(billed, "prompt_tokens_details", None) if billed else None
+        usage = (
+            TokenUsage(
+                input_tokens=billed.prompt_tokens,
+                output_tokens=billed.completion_tokens,
+                cached_input_tokens=(details.cached_tokens or 0) if details else 0,
+                cache_write_tokens=(getattr(details, "cache_write_tokens", None) or 0),
+            )
+            if billed
+            else None
+        )
         if message.refusal:
-            return LLMResponse(text="", refused=True, reason=message.refusal)
-        return LLMResponse(text=message.content or "")
+            return LLMResponse(
+                text="",
+                refused=True,
+                reason=message.refusal,
+                model=getattr(response, "model", None) or self.model,
+                usage=usage,
+            )
+        return LLMResponse(
+            text=message.content or "",
+            model=getattr(response, "model", None) or self.model,
+            usage=usage,
+        )

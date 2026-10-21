@@ -1,12 +1,16 @@
 """The LLMs tab: one card per LLM; a click opens the LLM's modal, where its settings are
 saved. Which one analyzes by default is picked in Settings."""
 
+import asyncio
 from typing import TYPE_CHECKING, Any
 
 import customtkinter as ctk
 
 from peao_bilingue import config, factories
+from peao_bilingue.adapters.pricing.official import PRICE_URLS, fetch_published_models
+from peao_bilingue.application.model_catalog import record_model_list_call
 from peao_bilingue.config import settings
+from peao_bilingue.domain.models import AIProvider, model_values
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import theme
 from peao_bilingue.ui.tabs.llms.dialog import LLMDialog
@@ -57,12 +61,61 @@ class LLMsTab(ctk.CTkScrollableFrame):
         if self.dialog is not None:
             self.dialog.close()
         self.dialog = LLMDialog(
-            self.app.content, name, on_save=self._save, on_close=self._closed
+            self.app.content,
+            name,
+            on_save=self._save,
+            on_close=self._closed,
+            model_source=self.app.repository,
+            on_refresh_models=self._refresh_models,
         )
         self.dialog.open()
+        if name in PRICE_URLS:
+            cached = self.app.repository.list_published_models(name)
+            configured_key = getattr(settings, f"{name}_api_key")
+            if configured_key and (
+                not cached or all(item.available is None for item in cached)
+            ):
+                self.dialog._refresh_models()
 
     def _closed(self) -> None:
         self.dialog = None
+
+    def _refresh_models(self, provider: str, key: str) -> None:
+        dialog = self.dialog
+
+        def load() -> list[str]:
+            cached = self.app.repository.list_published_models(provider)
+            models = fetch_published_models(
+                provider,
+                api_key=key,
+                cached_models=cached,
+                on_model_list=lambda succeeded: record_model_list_call(
+                    self.app.repository, provider, succeeded=succeeded
+                ),
+            )
+            self.app.repository.replace_published_models(provider, models)
+            return model_values(AIProvider(provider), self.app.repository)
+
+        def done(choices: list[str]) -> None:
+            if self.dialog is dialog and dialog is not None:
+                dialog.update_model_choices(choices)
+            self.app.panels["costs"].refresh()
+
+        def failed(_error: BaseException) -> None:
+            if self.dialog is dialog and dialog is not None:
+                cached = model_values(AIProvider(provider), self.app.repository)
+                if cached:
+                    dialog.update_model_choices(cached)
+                    dialog.model_status.configure(
+                        text=_("Could not refresh. Cached models remain available.")
+                    )
+                else:
+                    dialog.model_status.configure(
+                        text=_("Could not load provider models. Try again later.")
+                    )
+            self.app.panels["costs"].refresh()
+
+        self.app.run(asyncio.to_thread(load), on_done=done, on_error=failed)
 
     def _save(self, dialog: LLMDialog) -> bool:
         """The modal's Save; True when saved (the modal then closes)."""
