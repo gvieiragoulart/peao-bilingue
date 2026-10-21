@@ -2,7 +2,9 @@
 
 import argparse
 import asyncio
+import json
 import logging
+import platform
 import sys
 
 from peao_bilingue import factories
@@ -103,6 +105,8 @@ def main() -> None:
     commands.add_parser(
         "adapters", help=_("list the available sources, LLMs and notifiers")
     )
+    control = commands.add_parser("control", help="configure the running Linux window")
+    control.add_argument("action", choices=("state", "apply"))
 
     args = parser.parse_args()
     _configure_log(scheduled=args.command == "run" and args.scheduled)
@@ -156,6 +160,23 @@ def _run_command(args: argparse.Namespace) -> None:
                 (_("Notifiers"), factories.notifiers),
             ):
                 print(f"{label}: {', '.join(registry.available())}")
+        case "control":
+            _control(args.action)
+
+
+def _control(action: str) -> None:
+    from peao_bilingue.local_control import request
+
+    if platform.system() != "Linux":
+        raise SystemExit("Local control is available on Linux")
+    try:
+        payload = {"op": "state.get"} if action == "state" else json.load(sys.stdin)
+        response = request(payload)
+    except (OSError, ValueError) as failure:
+        raise SystemExit(f"Cannot contact the running window: {failure}") from None
+    print(json.dumps(response, ensure_ascii=False, indent=2))
+    if not response.get("ok"):
+        raise SystemExit(1)
 
 
 def _run(args: argparse.Namespace) -> None:
