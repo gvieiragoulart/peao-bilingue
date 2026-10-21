@@ -6,6 +6,7 @@ rates. Unknown or ambiguous entries remain unpriced.
 
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from decimal import Decimal
@@ -301,6 +302,7 @@ def fetch_published_models(
     *,
     api_key: str | None = None,
     cached_models: list[PublishedModel] | None = None,
+    on_model_list: Callable[[bool], None] | None = None,
 ) -> list[PublishedModel]:
     """Fetch public prices, then mark account availability when a key is configured."""
     source = PRICE_URLS[provider]
@@ -325,10 +327,14 @@ def fetch_published_models(
     try:
         available = _available_models(provider, api_key)
     except Exception as failure:
+        if on_model_list is not None:
+            on_model_list(False)
         logger.info("Could not list %s models: %s", provider, failure)
         if cached_models:
             raise RuntimeError(f"Could not refresh {provider} model list") from failure
         return models
+    if on_model_list is not None:
+        on_model_list(True)
     priced = {model.model for model in models}
     result = [
         model.model_copy(update={"available": model.model in available})

@@ -89,7 +89,9 @@ def test_model_list_adds_api_only_ids_and_marks_account_availability(
     monkeypatch.setattr(
         official, "_available_models", lambda provider, key: {"gpt-5-api-only"}
     )
-    models = official.fetch_published_models("openai")
+    outcomes: list[bool] = []
+    models = official.fetch_published_models("openai", on_model_list=outcomes.append)
+    assert outcomes == [True]
     assert [(item.model, item.available) for item in models] == [
         ("gpt-5-api-only", True),
         ("gpt-5-priced", False),
@@ -117,10 +119,15 @@ def test_refresh_error_leaves_cached_models_available(
         "openai",
         html.replace("gpt-5-new", "gpt-5-cached"),
     )
+    outcomes: list[bool] = []
     with pytest.raises(RuntimeError, match="Could not refresh openai model list"):
         official.fetch_published_models(
-            "openai", api_key="test-key", cached_models=cached
+            "openai",
+            api_key="test-key",
+            cached_models=cached,
+            on_model_list=outcomes.append,
         )
+    assert outcomes == [False]
     assert [item.model for item in cached] == ["gpt-5-cached"]
 
 
