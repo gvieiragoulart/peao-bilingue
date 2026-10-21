@@ -19,7 +19,7 @@ def attach_parent_console() -> bool:
     """A GUI .exe has no console, so its CLI prints nowhere. When it was started from
     a terminal, write to that terminal. False when there is none (e.g. Task
     Scheduler), and printing stays silent."""
-    if not is_frozen() or sys.stdout is not None:
+    if sys.platform != "win32" or not is_frozen() or sys.stdout is not None:
         return False
     kernel32 = ctypes.windll.kernel32
     if not kernel32.AttachConsole(ATTACH_PARENT_PROCESS):

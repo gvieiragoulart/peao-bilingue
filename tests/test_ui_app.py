@@ -2,6 +2,8 @@
 
 import json
 import os
+import subprocess
+import sys
 import time
 import tkinter as tk
 from collections.abc import Callable, Iterator
@@ -800,7 +802,14 @@ def test_collect_with_screenshots_opens_their_folder(
     monkeypatch.setattr(runs_tab, "capture_folder", lambda: folder)
     monkeypatch.setattr(runs_tab, "build_services", build)
     monkeypatch.setattr(runs_tab, "run_collection", collect)
-    monkeypatch.setattr(os, "startfile", opened.append, raising=False)
+    monkeypatch.setattr(
+        os, "startfile", lambda path: opened.append(Path(path)), raising=False
+    )
+    monkeypatch.setattr(
+        subprocess,
+        "Popen",
+        lambda command: opened.append(Path(command[1])),
+    )
     tab = window.panels["runs"]
 
     tab.collect()  # unchecked: no screenshots
@@ -917,6 +926,7 @@ def test_title_has_the_version(window: App) -> None:
     )  # "job radar" is by the logo
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows title bar icon")
 def test_window_takes_the_app_icon_before_customtkinter(window: App) -> None:
     # CustomTkinter puts its own icon on the window 200 ms after it opens, unless
     # iconbitmap was called first: this flag is what it checks.
@@ -1071,7 +1081,7 @@ def test_appearance_is_saved_and_applied(
     # The mode is process-wide: recorded, not changed, so other tests keep theirs.
     monkeypatch.setattr(ctk, "set_appearance_mode", applied.append)
     tab = window.panels["settings"]
-    assert tab.about.appearance.get() == "Same as Windows"
+    assert tab.about.appearance.get() == "System default"
 
     tab.about.appearance.set("Dark")
     tab._save()

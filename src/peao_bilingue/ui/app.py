@@ -116,9 +116,19 @@ class App(ctk.CTk):
             self.content, text="", font=theme.title(), anchor="w"
         )
         self.page_title.pack(fill="x", padx=PAGE_PADDING, pady=(18, 10))
+        # Keep the content geometry steady while switching sections. Without a
+        # fixed host, every pack_forget/pack asks the whole page to resize.
+        self.panel_host = ctk.CTkFrame(
+            self.content, fg_color="transparent", corner_radius=0
+        )
+        self.panel_host.pack(
+            fill="both", expand=True, padx=PAGE_PADDING, pady=(0, PAGE_PADDING)
+        )
+        self.panel_host.pack_propagate(False)
         self._pack_sections()
         self.panels: dict[str, Any] = {
-            identifier: cls(self.content, self) for identifier, _title, cls in sections
+            identifier: cls(self.panel_host, self)
+            for identifier, _title, cls in sections
         }
         self.current: str | None = None
         self.show("jobs")
@@ -140,11 +150,11 @@ class App(ctk.CTk):
 
     def show(self, identifier: str) -> None:
         """Shows one section in the content area, the way a tab did."""
+        if self.current == identifier:
+            return
         if self.current is not None:
             self.panels[self.current].pack_forget()
-        self.panels[identifier].pack(
-            fill="both", expand=True, padx=PAGE_PADDING, pady=(0, PAGE_PADDING)
-        )
+        self.panels[identifier].pack(fill="both", expand=True)
         self.current = identifier
         self.page_title.configure(text=self._titles[identifier])
         self.sidebar.set_active(identifier)
@@ -241,7 +251,7 @@ class App(ctk.CTk):
 
     def toggle_mode(self) -> None:
         """The sidebar's button: light to dark and back, saved like Settings' choice
-        (which then reads "Light" or "Dark" instead of "Same as Windows")."""
+        (which then reads "Light" or "Dark" instead of "System default")."""
         mode = "light" if ctk.get_appearance_mode() == "Dark" else "dark"
         config.save({"appearance": mode})
         ctk.set_appearance_mode(mode)

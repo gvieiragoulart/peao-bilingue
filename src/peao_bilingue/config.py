@@ -1,8 +1,9 @@
-"""Configuration: config.json + the Windows vault, with `.env` as a fallback.
+"""Configuration: config.json + the system keyring, with `.env` as a fallback.
 
-The window writes to `data/config.json` (whatever isn't secret) and to the keyring (on
-Windows, Credential Manager). Both beat `.env`; otherwise a change made on screen
-would be silently ignored. The CLI and the scheduled task read the same things.
+The window writes to `data/config.json` (whatever isn't secret) and to the system
+keyring (Credential Manager on Windows, Secret Service on Linux). Both beat `.env`;
+otherwise a change made on screen would be silently ignored. The CLI and scheduled
+collection read the same things.
 """
 
 import json
@@ -13,7 +14,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import keyring
-from keyring.errors import PasswordDeleteError
+from keyring.errors import NoKeyringError, PasswordDeleteError
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
@@ -38,6 +39,11 @@ def base_dir() -> Path:
     was opened from.
     """
     if is_frozen():
+        if sys.platform.startswith("linux"):
+            data_home = os.environ.get("XDG_DATA_HOME") or str(
+                Path.home() / ".local" / "share"
+            )
+            return Path(data_home) / "peao-bilingue"
         local = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
         return Path(local) / "PeaoBilingue"
     return Path.cwd()
@@ -56,10 +62,7 @@ ARTIFACTS_DIR = BASE_DIR / "artifacts"
 ENV_PATH = BASE_DIR / ".env"
 
 KEYRING_SERVICE = "peao-bilingue"
-# The download site: CloudFormation's SiteUrl output (infra/site.yaml), no trailing slash.
-# Every installed version checks for updates here, so it never changes: a custom domain is
-# added to the same CloudFront distribution, and this address keeps working.
-SITE_URL = "https://REPLACE-WITH-CLOUDFRONT-DOMAIN.cloudfront.net"
+RELEASE_REPOSITORY = "gvieiragoulart/peao-bilingue"
 # These fields go to the vault, never to config.json.
 SECRETS = frozenset(
     {
@@ -124,15 +127,25 @@ class _Vault(PydanticBaseSettingsSource):
     ) -> tuple[Any, str, bool]:
         if field_name not in SECRETS:
             return None, field_name, False
-        return keyring.get_password(KEYRING_SERVICE, field_name), field_name, False
+        return _get_secret(field_name), field_name, False
 
     def __call__(self) -> dict[str, Any]:
         values = {}
         for name in SECRETS:
-            value = keyring.get_password(KEYRING_SERVICE, name)
+            value = _get_secret(name)
             if value:
                 values[name] = value
         return values
+
+
+def _get_secret(name: str) -> str | None:
+    """Read a saved key when this session has a configured OS keyring."""
+    try:
+        return keyring.get_password(KEYRING_SERVICE, name)
+    except NoKeyringError:
+        # Headless Linux sessions and minimal desktops may not have Secret Service.
+        # The rest of the app should still be usable; saving a key reports the issue.
+        return None
 
 
 class Settings(BaseSettings):
@@ -164,10 +177,10 @@ class Settings(BaseSettings):
     enabled_sources: list[str] = ["vanhack"]
     # The LLM preselected on the jobs screen; analysis is requested job by job.
     analysis_llm: str = "anthropic"
-    # Notices after the scheduled collection. The Windows notification needs no setup,
+    # Notices after the scheduled collection. The native notification needs no setup,
     # so it starts on; email and WhatsApp start off: turned on before being filled in,
     # they would record a failed notice on every collection.
-    notifiers: list[str] = ["windows"]
+    notifiers: list[str] = ["linux" if sys.platform.startswith("linux") else "windows"]
 
     # VanHack
     # Login is passwordless (magic link / Google / LinkedIn) and guarded by
@@ -268,10 +281,9 @@ class Settings(BaseSettings):
     # The window: follow Windows' light/dark mode, or force one.
     appearance: Literal["system", "light", "dark"] = "system"
 
-    # Updates: when the app opens, ask the download site whether there's a newer version
-    # ({site_url}/latest.json). The site is also the project page.
+    # Updates: query this repository's latest published GitHub Release on startup.
     check_for_updates: bool = True
-    site_url: str = SITE_URL
+    release_repository: str = RELEASE_REPOSITORY
 
     # Email
     smtp_host: str = "smtp.gmail.com"

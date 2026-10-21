@@ -4,6 +4,7 @@ The CLI and the window build their services here; the application layer never
 imports an adapter directly.
 """
 
+import sys
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -11,8 +12,9 @@ from zoneinfo import ZoneInfo
 from peao_bilingue import factories
 from peao_bilingue.adapters.persistence.lock import FileRunLock
 from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
+from peao_bilingue.adapters.scheduling.linux import LinuxScheduler
 from peao_bilingue.adapters.scheduling.windows import WindowsScheduler
-from peao_bilingue.adapters.updates.manifest import SiteManifest
+from peao_bilingue.adapters.updates.github import GitHubReleases
 from peao_bilingue.application.collect import Services
 from peao_bilingue.config import ARTIFACTS_DIR, BASE_DIR, DATA_DIR, settings
 from peao_bilingue.domain.analysis import LLMProvider
@@ -83,8 +85,10 @@ def save_profile_notes(text: str) -> None:
 
 
 def build_scheduler() -> Scheduler:
+    if sys.platform.startswith("linux"):
+        return LinuxScheduler()
     return WindowsScheduler()
 
 
 def build_release_feed() -> ReleaseFeed:
-    return SiteManifest(settings.site_url)
+    return GitHubReleases(settings.release_repository)

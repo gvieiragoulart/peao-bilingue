@@ -1,5 +1,15 @@
 # Peão Bilíngue
 
+## Release delivery (2026-10-20)
+
+New versions are published directly to GitHub Releases from a matching `v<version>`
+tag by `.github/workflows/release.yml`. The workflow attaches the Windows installer
+and Linux bundle, each with a SHA-256 file. The app checks GitHub's latest published
+release for updates.
+`README.md` has the current release instructions. The dated Distribution section below
+records the earlier CloudFront plan; `.github/workflows/site.yml` was removed and
+`infra/` is retained only as deployment history.
+
 A personal job radar: it collects jobs from several sites, filters them by configurable searches
 and reports the new ones by email and WhatsApp. The LLM fit analysis is **requested one job at a
 time** in the app, with the LLM and profile picked right then. A Windows desktop app

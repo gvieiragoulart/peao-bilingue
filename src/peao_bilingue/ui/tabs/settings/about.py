@@ -12,7 +12,7 @@ from peao_bilingue.ui.widgets import Field, Form, Heading, OutlineButton
 
 
 def appearance_labels() -> dict[str, str]:
-    return {"system": _("Same as Windows"), "light": _("Light"), "dark": _("Dark")}
+    return {"system": _("System default"), "light": _("Light"), "dark": _("Dark")}
 
 
 class AboutSection(ctk.CTkFrame):
