@@ -243,11 +243,13 @@ def test_chart_hover_and_click_filter_task_activity(
     tab.chart._on_motion(event)
     assert tab.chart._hover == len(tab.chart._buckets) - 1
     tab.chart._on_click(event)
-    assert tab._selected_bucket == tab.chart._buckets[-1]
+    selected_bucket = tab._selected_bucket
+    assert selected_bucket == tab.chart._buckets[-1]
     assert "Activity by task ·" in tab.activity_heading.cget("text")
     assert len(rows(tab, "tasks")) == 1
     tab.chart._on_click(event)
-    assert tab._selected_bucket is None
+    cleared_bucket = tab._selected_bucket
+    assert cleared_bucket is None
     tab._select_bucket(tab.chart._buckets[0])
     assert rows(tab, "tasks") == []
     tab._show_all()

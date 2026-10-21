@@ -84,7 +84,7 @@ def test_model_list_adds_api_only_ids_and_marks_account_availability(
     )
     request = httpx.Request("GET", official.PRICE_URLS["openai"])
     response = httpx.Response(200, text=html, request=request)
-    monkeypatch.setattr(official.httpx, "get", lambda *args, **kwargs: response)
+    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: response)
     monkeypatch.setattr(settings, "openai_api_key", "test-key")
     monkeypatch.setattr(
         official, "_available_models", lambda provider, key: {"gpt-5-api-only"}
@@ -109,7 +109,7 @@ def test_refresh_error_leaves_cached_models_available(
     )
     request = httpx.Request("GET", official.PRICE_URLS["openai"])
     response = httpx.Response(200, text=html, request=request)
-    monkeypatch.setattr(official.httpx, "get", lambda *args, **kwargs: response)
+    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: response)
     monkeypatch.setattr(
         official,
         "_available_models",
