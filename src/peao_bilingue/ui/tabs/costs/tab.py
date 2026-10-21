@@ -1,17 +1,25 @@
-"""Costs: local API usage, provider totals, task history and model rates."""
+"""Costs: local API usage, spending history and published provider rates."""
 
+import asyncio
 from collections import defaultdict
-from datetime import datetime, timedelta
-from decimal import Decimal, InvalidOperation
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
 import customtkinter as ctk
 
+from peao_bilingue.adapters.pricing.official import PRICE_URLS, fetch_published_models
 from peao_bilingue.config import settings
-from peao_bilingue.domain.costs import CostCall, CostTask, ModelRate
+from peao_bilingue.domain.costs import CostCall, CostTask, PublishedModel
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import theme
+from peao_bilingue.ui.tabs.costs.chart import (
+    Bucket,
+    Scale,
+    SpendingChart,
+    spending_buckets,
+)
 from peao_bilingue.ui.widgets import Card, Heading, Hint, OutlineButton, Table
 
 if TYPE_CHECKING:
@@ -61,9 +69,15 @@ class CostsTab(ctk.CTkScrollableFrame):
         super().__init__(master, fg_color="transparent")
         self.app = app
         self._tasks: list[CostTask] = []
+        self._all_tasks: list[CostTask] = []
         self._calls_by_id: dict[str, CostCall] = {}
         self._provider: str | None = None
         self._model: str | None = None
+        self._scale: Scale = "day"
+        self._selected_bucket: Bucket | None = None
+        self._price_refreshing = False
+        self._price_auto_checked = False
+        self._published_rows: list[PublishedModel] = []
 
         top = ctk.CTkFrame(self, fg_color="transparent")
         top.pack(fill="x", pady=(0, 12))
@@ -81,24 +95,44 @@ class CostsTab(ctk.CTkScrollableFrame):
 
         summary = ctk.CTkFrame(self, fg_color="transparent")
         summary.pack(fill="x", pady=(0, 16))
-        for column in range(3):
+        for column in range(2):
             summary.grid_columnconfigure(column, weight=1, uniform="summary")
         self.total = self._metric(summary, 0, _("Estimated spend"))
         self.activity = self._metric(summary, 1, _("Activity"))
-        self.unknown = self._metric(summary, 2, _("Unpriced calls"))
-        Hint(
+        self.estimate_hint = Hint(
             self,
             text=_(
-                "Totals include priced calls only. Unpriced calls may add to your bill."
+                "Some calls have unavailable costs. Totals and chart include known estimates only."
             ),
             anchor="w",
-        ).pack(fill="x", pady=(0, 12))
+        )
+        self.estimate_hint.pack(fill="x", pady=(0, 12))
         self.empty = Hint(
             self,
             text=_("Your API usage will appear here after you analyze a job."),
             anchor="w",
         )
         self.empty.pack(fill="x", pady=(0, 12))
+
+        trend_top = ctk.CTkFrame(self, fg_color="transparent")
+        trend_top.pack(fill="x", pady=(0, 8))
+        Heading(trend_top, text=_("Spending over time")).pack(side="left")
+        self.trend_scale = ctk.CTkSegmentedButton(
+            trend_top,
+            values=[_("Day"), _("Month"), _("Year")],
+            command=self._change_scale,
+        )
+        self.trend_scale.pack(side="right")
+        self.trend_scale.set(_("Day"))
+        self.chart = SpendingChart(self, self._select_bucket)
+        self.chart.pack(fill="x", pady=(0, 8))
+        Hint(
+            self,
+            text=_(
+                "Last 30 days, 12 months or 5 years. Hover for provider costs; click a bar to filter activities."
+            ),
+            anchor="w",
+        ).pack(fill="x", pady=(0, 18))
 
         Heading(self, text=_("By provider")).pack(anchor="w", pady=(0, 8))
         self.providers = Table(
@@ -108,7 +142,6 @@ class CostsTab(ctk.CTkScrollableFrame):
                 ("cost", _("Estimated cost"), 130),
                 ("tasks", _("Tasks"), 80),
                 ("calls", _("API calls"), 120),
-                ("unknown", _("Unpriced"), 100),
             ],
             height=150,
         )
@@ -123,7 +156,6 @@ class CostsTab(ctk.CTkScrollableFrame):
                 ("model", _("Model"), 220),
                 ("cost", _("Estimated cost"), 130),
                 ("calls", _("API calls"), 120),
-                ("unknown", _("Unpriced"), 100),
             ],
             height=140,
         )
@@ -133,7 +165,8 @@ class CostsTab(ctk.CTkScrollableFrame):
 
         activity_top = ctk.CTkFrame(self, fg_color="transparent")
         activity_top.pack(fill="x", pady=(0, 8))
-        Heading(activity_top, text=_("Activity by task")).pack(side="left")
+        self.activity_heading = Heading(activity_top, text=_("Activity by task"))
+        self.activity_heading.pack(side="left")
         OutlineButton(
             activity_top, text=_("Show all"), width=92, command=self._show_all
         ).pack(side="right")
@@ -177,8 +210,7 @@ class CostsTab(ctk.CTkScrollableFrame):
         self.call_rate_hint = Hint(self, text="", anchor="w", wraplength=720)
         self.call_rate_hint.pack(fill="x", pady=(0, 16))
 
-        self._make_rate_editor()
-        self._load_rate("anthropic", settings.anthropic_model)
+        self._make_published_prices()
 
     @staticmethod
     def _metric(master: Any, column: int, label: str) -> ctk.CTkLabel:
@@ -199,18 +231,27 @@ class CostsTab(ctk.CTkScrollableFrame):
         return None
 
     def refresh(self) -> None:
-        self._tasks = self.app.repository.list_cost_tasks(self._since())
+        self._all_tasks = self.app.repository.list_cost_tasks()
+        since = self._since()
+        self._tasks = [
+            task
+            for task in self._all_tasks
+            if since is None or task.started_at >= since
+        ]
         tasks = self._tasks
         total = sum((task.cost_usd for task in tasks), Decimal("0"))
         count = sum(task.calls for task in tasks)
-        unknown = sum(task.unknown_calls for task in tasks)
         self.total.configure(text=money(total))
         self.activity.configure(
             text=_("{tasks} tasks · {calls} calls").format(
                 tasks=len(tasks), calls=count
             )
         )
-        self.unknown.configure(text=str(unknown))
+        if any(task.unknown_calls for task in tasks):
+            if not self.estimate_hint.winfo_manager():
+                self.estimate_hint.pack(fill="x", pady=(0, 12), before=self.empty)
+        else:
+            self.estimate_hint.pack_forget()
         if tasks:
             self.empty.pack_forget()
         elif not self.empty.winfo_manager():
@@ -235,7 +276,6 @@ class CostsTab(ctk.CTkScrollableFrame):
                         money(sum((task.cost_usd for task in items), Decimal("0"))),
                         str(len(items)),
                         str(sum(task.calls for task in items)),
-                        str(sum(task.unknown_calls for task in items)),
                     ),
                 )
                 for provider, items in sorted(grouped.items())
@@ -254,20 +294,61 @@ class CostsTab(ctk.CTkScrollableFrame):
                         model,
                         money(sum((task.cost_usd for task in items), Decimal("0"))),
                         str(sum(task.calls for task in items)),
-                        str(sum(task.unknown_calls for task in items)),
                     ),
                 )
                 for index, ((provider, model), items) in enumerate(self._model_rows)
             ]
         )
         self._fill_tasks()
+        self._fill_chart()
+        self._fill_published_prices()
+        if not self._price_auto_checked:
+            self.after(250, self._refresh_prices_if_visible)
+
+    def _change_scale(self, value: str) -> None:
+        self.chart.clear_selection()
+        if value == _("Day"):
+            self._scale = "day"
+        elif value == _("Month"):
+            self._scale = "month"
+        else:
+            self._scale = "year"
+        self._fill_chart()
+
+    def _select_bucket(self, bucket: Bucket | None) -> None:
+        self._selected_bucket = bucket
+        self.activity_heading.configure(
+            text=_("Activity by task")
+            if bucket is None
+            else _("Activity by task · {period}").format(period=bucket.label)
+        )
+        self._fill_tasks()
+
+    def _fill_chart(self) -> None:
+        self.chart.set_buckets(
+            spending_buckets(
+                self._all_tasks,
+                self._scale,
+                datetime.now(tz=ZoneInfo(settings.timezone)),
+                provider=self._provider,
+                model=self._model,
+            )
+        )
 
     def _fill_tasks(self) -> None:
         shown = [
             task
-            for task in self._tasks
+            for task in (
+                self._all_tasks if self._selected_bucket is not None else self._tasks
+            )
             if (self._provider is None or task.provider == self._provider)
             and (self._model is None or task.model == self._model)
+            and (
+                self._selected_bucket is None
+                or self._selected_bucket.start
+                <= task.started_at.astimezone(ZoneInfo(settings.timezone)).date()
+                < self._selected_bucket.end
+            )
         ]
         self.tasks.fill(
             [
@@ -278,7 +359,8 @@ class CostsTab(ctk.CTkScrollableFrame):
                         f"{TASK_KIND_LABELS.get(task.kind, task.kind.capitalize())}: {task.title}",
                         f"{task.provider} · {task.model}",
                         str(task.calls),
-                        money(task.cost_usd) + (" *" if task.unknown_calls else ""),
+                        money(task.cost_usd)
+                        + (f" ({_('partial')})" if task.unknown_calls else ""),
                         TASK_STATUS_LABELS.get(task.status, task.status.capitalize()),
                     ),
                 )
@@ -298,6 +380,7 @@ class CostsTab(ctk.CTkScrollableFrame):
             self._provider = chosen
             self._model = None
             self._fill_tasks()
+            self._fill_chart()
 
     def _pick_model(self) -> None:
         chosen = self.models.selected()
@@ -306,11 +389,13 @@ class CostsTab(ctk.CTkScrollableFrame):
         index = int(chosen)
         self._provider, self._model = self._model_rows[index][0]
         self._fill_tasks()
+        self._fill_chart()
 
     def _show_all(self) -> None:
         self._provider = None
         self._model = None
-        self._fill_tasks()
+        self.chart.clear_selection()
+        self._fill_chart()
 
     def _pick_task(self) -> None:
         task_id = self.tasks.selected()
@@ -347,7 +432,6 @@ class CostsTab(ctk.CTkScrollableFrame):
                 for call in calls
             ]
         )
-        self._load_rate(task.provider, calls[-1].model if calls else task.model)
 
     def _pick_call(self) -> None:
         selected = self.calls.selected()
@@ -387,98 +471,143 @@ class CostsTab(ctk.CTkScrollableFrame):
             )
         )
 
-    def _make_rate_editor(self) -> None:
+    def _make_published_prices(self) -> None:
         card = Card(self)
         card.pack(fill="x", pady=(0, 12))
-        Heading(card, text=_("Model prices")).pack(anchor="w", padx=16, pady=(14, 4))
+        top = ctk.CTkFrame(card, fg_color="transparent")
+        top.pack(fill="x", padx=16, pady=(14, 4))
+        Heading(top, text=_("Provider models and prices")).pack(side="left")
+        self.refresh_prices_button = OutlineButton(
+            top,
+            text=_("Refresh from providers"),
+            width=165,
+            command=self.refresh_prices,
+        )
+        self.refresh_prices_button.pack(side="right")
         Hint(
             card,
             text=_(
-                "USD per million tokens. Saved prices apply to future calls; earlier estimates stay as recorded."
+                "Standard paid text-token prices in USD per million. Model list status uses your configured API keys."
             ),
             wraplength=720,
             justify="left",
         ).pack(anchor="w", padx=16)
+        self.published_status = Hint(card, text="", anchor="w", wraplength=720)
+        self.published_status.pack(fill="x", padx=16, pady=(8, 8))
+        self.published = Table(
+            card,
+            [
+                ("provider", _("Provider"), 125),
+                ("model", _("Model"), 195),
+                ("input", _("Input"), 75),
+                ("output", _("Output"), 75),
+                ("cached", _("Cached input"), 105),
+                ("available", _("API model list"), 130),
+            ],
+            height=230,
+        )
+        self.published.tree.configure(height=8)
+        self.published.pack(fill="x", padx=16, pady=(0, 8))
+        self.published.on_select(self._pick_published)
+        self.published_source = Hint(card, text="", anchor="w", wraplength=720)
+        self.published_source.pack(fill="x", padx=16, pady=(0, 14))
 
-        identity = ctk.CTkFrame(card, fg_color="transparent")
-        identity.pack(fill="x", padx=16, pady=(10, 6))
-        self.rate_provider = self._entry(identity, _("Provider"), 130)
-        self.rate_model = self._entry(identity, _("Model"), 260)
-
-        amounts = ctk.CTkFrame(card, fg_color="transparent")
-        amounts.pack(fill="x", padx=16, pady=(0, 10))
-        self.rate_input = self._entry(amounts, _("Input"), 105)
-        self.rate_output = self._entry(amounts, _("Output"), 105)
-        self.rate_cached = self._entry(amounts, _("Cached input"), 105)
-        self.rate_write = self._entry(amounts, _("Cache write"), 105)
-        OutlineButton(
-            amounts, text=_("Save prices"), width=110, command=self._save_rate
-        ).pack(side="right", pady=(19, 0))
-        self.rate_source = Hint(card, text="", anchor="w", wraplength=720)
-        self.rate_source.pack(fill="x", padx=16, pady=(0, 14))
-
-    @staticmethod
-    def _entry(master: Any, label: str, width: int) -> ctk.CTkEntry:
-        box = ctk.CTkFrame(master, fg_color="transparent")
-        box.pack(side="left", padx=(0, 10))
-        Hint(box, text=label).pack(anchor="w")
-        entry = ctk.CTkEntry(box, width=width)
-        entry.pack()
-        return entry
-
-    @staticmethod
-    def _set(entry: ctk.CTkEntry, value: object) -> None:
-        entry.delete(0, "end")
-        if value is not None:
-            entry.insert(0, str(value))
-
-    def _load_rate(self, provider: str, model: str) -> None:
-        rate = self.app.repository.configured_rate(provider, model)
-        self._set(self.rate_provider, provider)
-        self._set(self.rate_model, model)
-        self._set(self.rate_input, rate.input_per_million if rate else None)
-        self._set(self.rate_output, rate.output_per_million if rate else None)
-        self._set(self.rate_cached, rate.cached_input_per_million if rate else None)
-        self._set(self.rate_write, rate.cache_write_per_million if rate else None)
-        self.rate_source.configure(
-            text=(
-                _("Price source: {source}").format(source=rate.source)
-                if rate is not None
-                else _("No price for this model yet. Enter its published rates above.")
+    def _fill_published_prices(self) -> None:
+        self._published_rows = self.app.repository.list_published_models()
+        self._published_rows.sort(key=lambda item: (item.provider, item.model))
+        self.published.fill(
+            [
+                (
+                    str(index),
+                    (
+                        PROVIDER_LABELS.get(item.provider, item.provider),
+                        item.model,
+                        str(item.rate.input_per_million) if item.rate else "—",
+                        str(item.rate.output_per_million) if item.rate else "—",
+                        str(item.rate.cached_input_per_million)
+                        if item.rate and item.rate.cached_input_per_million is not None
+                        else "—",
+                        _("In model list")
+                        if item.available is True
+                        else _("Not listed")
+                        if item.available is False
+                        else _("Not checked"),
+                    ),
+                )
+                for index, item in enumerate(self._published_rows)
+            ]
+        )
+        if not self._published_rows and not self._price_refreshing:
+            self.published_status.configure(
+                text=_("Refresh to load current provider models and prices.")
             )
+        elif self._published_rows and not self._price_refreshing:
+            latest = max(item.fetched_at for item in self._published_rows)
+            self.published_status.configure(
+                text=_("Last checked: {time}").format(
+                    time=latest.strftime("%Y-%m-%d %H:%M")
+                )
+            )
+
+    def _pick_published(self) -> None:
+        selected = self.published.selected()
+        if selected is None:
+            return
+        item = self._published_rows[int(selected)]
+        self.published_source.configure(
+            text=_("Official source: {url}").format(url=item.source_url)
         )
 
-    def _save_rate(self) -> None:
-        try:
-            provider = self.rate_provider.get().strip().lower()
-            model = self.rate_model.get().strip()
-            if not provider or not model:
-                raise ValueError(_("Provider and model are required."))
-            rate = ModelRate(
-                provider=provider,
-                model=model,
-                input_per_million=Decimal(self.rate_input.get()),
-                output_per_million=Decimal(self.rate_output.get()),
-                cached_input_per_million=(
-                    Decimal(self.rate_cached.get()) if self.rate_cached.get() else None
-                ),
-                cache_write_per_million=(
-                    Decimal(self.rate_write.get()) if self.rate_write.get() else None
-                ),
-            )
-            if any(
-                amount < 0
-                for amount in (
-                    rate.input_per_million,
-                    rate.output_per_million,
-                    rate.cached_input_per_million or Decimal("0"),
-                    rate.cache_write_per_million or Decimal("0"),
-                )
-            ):
-                raise ValueError(_("Prices cannot be negative."))
-        except (InvalidOperation, ValueError) as failure:
-            self.app.show_error(failure)
+    def _refresh_prices_if_visible(self) -> None:
+        if not self.winfo_viewable():
             return
-        self.app.repository.save_model_rate(rate)
-        self._load_rate(provider, model)
-        self.app.inform(_("Model prices saved for future calls."))
+        self._price_auto_checked = True
+        published = self.app.repository.list_published_models()
+        oldest_by_provider = {
+            provider: min(
+                (item.fetched_at for item in published if item.provider == provider),
+                default=None,
+            )
+            for provider in PRICE_URLS
+        }
+        current = datetime.now(UTC)
+        stale = [
+            provider
+            for provider, fetched in oldest_by_provider.items()
+            if fetched is None
+            or current - fetched.astimezone(UTC) >= timedelta(hours=24)
+        ]
+        if stale:
+            self.refresh_prices(stale)
+
+    def refresh_prices(self, providers: list[str] | None = None) -> None:
+        if self._price_refreshing:
+            return
+        self._price_refreshing = True
+        self.refresh_prices_button.configure(state="disabled")
+        self.published_status.configure(text=_("Checking official provider sources…"))
+
+        def fetch() -> list[str]:
+            errors: list[str] = []
+            for provider in providers or list(PRICE_URLS):
+                try:
+                    models = fetch_published_models(provider)
+                    self.app.repository.replace_published_models(provider, models)
+                except Exception as failure:  # noqa: BLE001 - keep cached prices
+                    errors.append(f"{provider}: {failure}")
+            return errors
+
+        def done(errors: list[str]) -> None:
+            self._price_refreshing = False
+            self.refresh_prices_button.configure(state="normal")
+            self.refresh()
+            if errors:
+                self.published_status.configure(
+                    text=_(
+                        "Could not refresh: {providers}. Cached prices remain available."
+                    ).format(
+                        providers=", ".join(item.split(":", 1)[0] for item in errors)
+                    )
+                )
+
+        self.app.run(asyncio.to_thread(fetch), on_done=done)

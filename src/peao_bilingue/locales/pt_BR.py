@@ -864,12 +864,19 @@ MESSAGES: dict[str, str] = {
     ),
     "Estimated spend": "Gasto estimado",
     "Activity": "Atividade",
-    "Unpriced calls": "Chamadas sem preço",
+    "Some calls have unavailable costs. Totals and chart include known estimates only.": (
+        "Algumas chamadas têm custo indisponível. O total e o gráfico incluem apenas estimativas conhecidas."
+    ),
+    "Spending over time": "Evolução dos gastos",
+    "Day": "Dia",
+    "Month": "Mês",
+    "Year": "Ano",
+    "No recorded spend in this view yet.": "Ainda não há gastos registrados nesta visualização.",
+    "Last 30 days, 12 months or 5 years. Hover for provider costs; click a bar to filter activities.": (
+        "Últimos 30 dias, 12 meses ou 5 anos. Passe o mouse para ver custos por provedor; clique numa barra para filtrar atividades."
+    ),
     "By provider": "Por provedor",
     "By requested model": "Por modelo solicitado",
-    "Totals include priced calls only. Unpriced calls may add to your bill.": (
-        "Os totais incluem apenas chamadas com preço. As demais podem aumentar a fatura."
-    ),
     "Your API usage will appear here after you analyze a job.": (
         "Seu uso de API aparecerá aqui após analisar uma vaga."
     ),
@@ -877,8 +884,9 @@ MESSAGES: dict[str, str] = {
     "Estimated cost": "Custo estimado",
     "Tasks": "Tarefas",
     "API calls": "Chamadas de API",
-    "Unpriced": "Sem preço",
+    "partial": "parcial",
     "Activity by task": "Atividade por tarefa",
+    "Activity by task · {period}": "Atividade por tarefa · {period}",
     "Show all": "Mostrar tudo",
     "When": "Quando",
     "Task": "Tarefa",
@@ -915,26 +923,28 @@ MESSAGES: dict[str, str] = {
     "Running": "Em andamento",
     "Invalid": "Inválida",
     "Refused": "Recusada",
-    "Model prices": "Preços dos modelos",
-    "USD per million tokens. Saved prices apply to future calls; earlier estimates stay as recorded.": (
-        "USD por milhão de tokens. Os preços salvos valem para chamadas futuras; "
-        "as estimativas anteriores ficam como foram registradas."
+    "Provider models and prices": "Modelos e preços dos provedores",
+    "Refresh from providers": "Atualizar dos provedores",
+    "Standard paid text-token prices in USD per million. Model list status uses your configured API keys.": (
+        "Preços padrão pagos de tokens de texto em USD por milhão. A lista de modelos usa as chaves de API configuradas."
     ),
     "Input": "Entrada",
     "Output": "Saída",
-    "Cache write": "Gravação em cache",
-    "Save prices": "Salvar preços",
-    "Price source: {source}": "Fonte do preço: {source}",
-    "No price for this model yet. Enter its published rates above.": (
-        "Ainda não há preço para este modelo. Informe as tarifas publicadas acima."
+    "API model list": "Lista da API",
+    "In model list": "Na lista de modelos",
+    "Not listed": "Não listado",
+    "Not checked": "Não consultado",
+    "Refresh to load current provider models and prices.": (
+        "Atualize para carregar os modelos e preços atuais dos provedores."
     ),
-    "Provider and model are required.": "Provedor e modelo são obrigatórios.",
-    "Prices cannot be negative.": "Os preços não podem ser negativos.",
-    "Model prices saved for future calls.": (
-        "Preços do modelo salvos para chamadas futuras."
+    "Last checked: {time}": "Última consulta: {time}",
+    "Official source: {url}": "Fonte oficial: {url}",
+    "Checking official provider sources…": "Consultando fontes oficiais dos provedores…",
+    "Could not refresh: {providers}. Cached prices remain available.": (
+        "Não foi possível atualizar: {providers}. Os preços em cache continuam disponíveis."
     ),
     "US$0 API spend": "US$0 em gastos com API",
     "Typical: {cost} / analysis": "Típico: {cost} / análise",
-    "Set model price in Costs": "Defina o preço em Custos",
+    "Refresh provider prices in Costs": "Atualize os preços dos provedores em Custos",
     "Cost history starts after 3 analyses": ("Histórico de custos após 3 análises"),
 }
