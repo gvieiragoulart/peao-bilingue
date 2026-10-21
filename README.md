@@ -230,18 +230,23 @@ improvements): good for a first look, with Claude for the jobs that really matte
 
 ## API costs
 
-The **Costs** tab records each analysis as one task and each provider response as a
-separate call. Retries and refusals appear in the task's call details. Usage, the
+The **Costs** tab records each analysis as one task and each provider request attempt
+as a separate call. Retries, errors, and refusals appear in the task's call details. Usage, the
 price used, and its estimated USD cost are saved in the local SQLite database; job
 prompts and API keys are never stored in the cost history. Deleting a job does not
 delete its cost record.
 
-Prices are estimates, not provider invoices. The Costs tab refreshes standard paid
+Prices are estimates, not provider invoices. The Costs tab has separate **Overview**
+and **Models and prices** views, so scrolling the model table does not scroll the
+spending history. It refreshes standard paid
 text-token rates from the official OpenAI, Anthropic, and Gemini pricing pages and
-lists models from each provider's model API when its key is configured. It keeps a
-local copy of the source and update time. Calls recorded before a rate was fetched
+lists text generation models from each provider's model API when its key is configured.
+Models for image, audio, embeddings, and other unsupported operations are hidden.
+It keeps a local copy of the source and update time. If a provider refresh fails,
+the cached model list remains selectable. Calls recorded before a rate was fetched
 gain an estimate after refresh; existing cost estimates keep their recorded rate.
-Calls without usable token counts or an unambiguous rate show **Cost unavailable**.
+Calls without usable token counts or an unambiguous rate show **Cost unavailable**;
+analysis is still allowed when a price is unavailable.
 Tasks containing those calls show a **partial** total, and the chart and summaries
 include known estimates only. The chart groups local spending by day, month, or year;
 hovering a bar shows provider amounts, and clicking it filters task activity to that

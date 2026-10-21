@@ -52,7 +52,9 @@ class OpenAI(LLMProvider):
         key = api_key or settings.openai_api_key
         if client is None and not key:
             raise ProviderUnavailable(_("Fill in the OpenAI API key on the LLMs tab."))
-        self._client = client or AsyncOpenAI(api_key=key)
+        # The application records each request attempt; hidden SDK retries would
+        # otherwise make one ledger row stand for several HTTP requests.
+        self._client = client or AsyncOpenAI(api_key=key, max_retries=0)
 
     async def generate_json(
         self, system: str, messages: list[Message], schema: type[BaseModel]

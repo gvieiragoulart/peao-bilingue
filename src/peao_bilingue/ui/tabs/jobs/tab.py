@@ -16,6 +16,7 @@ from peao_bilingue.composition import build_llm, read_profile_notes
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import JobAnalysis
 from peao_bilingue.domain.jobs import JobStatus, ListedJob
+from peao_bilingue.domain.models import MODEL_FIELDS, AIProvider
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.presentation import KeywordGroup
@@ -178,12 +179,7 @@ class JobsTab(ctk.CTkFrame):
 
     def _show_cost_hint(self) -> None:
         name = self.preview.chosen_llm()
-        model = {
-            "openai": settings.openai_model,
-            "anthropic": settings.anthropic_model,
-            "gemini": settings.gemini_model,
-            "ollama": settings.ollama_model,
-        }.get(name, "")
+        model = getattr(settings, MODEL_FIELDS[AIProvider(name)])
         if name == "ollama":
             self.preview.show_cost_hint(_("US$0 API spend"))
             return
