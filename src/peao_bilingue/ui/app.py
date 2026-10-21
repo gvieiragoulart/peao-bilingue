@@ -58,6 +58,29 @@ def tabs() -> list[tuple[str, str, type[Any]]]:
     ]
 
 
+class Panels(dict[str, Any]):
+    """Build a section on first use; unopened sections have no widgets to refresh."""
+
+    def __init__(
+        self, host: ctk.CTkFrame, app: "App", sections: list[tuple[str, str, type[Any]]]
+    ) -> None:
+        super().__init__((identifier, None) for identifier, _title, _cls in sections)
+        self._host = host
+        self._app = app
+        self._classes = {identifier: cls for identifier, _title, cls in sections}
+
+    def __getitem__(self, identifier: str) -> Any:
+        panel = super().__getitem__(identifier)
+        if panel is None:
+            panel = self._classes[identifier](self._host, self._app)
+            super().__setitem__(identifier, panel)
+            panel.refresh()
+        return panel
+
+    def loaded(self) -> list[Any]:
+        return [panel for panel in super().values() if panel is not None]
+
+
 class App(ctk.CTk):
     def __init__(
         self,
@@ -129,10 +152,7 @@ class App(ctk.CTk):
         )
         self.panel_host.pack_propagate(False)
         self._pack_sections()
-        self.panels: dict[str, Any] = {
-            identifier: cls(self.panel_host, self)
-            for identifier, _title, cls in sections
-        }
+        self.panels = Panels(self.panel_host, self, sections)
         self.current: str | None = None
         self.show("jobs")
 
@@ -300,7 +320,7 @@ class App(ctk.CTk):
             self.after_idle(self.on_change)
 
     def on_change(self) -> None:
-        for panel in self.panels.values():
+        for panel in self.panels.loaded():
             panel.refresh()
         self.refresh_badge()
         runs = self.repository.list_runs(1)

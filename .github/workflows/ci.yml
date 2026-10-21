@@ -122,4 +122,4 @@ jobs:
       - name: Install Playwright's Chromium
         run: uv run playwright install chromium
       - name: pytest — integration
-        run: uv run pytest -m integration
+        run: uv run pytest -m integration --durations=25
