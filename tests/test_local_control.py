@@ -38,9 +38,7 @@ def test_state_and_settings_patch(service: ControlService) -> None:
     assert changed
     assert result == {"updated": ["enabled_sources"]}
     assert settings.enabled_sources == ["remotive"]
-    assert json.loads(config.CONFIG_PATH.read_text())["enabled_sources"] == [
-        "remotive"
-    ]
+    assert json.loads(config.CONFIG_PATH.read_text())["enabled_sources"] == ["remotive"]
 
 
 def test_invalid_settings_do_not_change_disk(service: ControlService) -> None:
@@ -61,7 +59,11 @@ def test_search_and_profile_updates(service: ControlService) -> None:
     saved, _ = service.handle(
         {
             "op": "search.upsert",
-            "search": {"name": "Python", "keywords": [" python "], "sources": ["remotive"]},
+            "search": {
+                "name": "Python",
+                "keywords": [" python "],
+                "sources": ["remotive"],
+            },
         }
     )
     search_id = saved["search"]["id"]
