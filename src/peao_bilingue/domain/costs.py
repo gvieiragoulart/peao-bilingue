@@ -29,6 +29,17 @@ class ModelRate(BaseModel):
     source: str = "manual"
 
 
+class PublishedModel(BaseModel):
+    """A model seen at an official provider source, with a rate if unambiguous."""
+
+    provider: str
+    model: str
+    rate: ModelRate | None = None
+    source_url: str
+    fetched_at: datetime
+    available: bool | None = None
+
+
 class CostTask(BaseModel):
     id: str
     kind: str
@@ -133,4 +144,11 @@ class CostRepository(ABC):
     def configured_rate(self, provider: str, model: str) -> ModelRate | None: ...
 
     @abstractmethod
-    def save_model_rate(self, rate: ModelRate) -> None: ...
+    def list_published_models(
+        self, provider: str | None = None
+    ) -> list[PublishedModel]: ...
+
+    @abstractmethod
+    def replace_published_models(
+        self, provider: str, models: list[PublishedModel]
+    ) -> None: ...

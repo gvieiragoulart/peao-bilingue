@@ -194,7 +194,7 @@ class JobsTab(ctk.CTkFrame):
                 _("Typical: {cost} / analysis").format(cost=money(typical))
             )
         elif self.app.repository.configured_rate(name, model) is None:
-            self.preview.show_cost_hint(_("Set model price in Costs"))
+            self.preview.show_cost_hint(_("Refresh provider prices in Costs"))
         else:
             self.preview.show_cost_hint(_("Cost history starts after 3 analyses"))
 

@@ -236,12 +236,17 @@ price used, and its estimated USD cost are saved in the local SQLite database; j
 prompts and API keys are never stored in the cost history. Deleting a job does not
 delete its cost record.
 
-Prices are estimates, not provider invoices. The app includes a small, dated catalog
-for exact model names and lets you enter other models' published USD prices per
-million tokens on the Costs tab. Calls without usable token counts or a price remain
-marked **Cost unavailable** and are excluded from the displayed total. Changing a
-model price affects future calls only. Ollama is shown as $0 in API spend; local
-electricity and hardware are not counted.
+Prices are estimates, not provider invoices. The Costs tab refreshes standard paid
+text-token rates from the official OpenAI, Anthropic, and Gemini pricing pages and
+lists models from each provider's model API when its key is configured. It keeps a
+local copy of the source and update time. Calls recorded before a rate was fetched
+gain an estimate after refresh; existing cost estimates keep their recorded rate.
+Calls without usable token counts or an unambiguous rate show **Cost unavailable**.
+Tasks containing those calls show a **partial** total, and the chart and summaries
+include known estimates only. The chart groups local spending by day, month, or year;
+hovering a bar shows provider amounts, and clicking it filters task activity to that
+period. Click the bar again or **Show all** to clear the filter.
+Ollama is shown as $0 in API spend; local electricity and hardware are not counted.
 
 After three priced analyses with the same provider and model, the Analyze control
 shows the median past cost as a rough preview.

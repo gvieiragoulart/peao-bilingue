@@ -127,6 +127,20 @@ class ModelRateTable(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=now)
 
 
+class PublishedModelTable(SQLModel, table=True):
+    __tablename__ = "published_model"
+
+    provider: str = Field(primary_key=True)
+    model: str = Field(primary_key=True)
+    input_per_million: str | None = None
+    output_per_million: str | None = None
+    cached_input_per_million: str | None = None
+    cache_write_per_million: str | None = None
+    source_url: str
+    fetched_at: datetime = Field(default_factory=now)
+    available: bool | None = None
+
+
 class RunTable(SQLModel, table=True):
     __tablename__ = "run"
 

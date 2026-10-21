@@ -1,15 +1,15 @@
-"""The local cost ledger and user-supplied model prices."""
+"""The local cost ledger and published provider prices."""
 
 from datetime import datetime
 from decimal import Decimal
 
-from sqlmodel import col, select
+from sqlmodel import col, delete, select
 
 from peao_bilingue.adapters.persistence.sqlite.database import BaseSQLite
 from peao_bilingue.adapters.persistence.sqlite.tables import (
     CostCallTable,
     CostTaskTable,
-    ModelRateTable,
+    PublishedModelTable,
     local,
     now,
 )
@@ -19,10 +19,10 @@ from peao_bilingue.domain.costs import (
     CostRepository,
     CostTask,
     ModelRate,
+    PublishedModel,
     TokenUsage,
     estimated_cost,
 )
-from peao_bilingue.domain.pricing import catalog_rate
 
 
 class CostsSQLite(BaseSQLite, CostRepository):
@@ -187,50 +187,143 @@ class CostsSQLite(BaseSQLite, CostRepository):
         ][:limit]
 
     def configured_rate(self, provider: str, model: str) -> ModelRate | None:
-        with self._session() as session:
-            row = session.get(ModelRateTable, (provider, model))
-            if row is None:
-                return catalog_rate(provider, model)
+        if provider == "ollama":
             return ModelRate(
                 provider=provider,
                 model=model,
-                input_per_million=Decimal(row.input_per_million),
-                output_per_million=Decimal(row.output_per_million),
-                cached_input_per_million=(
-                    Decimal(row.cached_input_per_million)
-                    if row.cached_input_per_million is not None
-                    else None
-                ),
-                cache_write_per_million=(
-                    Decimal(row.cache_write_per_million)
-                    if row.cache_write_per_million is not None
-                    else None
-                ),
-                source="manual",
+                input_per_million=Decimal("0"),
+                output_per_million=Decimal("0"),
+                cached_input_per_million=Decimal("0"),
+                cache_write_per_million=Decimal("0"),
+                source="local",
             )
-
-    def save_model_rate(self, rate: ModelRate) -> None:
         with self._session() as session:
-            row = session.get(ModelRateTable, (rate.provider, rate.model))
-            if row is None:
-                row = ModelRateTable(
-                    provider=rate.provider,
-                    model=rate.model,
-                    input_per_million=str(rate.input_per_million),
-                    output_per_million=str(rate.output_per_million),
+            official = session.get(PublishedModelTable, (provider, model))
+            if official is not None and official.input_per_million is not None:
+                return ModelRate(
+                    provider=provider,
+                    model=model,
+                    input_per_million=Decimal(official.input_per_million),
+                    output_per_million=Decimal(official.output_per_million or "0"),
+                    cached_input_per_million=(
+                        Decimal(official.cached_input_per_million)
+                        if official.cached_input_per_million is not None
+                        else None
+                    ),
+                    cache_write_per_million=(
+                        Decimal(official.cache_write_per_million)
+                        if official.cache_write_per_million is not None
+                        else None
+                    ),
+                    source=official.source_url,
                 )
-            row.input_per_million = str(rate.input_per_million)
-            row.output_per_million = str(rate.output_per_million)
-            row.cached_input_per_million = (
-                str(rate.cached_input_per_million)
-                if rate.cached_input_per_million is not None
-                else None
+            return None
+
+    def list_published_models(
+        self, provider: str | None = None
+    ) -> list[PublishedModel]:
+        with self._session() as session:
+            query = select(PublishedModelTable)
+            if provider is not None:
+                query = query.where(PublishedModelTable.provider == provider)
+            rows = session.exec(query).all()
+        return [
+            PublishedModel(
+                provider=row.provider,
+                model=row.model,
+                rate=(
+                    ModelRate(
+                        provider=row.provider,
+                        model=row.model,
+                        input_per_million=Decimal(row.input_per_million),
+                        output_per_million=Decimal(row.output_per_million or "0"),
+                        cached_input_per_million=(
+                            Decimal(row.cached_input_per_million)
+                            if row.cached_input_per_million is not None
+                            else None
+                        ),
+                        cache_write_per_million=(
+                            Decimal(row.cache_write_per_million)
+                            if row.cache_write_per_million is not None
+                            else None
+                        ),
+                        source=row.source_url,
+                    )
+                    if row.input_per_million is not None
+                    else None
+                ),
+                source_url=row.source_url,
+                fetched_at=local(row.fetched_at),
+                available=row.available,
             )
-            row.cache_write_per_million = (
-                str(rate.cache_write_per_million)
-                if rate.cache_write_per_million is not None
-                else None
+            for row in rows
+        ]
+
+    def replace_published_models(
+        self, provider: str, models: list[PublishedModel]
+    ) -> None:
+        with self._session() as session:
+            session.exec(
+                delete(PublishedModelTable).where(
+                    col(PublishedModelTable.provider) == provider
+                )
             )
-            row.updated_at = now()
-            session.add(row)
+            rates: dict[str, ModelRate] = {}
+            for model in models:
+                rate = model.rate
+                if rate is not None:
+                    rates[model.model] = rate
+                session.add(
+                    PublishedModelTable(
+                        provider=provider,
+                        model=model.model,
+                        input_per_million=(
+                            str(rate.input_per_million) if rate else None
+                        ),
+                        output_per_million=(
+                            str(rate.output_per_million) if rate else None
+                        ),
+                        cached_input_per_million=(
+                            str(rate.cached_input_per_million)
+                            if rate and rate.cached_input_per_million is not None
+                            else None
+                        ),
+                        cache_write_per_million=(
+                            str(rate.cache_write_per_million)
+                            if rate and rate.cache_write_per_million is not None
+                            else None
+                        ),
+                        source_url=model.source_url,
+                        fetched_at=model.fetched_at,
+                        available=model.available,
+                    )
+                )
+            # Calls made before a rate was available gain an estimate, with the
+            # fetched source saved on the call. Existing estimates stay untouched.
+            unestimated = session.exec(
+                select(CostCallTable).where(
+                    CostCallTable.provider == provider,
+                    col(CostCallTable.cost_usd).is_(None),
+                )
+            ).all()
+            for call in unestimated:
+                rate = rates.get(call.model)
+                if rate is None:
+                    continue
+                cost = estimated_cost(
+                    TokenUsage(
+                        input_tokens=call.input_tokens,
+                        output_tokens=call.output_tokens,
+                        cached_input_tokens=call.cached_input_tokens,
+                        cache_write_tokens=call.cache_write_tokens,
+                    ),
+                    rate,
+                )
+                if cost is None:
+                    continue
+                call.cost_usd = str(cost)
+                call.cost_reason = None
+                call.rate_source = rate.source
+                call.rate_snapshot = rate.model_dump(mode="json")
+                session.add(call)
             session.commit()
