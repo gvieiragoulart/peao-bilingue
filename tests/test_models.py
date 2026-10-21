@@ -40,3 +40,6 @@ def test_other_modalities_are_not_usable() -> None:
     assert not is_usable_model("openai", "gpt-image-1")
     assert not is_usable_model("openai", "gpt-4o-realtime-preview")
     assert not is_usable_model("gemini", "gemini-3-pro-image")
+    assert not is_usable_model("gemini", "gemini-nano-banana-2.1")
+    assert not is_usable_model("gemini", "gemini-robotics-er-2")
+    assert not is_usable_model("gemini", "gemini-omni-flash-preview")
