@@ -12,6 +12,7 @@ import customtkinter as ctk
 from peao_bilingue.adapters.pricing.official import PRICE_URLS, fetch_published_models
 from peao_bilingue.config import settings
 from peao_bilingue.domain.costs import CostCall, CostTask, PublishedModel
+from peao_bilingue.domain.models import is_usable_model
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import theme
 from peao_bilingue.ui.tabs.costs.chart import (
@@ -64,7 +65,7 @@ def money(amount: Decimal | None) -> str:
     return f"US${amount:,.{places}f}"
 
 
-class CostsTab(ctk.CTkScrollableFrame):
+class CostsTab(ctk.CTkFrame):
     def __init__(self, master: Any, app: "App") -> None:
         super().__init__(master, fg_color="transparent")
         self.app = app
@@ -79,7 +80,20 @@ class CostsTab(ctk.CTkScrollableFrame):
         self._price_auto_checked = False
         self._published_rows: list[PublishedModel] = []
 
-        top = ctk.CTkFrame(self, fg_color="transparent")
+        self.views = ctk.CTkTabview(self, fg_color="transparent")
+        self.views.pack(fill="both", expand=True)
+        self.views.add(_("Overview"))
+        self.views.add(_("Models and prices"))
+        self.overview = ctk.CTkScrollableFrame(
+            self.views.tab(_("Overview")), fg_color="transparent"
+        )
+        self.overview.pack(fill="both", expand=True)
+        self.catalog = ctk.CTkFrame(
+            self.views.tab(_("Models and prices")), fg_color="transparent"
+        )
+        self.catalog.pack(fill="both", expand=True)
+
+        top = ctk.CTkFrame(self.overview, fg_color="transparent")
         top.pack(fill="x", pady=(0, 12))
         Hint(
             top,
@@ -93,14 +107,30 @@ class CostsTab(ctk.CTkScrollableFrame):
         )
         self.period.pack(side="right")
 
-        summary = ctk.CTkFrame(self, fg_color="transparent")
+        summary = ctk.CTkFrame(self.overview, fg_color="transparent")
         summary.pack(fill="x", pady=(0, 16))
         for column in range(2):
             summary.grid_columnconfigure(column, weight=1, uniform="summary")
         self.total = self._metric(summary, 0, _("Estimated spend"))
-        self.activity = self._metric(summary, 1, _("Activity"))
+        activity_card = Card(summary)
+        activity_card.grid(row=0, column=1, sticky="nsew", padx=5)
+        Hint(activity_card, text=_("Activity"), anchor="w").pack(
+            fill="x", padx=16, pady=(12, 3)
+        )
+        activity_numbers = ctk.CTkFrame(activity_card, fg_color="transparent")
+        activity_numbers.pack(fill="x", padx=16, pady=(0, 12))
+        for column, label in enumerate((_("Tasks"), _("API calls"))):
+            group = ctk.CTkFrame(activity_numbers, fg_color="transparent")
+            group.pack(side="left", fill="x", expand=True)
+            value = ctk.CTkLabel(group, text="0", font=theme.display(24), anchor="w")
+            value.pack(anchor="w")
+            Hint(group, text=label, anchor="w").pack(anchor="w")
+            if column == 0:
+                self.activity_tasks = value
+            else:
+                self.activity_calls = value
         self.estimate_hint = Hint(
-            self,
+            self.overview,
             text=_(
                 "Some calls have unavailable costs. Totals and chart include known estimates only."
             ),
@@ -108,13 +138,13 @@ class CostsTab(ctk.CTkScrollableFrame):
         )
         self.estimate_hint.pack(fill="x", pady=(0, 12))
         self.empty = Hint(
-            self,
+            self.overview,
             text=_("Your API usage will appear here after you analyze a job."),
             anchor="w",
         )
         self.empty.pack(fill="x", pady=(0, 12))
 
-        trend_top = ctk.CTkFrame(self, fg_color="transparent")
+        trend_top = ctk.CTkFrame(self.overview, fg_color="transparent")
         trend_top.pack(fill="x", pady=(0, 8))
         Heading(trend_top, text=_("Spending over time")).pack(side="left")
         self.trend_scale = ctk.CTkSegmentedButton(
@@ -124,19 +154,19 @@ class CostsTab(ctk.CTkScrollableFrame):
         )
         self.trend_scale.pack(side="right")
         self.trend_scale.set(_("Day"))
-        self.chart = SpendingChart(self, self._select_bucket)
+        self.chart = SpendingChart(self.overview, self._select_bucket)
         self.chart.pack(fill="x", pady=(0, 8))
         Hint(
-            self,
+            self.overview,
             text=_(
                 "Last 30 days, 12 months or 5 years. Hover for provider costs; click a bar to filter activities."
             ),
             anchor="w",
         ).pack(fill="x", pady=(0, 18))
 
-        Heading(self, text=_("By provider")).pack(anchor="w", pady=(0, 8))
+        Heading(self.overview, text=_("By provider")).pack(anchor="w", pady=(0, 8))
         self.providers = Table(
-            self,
+            self.overview,
             [
                 ("provider", _("Provider"), 160),
                 ("cost", _("Estimated cost"), 130),
@@ -148,9 +178,11 @@ class CostsTab(ctk.CTkScrollableFrame):
         self.providers.tree.configure(height=4)
         self.providers.pack(fill="x", pady=(0, 16))
         self.providers.on_select(self._pick_provider)
-        Heading(self, text=_("By requested model")).pack(anchor="w", pady=(0, 8))
+        Heading(self.overview, text=_("By requested model")).pack(
+            anchor="w", pady=(0, 8)
+        )
         self.models = Table(
-            self,
+            self.overview,
             [
                 ("provider", _("Provider"), 150),
                 ("model", _("Model"), 220),
@@ -163,7 +195,7 @@ class CostsTab(ctk.CTkScrollableFrame):
         self.models.pack(fill="x", pady=(0, 16))
         self.models.on_select(self._pick_model)
 
-        activity_top = ctk.CTkFrame(self, fg_color="transparent")
+        activity_top = ctk.CTkFrame(self.overview, fg_color="transparent")
         activity_top.pack(fill="x", pady=(0, 8))
         self.activity_heading = Heading(activity_top, text=_("Activity by task"))
         self.activity_heading.pack(side="left")
@@ -171,7 +203,7 @@ class CostsTab(ctk.CTkScrollableFrame):
             activity_top, text=_("Show all"), width=92, command=self._show_all
         ).pack(side="right")
         self.tasks = Table(
-            self,
+            self.overview,
             [
                 ("when", _("When"), 130),
                 ("task", _("Task"), 200),
@@ -186,13 +218,15 @@ class CostsTab(ctk.CTkScrollableFrame):
         self.tasks.pack(fill="x", pady=(0, 16))
         self.tasks.on_select(self._pick_task)
 
-        Heading(self, text=_("Call details")).pack(anchor="w", pady=(0, 8))
+        Heading(self.overview, text=_("Call details")).pack(anchor="w", pady=(0, 8))
         self.detail_hint = Hint(
-            self, text=_("Select a task to see each API call and retry."), anchor="w"
+            self.overview,
+            text=_("Select a task to see each API call and retry."),
+            anchor="w",
         )
         self.detail_hint.pack(fill="x", pady=(0, 8))
         self.calls = Table(
-            self,
+            self.overview,
             [
                 ("attempt", _("Call"), 80),
                 ("model", _("Model used"), 150),
@@ -207,7 +241,7 @@ class CostsTab(ctk.CTkScrollableFrame):
         self.calls.tree.configure(height=4)
         self.calls.pack(fill="x", pady=(0, 20))
         self.calls.on_select(self._pick_call)
-        self.call_rate_hint = Hint(self, text="", anchor="w", wraplength=720)
+        self.call_rate_hint = Hint(self.overview, text="", anchor="w", wraplength=720)
         self.call_rate_hint.pack(fill="x", pady=(0, 16))
 
         self._make_published_prices()
@@ -217,7 +251,7 @@ class CostsTab(ctk.CTkScrollableFrame):
         card = Card(master)
         card.grid(row=0, column=column, sticky="nsew", padx=5)
         Hint(card, text=label, anchor="w").pack(fill="x", padx=16, pady=(12, 0))
-        value = ctk.CTkLabel(card, text="", font=theme.section(), anchor="w")
+        value = ctk.CTkLabel(card, text="", font=theme.display(24), anchor="w")
         value.pack(fill="x", padx=16, pady=(2, 12))
         return value
 
@@ -242,11 +276,8 @@ class CostsTab(ctk.CTkScrollableFrame):
         total = sum((task.cost_usd for task in tasks), Decimal("0"))
         count = sum(task.calls for task in tasks)
         self.total.configure(text=money(total))
-        self.activity.configure(
-            text=_("{tasks} tasks · {calls} calls").format(
-                tasks=len(tasks), calls=count
-            )
-        )
+        self.activity_tasks.configure(text=str(len(tasks)))
+        self.activity_calls.configure(text=str(count))
         if any(task.unknown_calls for task in tasks):
             if not self.estimate_hint.winfo_manager():
                 self.estimate_hint.pack(fill="x", pady=(0, 12), before=self.empty)
@@ -472,8 +503,8 @@ class CostsTab(ctk.CTkScrollableFrame):
         )
 
     def _make_published_prices(self) -> None:
-        card = Card(self)
-        card.pack(fill="x", pady=(0, 12))
+        card = Card(self.catalog)
+        card.pack(fill="both", expand=True, pady=(0, 12))
         top = ctk.CTkFrame(card, fg_color="transparent")
         top.pack(fill="x", padx=16, pady=(14, 4))
         Heading(top, text=_("Provider models and prices")).pack(side="left")
@@ -506,14 +537,19 @@ class CostsTab(ctk.CTkScrollableFrame):
             ],
             height=230,
         )
-        self.published.tree.configure(height=8)
-        self.published.pack(fill="x", padx=16, pady=(0, 8))
+        self.published.tree.configure(height=16)
+        self.published.pack(fill="both", expand=True, padx=16, pady=(0, 8))
         self.published.on_select(self._pick_published)
         self.published_source = Hint(card, text="", anchor="w", wraplength=720)
         self.published_source.pack(fill="x", padx=16, pady=(0, 14))
 
     def _fill_published_prices(self) -> None:
-        self._published_rows = self.app.repository.list_published_models()
+        self._published_rows = [
+            item
+            for item in self.app.repository.list_published_models()
+            if item.available is not False
+            and is_usable_model(item.provider, item.model)
+        ]
         self._published_rows.sort(key=lambda item: (item.provider, item.model))
         self.published.fill(
             [
@@ -591,7 +627,8 @@ class CostsTab(ctk.CTkScrollableFrame):
             errors: list[str] = []
             for provider in providers or list(PRICE_URLS):
                 try:
-                    models = fetch_published_models(provider)
+                    cached = self.app.repository.list_published_models(provider)
+                    models = fetch_published_models(provider, cached_models=cached)
                     self.app.repository.replace_published_models(provider, models)
                 except Exception as failure:  # noqa: BLE001 - keep cached prices
                     errors.append(f"{provider}: {failure}")

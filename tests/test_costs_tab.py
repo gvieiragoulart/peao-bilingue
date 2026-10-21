@@ -123,7 +123,8 @@ def test_costs_tab_shows_totals_and_partial_costs(
     tab: CostsTab = window.panels["costs"]
 
     assert tab.total.cget("text") == "US$0.0220"
-    assert tab.activity.cget("text") == "2 tasks · 2 calls"
+    assert tab.activity_tasks.cget("text") == "2"
+    assert tab.activity_calls.cget("text") == "2"
     assert "unavailable" in tab.estimate_hint.cget("text")
     assert [row[0] for row in rows(tab, "providers")] == [
         "Gemini (Google)",
@@ -133,6 +134,16 @@ def test_costs_tab_shows_totals_and_partial_costs(
     assert any("partial" in row[4] for row in rows(tab, "tasks"))
     assert not hasattr(tab, "unknown")
     assert tab.chart._buckets[-1].total == Decimal("0.022")
+
+
+def test_models_and_prices_has_its_own_view_and_scroll_area(window: App) -> None:
+    window.show("costs")
+    tab: CostsTab = window.panels["costs"]
+    assert tab.views.get() == "Overview"
+    assert tab.chart.master is tab.overview
+    assert tab.published.master is not tab.overview
+    tab.views.set("Models and prices")
+    assert tab.views.get() == "Models and prices"
 
 
 def test_costs_tab_filters_provider_and_model_and_shows_call_detail(
@@ -187,17 +198,21 @@ def test_costs_tab_loads_published_prices_and_backfills_calls(
         repository,
         "custom",
         provider="gemini",
-        model="custom-model",
+        model="gemini-custom-model",
         title="Custom priced task",
         usage=TokenUsage(input_tokens=1000, output_tokens=1000),
     )
     assert repository.list_cost_calls("custom")[0].cost_usd is None
-    publish(repository, "gemini", "custom-model", "1.25", "5")
+    publish(repository, "gemini", "gemini-custom-model", "1.25", "5")
     window.show("costs")
     tab: CostsTab = window.panels["costs"]
     tab.refresh()
     assert tab.total.cget("text") == "US$0.006250"
-    assert rows(tab, "published")[0][1:4] == ("custom-model", "1.25", "5")
+    assert rows(tab, "published")[0][1:4] == (
+        "gemini-custom-model",
+        "1.25",
+        "5",
+    )
     assert rows(tab, "published")[0][5] == "In model list"
     tab.published.tree.selection_set("0")
     tab._pick_published()

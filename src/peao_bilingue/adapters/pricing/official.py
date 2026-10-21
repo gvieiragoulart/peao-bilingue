@@ -15,6 +15,7 @@ import httpx
 
 from peao_bilingue.config import settings
 from peao_bilingue.domain.costs import ModelRate, PublishedModel
+from peao_bilingue.domain.models import is_usable_model
 
 logger = logging.getLogger(__name__)
 
@@ -255,7 +256,10 @@ def parse_pricing_page(
                 _gemini_amount(values[output_rows[0]], observed.date()),
                 _gemini_amount(cached, observed.date()),
             )
-    return sorted(found.values(), key=lambda entry: entry.model)
+    return sorted(
+        (entry for entry in found.values() if is_usable_model(provider, entry.model)),
+        key=lambda entry: entry.model,
+    )
 
 
 def _available_models(provider: str, api_key: str) -> set[str]:
@@ -263,23 +267,41 @@ def _available_models(provider: str, api_key: str) -> set[str]:
         from openai import OpenAI
 
         with OpenAI(api_key=api_key, timeout=10, max_retries=0) as client:
-            return {model.id for model in client.models.list().data}
+            return {
+                model.id
+                for model in client.models.list().data
+                if is_usable_model(provider, model.id)
+            }
     if provider == "anthropic":
         from anthropic import Anthropic
 
         with Anthropic(api_key=api_key, timeout=10, max_retries=0) as client:
-            return {model.id for model in client.models.list()}
+            return {
+                model.id
+                for model in client.models.list()
+                if is_usable_model(provider, model.id)
+            }
     from google import genai
 
-    with genai.Client(api_key=api_key, http_options={"timeout": 10000}) as client:
+    with genai.Client(
+        api_key=api_key,
+        http_options={"timeout": 10000, "retry_options": {"attempts": 1}},
+    ) as client:
         return {
             model.name.removeprefix("models/")
             for model in client.models.list()
             if model.name
+            and is_usable_model(provider, model.name.removeprefix("models/"))
+            and "generateContent" in (model.supported_actions or [])
         }
 
 
-def fetch_published_models(provider: str) -> list[PublishedModel]:
+def fetch_published_models(
+    provider: str,
+    *,
+    api_key: str | None = None,
+    cached_models: list[PublishedModel] | None = None,
+) -> list[PublishedModel]:
     """Fetch public prices, then mark account availability when a key is configured."""
     source = PRICE_URLS[provider]
     response = httpx.get(
@@ -292,17 +314,20 @@ def fetch_published_models(provider: str) -> list[PublishedModel]:
     models = parse_pricing_page(provider, response.text)
     if not models:
         raise ValueError(f"No model prices could be read from {source}")
-    api_key = {
-        "openai": settings.openai_api_key,
-        "anthropic": settings.anthropic_api_key,
-        "gemini": settings.gemini_api_key,
-    }[provider]
+    if api_key is None:
+        api_key = {
+            "openai": settings.openai_api_key,
+            "anthropic": settings.anthropic_api_key,
+            "gemini": settings.gemini_api_key,
+        }[provider]
     if not api_key:
         return models
     try:
         available = _available_models(provider, api_key)
-    except Exception as failure:  # noqa: BLE001 - public prices still work without API access
+    except Exception as failure:
         logger.info("Could not list %s models: %s", provider, failure)
+        if cached_models:
+            raise RuntimeError(f"Could not refresh {provider} model list") from failure
         return models
     priced = {model.model for model in models}
     result = [

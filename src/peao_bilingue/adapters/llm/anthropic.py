@@ -52,7 +52,8 @@ class Anthropic(LLMProvider):
         self.model = model or settings.anthropic_model
         # An empty key becomes None so the SDK finds the credential by itself.
         self._client = client or AsyncAnthropic(
-            api_key=api_key or settings.anthropic_api_key or None
+            api_key=api_key or settings.anthropic_api_key or None,
+            max_retries=0,
         )
 
     async def generate_json(

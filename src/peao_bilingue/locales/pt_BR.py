@@ -856,6 +856,16 @@ MESSAGES: dict[str, str] = {
     "Your CV:": "Seu currículo:",
     # --- local API costs ---------------------------------------------------------
     "Costs": "Custos",
+    "Overview": "Visão geral",
+    "Models and prices": "Modelos e preços",
+    "Refresh provider models": "Atualizar modelos do provedor",
+    "Checking provider models…": "Consultando modelos do provedor…",
+    "{count} models loaded from the provider.": (
+        "{count} modelos carregados do provedor."
+    ),
+    "The provider returned no models.": "O provedor não retornou modelos.",
+    "Could not refresh. Cached models remain available.": "Não foi possível atualizar. Os modelos em cache continuam disponíveis.",
+    "Could not load provider models. Try again later.": "Não foi possível carregar os modelos do provedor. Tente novamente mais tarde.",
     "This month": "Este mês",
     "Last 30 days": "Últimos 30 dias",
     "All time": "Todo o período",
@@ -915,7 +925,6 @@ MESSAGES: dict[str, str] = {
         "Tarifas desta chamada (USD / milhão): entrada {input}, saída {output}, "
         "cache {cached}, gravação {write}. Fonte: {source}"
     ),
-    "{tasks} tasks · {calls} calls": "{tasks} tarefas · {calls} chamadas",
     "{title} · {provider} · {count} calls": ("{title} · {provider} · {count} chamadas"),
     "Succeeded": "Concluída",
     "Analysis": "Análise",

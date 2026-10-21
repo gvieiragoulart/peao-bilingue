@@ -17,9 +17,9 @@ from peao_bilingue.config import settings
             "openai",
             (
                 "<table><tr><th>Model</th><th>Input</th><th>Output</th><th>Cached input</th></tr>"
-                "<tr><td>gpt-example</td><td>$2.00</td><td>$10.00</td><td>$0.10</td></tr></table>"
+                "<tr><td>gpt-5-example</td><td>$2.00</td><td>$10.00</td><td>$0.10</td></tr></table>"
             ),
-            "gpt-example",
+            "gpt-5-example",
             "2.00",
             "10.00",
         ),
@@ -80,19 +80,59 @@ def test_model_list_adds_api_only_ids_and_marks_account_availability(
 ) -> None:
     html = (
         "<table><tr><th>Model</th><th>Input</th><th>Output</th></tr>"
-        "<tr><td>gpt-priced</td><td>$2</td><td>$10</td></tr></table>"
+        "<tr><td>gpt-5-priced</td><td>$2</td><td>$10</td></tr></table>"
     )
     request = httpx.Request("GET", official.PRICE_URLS["openai"])
     response = httpx.Response(200, text=html, request=request)
     monkeypatch.setattr(official.httpx, "get", lambda *args, **kwargs: response)
     monkeypatch.setattr(settings, "openai_api_key", "test-key")
     monkeypatch.setattr(
-        official, "_available_models", lambda provider, key: {"gpt-api-only"}
+        official, "_available_models", lambda provider, key: {"gpt-5-api-only"}
     )
     models = official.fetch_published_models("openai")
     assert [(item.model, item.available) for item in models] == [
-        ("gpt-api-only", True),
-        ("gpt-priced", False),
+        ("gpt-5-api-only", True),
+        ("gpt-5-priced", False),
     ]
     assert models[0].rate is None
     assert models[1].rate is not None
+
+
+def test_refresh_error_leaves_cached_models_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    html = (
+        "<table><tr><th>Model</th><th>Input</th><th>Output</th></tr>"
+        "<tr><td>gpt-5-new</td><td>$2</td><td>$10</td></tr></table>"
+    )
+    request = httpx.Request("GET", official.PRICE_URLS["openai"])
+    response = httpx.Response(200, text=html, request=request)
+    monkeypatch.setattr(official.httpx, "get", lambda *args, **kwargs: response)
+    monkeypatch.setattr(
+        official,
+        "_available_models",
+        lambda provider, key: (_ for _ in ()).throw(ConnectionError("offline")),
+    )
+    cached = official.parse_pricing_page(
+        "openai",
+        html.replace("gpt-5-new", "gpt-5-cached"),
+    )
+    with pytest.raises(RuntimeError, match="Could not refresh openai model list"):
+        official.fetch_published_models(
+            "openai", api_key="test-key", cached_models=cached
+        )
+    assert [item.model for item in cached] == ["gpt-5-cached"]
+
+
+def test_only_usable_text_models_are_kept() -> None:
+    html = (
+        "<table><tr><th>Model</th><th>Input</th><th>Output</th></tr>"
+        "<tr><td>gpt-5.4</td><td>$2</td><td>$10</td></tr>"
+        "<tr><td>gpt-image-1</td><td>$2</td><td>$10</td></tr>"
+        "<tr><td>gpt-4o-audio-preview</td><td>$2</td><td>$10</td></tr>"
+        "<tr><td>text-embedding-3-large</td><td>$2</td><td>$10</td></tr>"
+        "</table>"
+    )
+    assert [item.model for item in official.parse_pricing_page("openai", html)] == [
+        "gpt-5.4"
+    ]

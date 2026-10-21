@@ -54,7 +54,12 @@ class Gemini(LLMProvider):
         key = api_key or settings.gemini_api_key
         if client is None and not key:
             raise ProviderUnavailable(_("Fill in the Gemini API key on the LLMs tab."))
-        self._client = client or genai.Client(api_key=key)
+        self._client = client or genai.Client(
+            api_key=key,
+            http_options=types.HttpOptions(
+                retry_options=types.HttpRetryOptions(attempts=1)
+            ),
+        )
 
     async def generate_json(
         self, system: str, messages: list[Message], schema: type[BaseModel]
