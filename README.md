@@ -110,6 +110,10 @@ Cloudflare rejects unusual browsers.
 
 ## Command line
 
+On Linux, an agent or script can inspect and configure the open window through
+`peao control state` and `peao control apply`. See the
+[local control guide](docs/local-control.md) for the JSON operations and examples.
+
 The CLI logs in, manages searches, collects and schedules; it is what the scheduled collection
 uses. Analysis happens in the app.
 
