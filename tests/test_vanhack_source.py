@@ -11,7 +11,6 @@ from peao_bilingue.adapters.sources.vanhack.source import VanHack, _job, _summar
 from peao_bilingue.domain.collection import JobSource
 from peao_bilingue.domain.errors import HumanChallenge, SessionExpired
 from peao_bilingue.domain.jobs import JobSummary
-from peao_bilingue.domain.profile import ProfileSource
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures" / "vanhack"
 
@@ -22,9 +21,9 @@ async def summaries(page: Page) -> list[JobSummary]:
     return [_summary(card) for card in await listing.extract(page)]
 
 
-def test_implements_both_ports() -> None:
+def test_is_a_job_source() -> None:
     source = VanHack()
-    assert isinstance(source, JobSource) and isinstance(source, ProfileSource)
+    assert isinstance(source, JobSource)
     assert VanHack.needs_browser
 
 

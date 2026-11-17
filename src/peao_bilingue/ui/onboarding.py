@@ -9,23 +9,22 @@ import asyncio
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
-from tkinter import filedialog
 from typing import TYPE_CHECKING, Any
 
 import customtkinter as ctk
 from pydantic import ValidationError
 
 from peao_bilingue import APP_NAME, config, factories
-from peao_bilingue.adapters.documents import read_document
 from peao_bilingue.application.profile import manual_profile
 from peao_bilingue.config import settings
 from peao_bilingue.domain.collection import ManualSession
+from peao_bilingue.domain.profile import MANUAL_SOURCE
 from peao_bilingue.domain.repository import Repository
 from peao_bilingue.domain.schedule import check_time
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation, theme
+from peao_bilingue.ui.cv_editor import CVEditor
 from peao_bilingue.ui.widgets import Form, OutlineButton, adapter_fields
 
 if TYPE_CHECKING:
@@ -37,11 +36,11 @@ WRAP = 760
 
 def needs_onboarding(repository: Repository) -> bool:
     """A new user: the guide was never finished or skipped, and there's no search and
-    no profile. Whoever set the app up before the guide existed doesn't get it."""
+    no CV. Whoever set the app up before the guide existed doesn't get it."""
     return not (
         settings.onboarding_done
         or repository.list_searches()
-        or repository.sources_with_profile()
+        or repository.last_profile(MANUAL_SOURCE)
     )
 
 
@@ -107,7 +106,7 @@ class Onboarding(ctk.CTkFrame):
             Step(_("Welcome"), self._welcome(), lambda: None),
             Step(_("What are you looking for?"), self._search(), self.read_search),
             Step(_("Where to look"), self._sources(), self.read_sources),
-            Step(_("Your profile"), self._profile(), self.read_cv),
+            Step(_("Your CV"), self._cv(), self.read_cv),
             Step(_("Who analyzes the jobs"), self._llm(), self.read_llm),
             Step(_("Collection and notices"), self._notices(), self.read_notices),
         ]
@@ -250,7 +249,7 @@ class Onboarding(ctk.CTkFrame):
             ).pack(anchor="w", padx=(30, 0))
         return page
 
-    def _profile(self) -> Any:
+    def _cv(self) -> Any:
         page = self._page()
         self._text(
             page,
@@ -258,44 +257,12 @@ class Onboarding(ctk.CTkFrame):
                 "Paste your CV or LinkedIn profile, or import a .pdf, .txt or .md file. "
                 "It's what the LLM compares each job with. Emails, phone numbers, links "
                 "and CPF are removed automatically; remove your name and address "
-                "yourself. You can also skip this and do it later, on the Profile tab."
+                "yourself. You can also skip this and do it later, in Settings."
             ),
         )
-        OutlineButton(
-            page,
-            text=_("Import file…"),
-            width=130,
-            command=self._import,
-        ).pack(anchor="w", pady=(0, 8))
-        self.cv = ctk.CTkTextbox(page, wrap="word", height=260)
+        self.cv = CVEditor(page, on_error=self.app.show_error)
         self.cv.pack(fill="x")
         return page
-
-    def _import(self) -> None:
-        chosen = filedialog.askopenfilename(
-            parent=self,
-            title=_("Import your CV"),
-            filetypes=[(_("CV or profile"), "*.pdf *.txt *.md")],
-        )
-        if not chosen:
-            return
-        try:
-            text = read_document(Path(chosen))
-        except Exception as failure:  # noqa: BLE001 - a broken file is a notice
-            self.app.show_error(failure)
-            return
-        if not text:
-            self.app.show_error(
-                ValueError(
-                    _(
-                        "No text found in the file (a scanned PDF is an image). Paste "
-                        "the text instead."
-                    )
-                )
-            )
-            return
-        self.cv.delete("1.0", "end")
-        self.cv.insert("1.0", text)
 
     def _llm(self) -> Any:
         page = self._page()
@@ -407,7 +374,7 @@ class Onboarding(ctk.CTkFrame):
         return sources
 
     def read_cv(self) -> str:
-        return str(self.cv.get("1.0", "end")).strip()
+        return self.cv.content()
 
     def read_llm(self) -> tuple[str, dict[str, Any]]:
         name = self._llm_names[self.llm_menu.get()]

@@ -16,7 +16,7 @@ from peao_bilingue.adapters.scheduling.linux import LinuxScheduler
 from peao_bilingue.adapters.scheduling.windows import WindowsScheduler
 from peao_bilingue.adapters.updates.github import GitHubReleases
 from peao_bilingue.application.collect import Services
-from peao_bilingue.config import ARTIFACTS_DIR, BASE_DIR, DATA_DIR, settings
+from peao_bilingue.config import ARTIFACTS_DIR, DATA_DIR, settings
 from peao_bilingue.domain.analysis import LLMProvider
 from peao_bilingue.domain.repository import Repository
 from peao_bilingue.domain.schedule import Scheduler
@@ -51,7 +51,6 @@ def build_services(
     return Services(
         searches=database,
         jobs=database,
-        profiles=database,
         runs=database,
         sources=created,
         notifiers=[factories.notifiers.create(name) for name in settings.notifiers],
@@ -64,24 +63,6 @@ def build_services(
 def build_llm(name: str | None = None) -> LLMProvider:
     """The provider picked on screen; with no name, the configured default."""
     return factories.llms.create(name or settings.analysis_llm)
-
-
-def profile_notes_path() -> Path:
-    path = Path(settings.profile_notes_path)
-    # Relative to the base folder: the project's, or the user's in the .exe.
-    return path if path.is_absolute() else BASE_DIR / path
-
-
-def read_profile_notes() -> str:
-    """What the user writes about themselves (`profile_notes.md`), if anything."""
-    path = profile_notes_path()
-    return path.read_text(encoding="utf-8") if path.exists() else ""
-
-
-def save_profile_notes(text: str) -> None:
-    path = profile_notes_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
 
 
 def build_scheduler() -> Scheduler:

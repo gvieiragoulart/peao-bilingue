@@ -19,8 +19,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from peao_bilingue import config, factories
-from peao_bilingue.application.profile import clean_notes, manual_profile
-from peao_bilingue.composition import read_profile_notes, save_profile_notes
+from peao_bilingue.application.profile import manual_profile
 from peao_bilingue.config import DATA_DIR, SECRETS, Settings, settings
 from peao_bilingue.domain.profile import MANUAL_SOURCE
 from peao_bilingue.domain.repository import Repository
@@ -60,7 +59,6 @@ class ControlService:
                 "notifiers": factories.notifiers.available(),
                 "searches": [s.model_dump() for s in self.repository.list_searches()],
                 "manual_profile": profile[1].text if profile else None,
-                "profile_notes": read_profile_notes(),
             }, False
         if op == "settings.patch":
             if set(command) != {"op", "changes"}:
@@ -114,12 +112,6 @@ class ControlService:
                 raise ValueError("Profile has no text after contact data is removed")
             _id, changed = self.repository.save_profile(manual)
             return {"changed": changed, "contact_data_removed": removed.any()}, True
-        if op == "notes.set":
-            if set(command) != {"op", "text"} or not isinstance(command["text"], str):
-                raise ValueError("notes.set requires text")
-            clean, removed = clean_notes(command["text"])
-            save_profile_notes(clean + "\n" if clean else "")
-            return {"contact_data_removed": removed.any()}, True
         raise ValueError(f"Unknown operation: {op!r}")
 
 

@@ -50,11 +50,10 @@ def system_prompt() -> str:
     return SYSTEM.format(language=response_language())
 
 
-def build_prompt(job: Job, profile_text: str, notes: str = "") -> str:
-    parts = ["# Candidate profile", profile_text]
-    if notes.strip():
-        parts += ["", "# Candidate notes (written by hand)", notes.strip()]
-    parts += [
+def build_prompt(job: Job, profile_text: str) -> str:
+    parts = [
+        "# Candidate profile",
+        profile_text,
         "",
         "# Job",
         json.dumps(
@@ -135,12 +134,9 @@ async def analyze(
     profile_text: str,
     provider: LLMProvider,
     *,
-    notes: str = "",
     on_call: Callable[[int, LLMResponse | None, CallStatus], None] | None = None,
 ) -> JobAnalysis:
-    """`notes`: what the user writes about themselves (passed in: the application
-    layer reads no files and no configuration)."""
-    prompt = build_prompt(job, profile_text, notes)
+    prompt = build_prompt(job, profile_text)
     return await generate_validated(
         provider, system_prompt(), prompt, JobAnalysis, on_call=on_call
     )
@@ -154,27 +150,18 @@ async def analyze_job(
     profiles: ProfileRepository,
     analyses: AnalysisRepository,
     costs: CostRepository | None = None,
-    profile_source: str | None = None,
-    notes: str = "",
 ) -> JobAnalysis:
-    """Analyzes a saved job and stores the analysis with the profile it used.
-
-    The profile is the one from the job's own source or, when that source has none
-    (like the public APIs), the one the user pasted (`manual`). `profile_source` picks
-    a specific source's.
-    """
+    """Analyzes a saved job against the user's CV (the `manual` profile, pasted in
+    Settings) and stores the analysis with the CV snapshot it used."""
     job = jobs.get_job(key)
     if job is None:
         raise LookupError(_("Job {key} not found.").format(key=key))
-    candidates = [profile_source] if profile_source else [job.source, MANUAL_SOURCE]
-    saved = next(
-        (found for name in candidates if (found := profiles.last_profile(name))), None
-    )
+    saved = profiles.last_profile(MANUAL_SOURCE)
     if saved is None:
         raise MissingProfile(
             _(
-                "There's no profile to compare this job with. On the Profile tab, "
-                "paste your CV or read the profile of a source like VanHack."
+                "There's no CV to compare this job with. Paste yours in Settings, "
+                "under Your CV."
             )
         )
     profile_id, profile = saved
@@ -204,9 +191,7 @@ async def analyze_job(
 
     succeeded = False
     try:
-        analysis = await analyze(
-            job, profile.text, provider, notes=notes, on_call=record_call
-        )
+        analysis = await analyze(job, profile.text, provider, on_call=record_call)
         analyses.save_analysis(
             key,
             analysis,

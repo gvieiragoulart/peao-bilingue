@@ -4,7 +4,7 @@ from typing import Any
 
 from peao_bilingue.domain.analysis import JobAnalysis
 from peao_bilingue.domain.jobs import Job, Skill
-from peao_bilingue.domain.profile import Profile
+from peao_bilingue.domain.profile import MANUAL_SOURCE, Profile
 
 
 def job(
@@ -48,7 +48,9 @@ def analysis(fit: int = 82, **overrides: Any) -> JobAnalysis:
     return JobAnalysis(**{**base, **overrides})
 
 
-def profile(role: str = "Software Developer", *, source: str = "vanhack") -> Profile:
+def profile(
+    role: str = "Software Developer", *, source: str = MANUAL_SOURCE
+) -> Profile:
     return Profile(
         source=source,
         data={"role": role},

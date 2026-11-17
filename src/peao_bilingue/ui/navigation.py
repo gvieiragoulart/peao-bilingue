@@ -20,7 +20,6 @@ ICONS = {
     "sources": "",  # Globe
     "llms": "",  # Robot
     "costs": "",  # Calculator
-    "profile": "",  # Contact
     "runs": "",  # History
     "settings": "",  # Setting
 }

@@ -277,36 +277,11 @@ def test_profile_saved_only_when_content_changes(repository: SQLiteRepository) -
 
     _id, changed = repository.save_profile(profile("Staff"))
     assert changed is True
-    assert saved_profile(repository, "vanhack").data == {"role": "Staff"}
-
-
-def test_each_source_has_its_own_profile(repository: SQLiteRepository) -> None:
-    repository.save_profile(profile("Staff", source="vanhack"))
-    # the same content in another source: another profile, not a repeat
-    _id, changed = repository.save_profile(profile("Staff", source="linkedin"))
-    repository.save_profile(profile("Tech Lead", source="linkedin"))
-
-    assert changed is True
-    assert repository.sources_with_profile() == ["linkedin", "vanhack"]
-    assert saved_profile(repository, "vanhack").data == {"role": "Staff"}
-    assert saved_profile(repository, "linkedin").data == {"role": "Tech Lead"}
-    assert saved_profile(repository, "linkedin").source == "linkedin"
-
-
-def test_profile_history_is_per_source(repository: SQLiteRepository) -> None:
-    repository.save_profile(profile("Dev"))
-    repository.save_profile(profile("Other", source="linkedin"))
-    repository.save_profile(profile("Staff"))
-
-    [recent, old] = repository.profile_history("vanhack")
-    assert recent["changed_fields"] == ["role"]
-    assert old["changed_fields"] == ["role"]  # against nothing
-    assert len(repository.profile_history("linkedin")) == 1
+    assert saved_profile(repository, "manual").data == {"role": "Staff"}
 
 
 def test_without_saved_profile_returns_none(repository: SQLiteRepository) -> None:
-    assert repository.last_profile("vanhack") is None
-    assert repository.sources_with_profile() == []
+    assert repository.last_profile("manual") is None
 
 
 def test_analysis_knows_profile_used_and_if_it_changed(
@@ -318,10 +293,10 @@ def test_analysis_knows_profile_used_and_if_it_changed(
         new.key, analysis(70), provider="fake", model="m", profile_id=profile_id
     )
     saved = saved_analysis(repository, new.key)
-    assert (saved.profile_source, saved.profile_outdated) == ("vanhack", False)
+    assert (saved.profile_source, saved.profile_outdated) == ("manual", False)
 
-    # another source's profile changed: no effect
-    repository.save_profile(profile("Other", source="linkedin"))
+    # an older database's VanHack profile: another source, no effect
+    repository.save_profile(profile("Other", source="vanhack"))
     assert saved_analysis(repository, new.key).profile_outdated is False
 
     repository.save_profile(profile("Staff"))

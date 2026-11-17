@@ -8,10 +8,9 @@ MESSAGES: dict[str, str] = {
         "Resposta inválida após {attempts} tentativas: {error}"
     ),
     "Job {key} not found.": "Vaga {key} não encontrada.",
-    "There's no profile to compare this job with. On the Profile tab, paste your CV or "
-    "read the profile of a source like VanHack.": (
-        "Não há perfil para comparar com esta vaga. Na aba Perfil, cole o seu currículo "
-        "ou leia o perfil de uma fonte como a VanHack."
+    "There's no CV to compare this job with. Paste yours in Settings, under Your CV.": (
+        "Não há currículo para comparar com esta vaga. Cole o seu nas Configurações, "
+        "em Seu currículo."
     ),
     "Interrupted: the process ended before finishing (app closed during the "
     "collection, PC turned off or the scheduled task's time limit).": (
@@ -138,12 +137,12 @@ MESSAGES: dict[str, str] = {
         "Vagas sênior de tecnologia em empresas que patrocinam visto e mudança, e "
         "vagas remotas em empresas que contratam de fora. Usa a sua conta."
     ),
-    "The robot reads the jobs and your VanHack profile with the session saved when "
-    "you log in by hand: it never fills in the login form or solves a human check. "
-    "If the session expires, the collection stops and asks you to log in again.": (
-        "O robô lê as vagas e o seu perfil na VanHack com a sessão salva quando você "
-        "faz o login à mão: ele nunca preenche o formulário de login nem resolve uma "
-        "verificação humana. Se a sessão expirar, a coleta para e pede um novo login."
+    "The robot reads the jobs with the session saved when you log in by hand: it "
+    "never fills in the login form or solves a human check. If the session expires, "
+    "the collection stops and asks you to log in again.": (
+        "O robô lê as vagas com a sessão salva quando você faz o login à mão: ele "
+        "nunca preenche o formulário de login nem resolve uma verificação humana. Se "
+        "a sessão expirar, a coleta para e pede um novo login."
     ),
     "Fully remote jobs from vetted companies, here in software development. Public "
     "API, no account.": (
@@ -445,7 +444,6 @@ MESSAGES: dict[str, str] = {
     "Later": "Depois",
     "Jobs": "Vagas",
     "Searches": "Buscas",
-    "Profile": "Perfil",
     "Runs": "Execuções",
     "Settings": "Configurações",
     "All": "Todas",
@@ -469,16 +467,14 @@ MESSAGES: dict[str, str] = {
     # --- window: job detail -------------------------------------------------------
     "Also on {source}: {url}": "Também em {source}: {url}",
     "(none found)": "(nenhum identificado)",
-    "Not analyzed yet: pick the LLM and the profile, then click Analyze.": (
-        "Ainda não analisada: escolha o LLM e o perfil e clique em Analisar."
+    "Not analyzed yet: pick the LLM, then click Analyze.": (
+        "Ainda não analisada: escolha o LLM e clique em Analisar."
     ),
-    "Analysis by {provider} ({model}) on {when}": (
-        "Análise por {provider} ({model}) em {when}"
+    "Analysis by {provider} ({model}) on {when}.": (
+        "Análise por {provider} ({model}) em {when}."
     ),
-    ", with the {source} profile": ", com o perfil da fonte {source}",
-    "The {source} profile changed after this analysis: analyze again to update it.": (
-        "O perfil da fonte {source} mudou depois desta análise: analise de novo para "
-        "atualizar."
+    "Your CV changed after this analysis: analyze again to update it.": (
+        "O seu currículo mudou depois desta análise: analise de novo para atualizar."
     ),
     "The minimum fit must be a number from 0 to 100.": (
         "O fit mínimo precisa ser um número de 0 a 100."
@@ -501,7 +497,6 @@ MESSAGES: dict[str, str] = {
     "1 year ago": "há 1 ano",
     "{years} years ago": "há {years} anos",
     # --- window: Jobs tab ---------------------------------------------------------
-    "(none)": "(nenhum)",
     "fit ≥": "fit ≥",
     "Minimum fit": "Fit mínimo",
     "Fit": "Fit",
@@ -615,7 +610,6 @@ MESSAGES: dict[str, str] = {
         "nunca preenche o login nem resolve verificação humana."
     ),
     "browser": "navegador",
-    "reads your profile": "lê o seu perfil",
     "no account needed": "sem conta",
     "Configure": "Configurar",
     "Open the site": "Abrir o site",
@@ -644,39 +638,25 @@ MESSAGES: dict[str, str] = {
     ),
     "System default": "Padrão do sistema",
     "LLM settings saved.": "Configuração dos LLMs salva.",
-    # --- window: Profile tab ------------------------------------------------------
-    "Read profile now": "Ler perfil agora",
-    "Reading…": "Lendo…",
-    "Read on": "Lido em",
-    "What changed": "O que mudou",
-    "My CV (pasted)": "Meu currículo (colado)",
-    "Save profile": "Salvar perfil",
+    # --- window: the CV (Settings and the first-run guide) ------------------------
     "Import file…": "Importar arquivo…",
     "Import your CV": "Importar o seu currículo",
     "CV or profile": "Currículo ou perfil",
-    "Paste your CV or profile (or import a file) and save. It's the profile for jobs "
-    "whose source has none. Emails, phones and links are removed automatically.": (
-        "Cole o seu currículo ou perfil (ou importe um arquivo) e salve. É o perfil das "
-        "vagas de fontes que não têm um. Emails, telefones e links saem sozinhos."
+    "Paste your CV or LinkedIn profile, or import a .pdf, .txt or .md file: every job "
+    "is analyzed against it. Emails, phone numbers, links and CPF are removed when "
+    "you save; remove your name and address yourself.": (
+        "Cole o seu currículo ou perfil do LinkedIn, ou importe um arquivo .pdf, .txt ou "
+        ".md: toda vaga é analisada com ele. Emails, telefones, links e CPF saem quando "
+        "você salva; nome e endereço, tire você mesmo."
     ),
-    "Paste your CV or profile first.": "Cole o seu currículo ou perfil primeiro.",
+    "The CV is empty: paste it or import a file.": (
+        "O currículo está vazio: cole o texto ou importe um arquivo."
+    ),
     "No text found in the file (a scanned PDF is an image). Paste the text instead.": (
         "Nenhum texto no arquivo (PDF escaneado é imagem). Cole o texto no lugar."
     ),
-    "Imported. Check the text and click Save profile.": (
-        "Importado. Confira o texto e clique em Salvar perfil."
-    ),
     "Can't read {name}: use a .txt, .md or .pdf file.": (
         "Não consigo ler {name}: use um arquivo .txt, .md ou .pdf."
-    ),
-    "Notes about you": "Notas sobre você",
-    "Save notes": "Salvar notas",
-    "They go into every analysis, with any profile: what you want and don't want, and "
-    'what the profile doesn\'t show (e.g. "I want remote jobs only", "I\'ve led a team '
-    'of 5").': (
-        "Entram em toda análise, com qualquer perfil: o que você quer e não quer, e o "
-        'que o perfil não mostra (ex.: "quero só vagas remotas", "já liderei um time '
-        'de 5").'
     ),
     "Saved.": "Salvo.",
     "Saved. Removed from the text: {items}.": "Salvo. Saíram do texto: {items}.",
@@ -687,17 +667,6 @@ MESSAGES: dict[str, str] = {
     "{count} phone number(s)": "{count} telefone(s)",
     "{count} link(s)": "{count} link(s)",
     "{count} CPF number(s)": "{count} CPF(s)",
-    "No {source} profile read yet.": "Nenhum perfil da fonte {source} lido ainda.",
-    "Click Read profile now.": "Clique em Ler perfil agora.",
-    "The {source} profile, used to analyze its jobs (no personal data):": (
-        "Perfil da fonte {source}, usado nas análises das vagas dela (sem dados "
-        "pessoais):"
-    ),
-    "The {source} source is off or doesn't read a profile.": (
-        "A fonte {source} não está ligada ou não lê perfil."
-    ),
-    "The {source} profile was updated.": "Perfil da fonte {source} atualizado.",
-    "The profile hasn't changed.": "Perfil sem mudanças.",
     # --- window: Runs tab ---------------------------------------------------------
     "The collection looks for new jobs and saves them, with no LLM: analyze the ones "
     "you want on the Jobs tab.": (
@@ -729,7 +698,6 @@ MESSAGES: dict[str, str] = {
     "Jobs detailed per source, per run": "Vagas detalhadas por fonte, por execução",
     "Maximum listing scrolls": "Rolagens máximas da listagem",
     "Hide the browser during the collection": "Navegador escondido durante a coleta",
-    "Profile notes file": "Arquivo de notas do perfil",
     "Notices": "Avisos",
     "After the scheduled collection, a digest of the new jobs (title, source and "
     "link) through the enabled channels, and a notice if something fails, like a "
@@ -766,7 +734,7 @@ MESSAGES: dict[str, str] = {
     "Welcome": "Boas-vindas",
     "What are you looking for?": "O que você procura?",
     "Where to look": "Onde procurar",
-    "Your profile": "Seu perfil",
+    "Your CV": "Seu currículo",
     "Who analyzes the jobs": "Quem analisa as vagas",
     "Collection and notices": "Coleta e avisos",
     "{app} collects jobs from several sites every day, keeps the ones that match your "
@@ -816,11 +784,11 @@ MESSAGES: dict[str, str] = {
     "Paste your CV or LinkedIn profile, or import a .pdf, .txt or .md file. It's what "
     "the LLM compares each job with. Emails, phone numbers, links and CPF are removed "
     "automatically; remove your name and address yourself. You can also skip this and "
-    "do it later, on the Profile tab.": (
+    "do it later, in Settings.": (
         "Cole o seu currículo ou perfil do LinkedIn, ou importe um arquivo .pdf, .txt ou "
         ".md. É com ele que o LLM compara cada vaga. Emails, telefones, links e CPF saem "
         "automaticamente; nome e endereço, tire você mesmo. Também dá para pular e fazer "
-        "isso depois, na aba Perfil."
+        "isso depois, nas Configurações."
     ),
     "Ollama runs on your computer, for free, but needs installing (ollama.com) and a "
     "good graphics card. Claude, OpenAI and Gemini need an API key and charge per "

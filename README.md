@@ -75,23 +75,19 @@ works as an alternative for the command line.
 
 | Tab (in the app) | What it's for |
 |---|---|
-| Vagas (Jobs) | the list with fit and filters, a text search; pick the LLM and profile, then **Analisar**; mark as studying/applied/discarded |
+| Vagas (Jobs) | the list with fit and filters, a text search; pick the LLM, then **Analisar**; mark as studying/applied/discarded |
 | Buscas (Searches) | keywords, excluded terms and which sources each search uses |
 | Fontes (Sources) | turn each site on or off; manual login and session check |
 | LLMs | the LLM preselected on the Jobs tab, models and keys |
-| Perfil (Profile) | your pasted or imported CV, each source's profile (no personal data), their history, and notes about you |
 | Execuções (Runs) | "collect now", the daily automatic collection, history and the live log |
-| Configurações (Settings) | collection limits, notice channels (Windows notification, email, WhatsApp), version and logs |
+| Configurações (Settings) | your CV, the default LLM, collection limits, notice channels (Windows notification, email, WhatsApp), version and logs |
 
-**Each source has its own profile** (the one on VanHack is not the one on LinkedIn), and a job
-is analyzed, by default, with its source's profile. A job from a source with no profile (the
-public APIs) uses **your CV**: paste it, or import a `.pdf`, `.txt` or `.md`, on the Profile tab.
-Emails, phone numbers, links and CPF numbers are removed before it is saved; a name or an address
-can't be found by a pattern, so check the text. The **notes** (what you want, what the profile
-doesn't show) go into every analysis. The collection calls no LLM: nothing is spent until you
-click Analyze.
+Every job is analyzed against **your CV**: paste it, or import a `.pdf`, `.txt` or `.md`, in
+Settings → **Seu currículo**. Emails, phone numbers, links and CPF numbers are removed before it
+is saved; a name or an address can't be found by a pattern, so check the text. The collection
+calls no LLM: nothing is spent until you click Analyze.
 
-**Sources:** VanHack (manual login, reads your profile), Remotive and Remote OK (public APIs of
+**Sources:** VanHack (manual login), Remotive and Remote OK (public APIs of
 remote jobs, no account), Arbeitnow (jobs in Germany with visa sponsorship), Himalayas (remote
 jobs open to people in Brazil), We Work Remotely (public RSS) and Strider (its public jobs page:
 long-term remote jobs at US companies, open to Latin America), and the job repositories of
@@ -209,7 +205,7 @@ line (`PeaoBilingue.exe run`, `PeaoBilingue.exe login`...). Scheduling the colle
 
 Differences from running the project:
 
-- **The data lives in `%LOCALAPPDATA%\PeaoBilingue`** (`data/`, `.env`, `profile_notes.md`,
+- **The data lives in `%LOCALAPPDATA%\PeaoBilingue`** (`data/`, `.env`,
   `artifacts/`), not next to the program: the .exe can be anywhere. To bring existing data, copy
   the project's `data/` there (with the app closed). `PEAO_DATA_DIR` still points elsewhere.
 - The LLM keys live in the system keyring, shared with the project: what was saved on

@@ -35,7 +35,7 @@ def collection_command() -> tuple[Path, str, Path]:
     In the .exe: the executable itself (no window), which becomes the CLI with
     arguments; its own folder, since the data lives in %LOCALAPPDATA%. In the project:
     pythonw from the same environment (no console window), in the project folder,
-    where data/, .env and profile_notes.md are.
+    where data/ and .env are.
     """
     if is_frozen():
         exe = Path(sys.executable)

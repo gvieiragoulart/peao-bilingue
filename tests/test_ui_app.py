@@ -541,26 +541,12 @@ def test_messages_from_other_threads_reach_the_log(window: App) -> None:
     assert "from the worker" in window.panels["runs"].log.box.get("1.0", "end")
 
 
-def test_profile_shows_latest_snapshot(
-    window: App, repository: SQLiteRepository
-) -> None:
+def test_settings_show_the_saved_cv(window: App, repository: SQLiteRepository) -> None:
     repository.save_profile(profile("Staff Engineer"))
-    tab = window.panels["profile"]
+    tab = window.panels["settings"]
     tab.refresh()
-    assert "Staff Engineer" in tab.text.get("1.0", "end")
-
-
-def test_profile_is_shown_per_source(window: App, repository: SQLiteRepository) -> None:
-    repository.save_profile(profile("Staff Engineer", source="vanhack"))
-    repository.save_profile(profile("Tech Lead", source="linkedin"))
-    tab = window.panels["profile"]
-
-    tab._on_pick("linkedin")  # as a click on the picker
-    assert "Tech Lead" in tab.text.get("1.0", "end")
-
-    tab._on_pick("vanhack")  # as a click on the picker
-    assert "Staff Engineer" in tab.text.get("1.0", "end")
-    assert "Tech Lead" not in tab.text.get("1.0", "end")
+    assert "Role: Staff Engineer" in tab.cv.editor.content()
+    assert "profile" not in window.panels  # no Profile tab any more
 
 
 def process_until(
@@ -878,13 +864,12 @@ def select(window: App, key: str) -> jobs_tab.JobsTab:
     return tab
 
 
-def test_analyze_uses_chosen_llm_and_profile(
+def test_analyze_uses_chosen_llm_and_the_cv(
     window: App, repository: SQLiteRepository, requested_llms: list[str]
 ) -> None:
     repository.save_profile(profile("Staff Engineer"))
     repository.save_job(job("1"), ["Python"])
     tab = select(window, "vanhack:1")
-    assert tab.preview.profile.get() == "vanhack"  # by default, the job's source's
 
     tab.preview.llm.set("Ollama (local, free)")
     tab._analyze()
@@ -895,12 +880,12 @@ def test_analyze_uses_chosen_llm_and_profile(
     assert (saved.analysis.fit_score, saved.provider, saved.profile_source) == (
         74,
         "ollama",
-        "vanhack",
+        "manual",
     )
     assert tab.preview.analyze_button.cget("state") == "normal"
 
 
-def test_analyze_without_profile_explains_what_to_do(
+def test_analyze_without_cv_explains_what_to_do(
     window: App, repository: SQLiteRepository, requested_llms: list[str]
 ) -> None:
     repository.save_job(job("1"), ["Python"])
@@ -909,7 +894,7 @@ def test_analyze_without_profile_explains_what_to_do(
     tab._analyze()
 
     assert process_until(window, lambda: bool(window.notices["errors"]))
-    assert "Profile tab" in window.notices["errors"][0]
+    assert "Settings" in window.notices["errors"][0]
     assert repository.current_analysis("vanhack:1") is None
 
 
@@ -954,47 +939,76 @@ def test_window_takes_the_app_icon_before_customtkinter(window: App) -> None:
     assert window._iconbitmap_method_called
 
 
-# --- the pasted CV and the notes ----------------------------------------------------
+# --- the CV, in Settings --------------------------------------------------------------
 
 
 def test_pasted_cv_is_saved_without_contact_data(
     window: App, repository: SQLiteRepository
 ) -> None:
-    tab = window.panels["profile"]
-    tab._on_pick("My CV (pasted)")  # as a click on the picker
-
-    tab.text.insert("1.0", "Senior Python Engineer\nme@mail.com | (11) 98765-4321")
-    tab._save_manual()
+    tab = window.panels["settings"]
+    tab.cv.editor.box.insert(
+        "1.0", "Senior Python Engineer\nme@mail.com | (11) 98765-4321"
+    )
+    tab._save()
 
     saved = repository.last_profile("manual")
     assert saved is not None
     assert saved[1].text == "Senior Python Engineer"
     assert "1 email(s), 1 phone number(s)" in window.notices["infos"][0]
+    assert tab.cv.editor.content() == "Senior Python Engineer"  # as saved
 
 
-def test_an_unsaved_paste_survives_a_refresh(window: App) -> None:
-    tab = window.panels["profile"]
-    tab._on_pick("My CV (pasted)")  # as a click on the picker
-    tab.text.insert("1.0", "half written")
+def test_saving_settings_leaves_an_untouched_cv_alone(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_profile(profile("Staff Engineer"))
+    before = repository.last_profile("manual")
+    tab = window.panels["settings"]
+    tab.refresh()
+
+    tab._save()
+
+    assert repository.last_profile("manual") == before
+    assert window.notices["infos"] == ["Settings saved."]
+
+
+def test_an_empty_cv_saves_nothing(window: App, repository: SQLiteRepository) -> None:
+    repository.save_profile(profile("Staff Engineer"))
+    tab = window.panels["settings"]
+    tab.refresh()
+    tab.cv.editor.box.delete("1.0", "end")
+
+    tab._save()
+
+    assert any("The CV is empty" in error for error in window.notices["errors"])
+    assert not config.CONFIG_PATH.exists()  # the other settings weren't saved either
+    saved = repository.last_profile("manual")
+    assert saved is not None and "Staff Engineer" in saved[1].text
+
+
+def test_an_imported_cv_waits_for_save(
+    window: App, repository: SQLiteRepository, tmp_path: Path
+) -> None:
+    cv = tmp_path / "cv.txt"
+    cv.write_text("Backend Engineer\n", encoding="utf-8")
+    tab = window.panels["settings"]
+
+    tab.cv.editor.import_file(cv)
+
+    assert tab.cv.editor.content() == "Backend Engineer"
+    assert repository.last_profile("manual") is None
+    tab._save()
+    saved = repository.last_profile("manual")
+    assert saved is not None and saved[1].text == "Backend Engineer"
+
+
+def test_an_unsaved_cv_survives_a_refresh(window: App) -> None:
+    tab = window.panels["settings"]
+    tab.cv.editor.box.insert("1.0", "half written")
 
     window.on_change()  # e.g. a collection ended
 
-    assert "half written" in tab.text.get("1.0", "end")
-
-
-def test_notes_are_saved_clean(
-    window: App, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(settings, "profile_notes_path", str(tmp_path / "notes.md"))
-    tab = window.panels["profile"]
-    tab.notes.box.delete("1.0", "end")
-    tab.notes.box.insert("1.0", "Remote only. Reach me at me@mail.com")
-
-    tab._save_notes()
-
-    assert (tmp_path / "notes.md").read_text(
-        encoding="utf-8"
-    ) == "Remote only. Reach me at\n"
+    assert "half written" in tab.cv.editor.content()
 
 
 # --- the first-run guide ----------------------------------------------------------------
@@ -1019,7 +1033,7 @@ def test_the_guide_saves_everything_at_the_end(
     guide.search_exclude.insert(0, "intern")
     for name, box in guide.source_boxes.items():
         box.select() if name in ("remotive", "vanhack") else box.deselect()
-    guide.cv.insert("1.0", "Senior Python Engineer\nme@mail.com")
+    guide.cv.box.insert("1.0", "Senior Python Engineer\nme@mail.com")
     guide.pick_llm("ollama")
     guide.time.delete(0, "end")
     guide.time.insert(0, "07:30")

@@ -10,17 +10,15 @@ from pydantic import ValidationError
 
 from peao_bilingue import config
 from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
-from peao_bilingue.composition import read_profile_notes
 from peao_bilingue.config import settings
 from peao_bilingue.domain.errors import UnknownName
 from peao_bilingue.local_control import ControlService, LocalControl, request
 
 
 @pytest.fixture
-def service(repository: SQLiteRepository, tmp_path: Path) -> Iterator[ControlService]:
+def service(repository: SQLiteRepository) -> Iterator[ControlService]:
     config.CONFIG_PATH.unlink(missing_ok=True)
     config.reload()
-    settings.profile_notes_path = str(tmp_path / "notes.md")
     yield ControlService(repository)
     config.CONFIG_PATH.unlink(missing_ok=True)
     config.reload()
@@ -86,10 +84,6 @@ def test_search_and_profile_updates(service: ControlService) -> None:
     result, _ = service.handle({"op": "profile.set", "text": "Dev me@example.com"})
     assert result["contact_data_removed"]
     assert service.handle({"op": "state.get"})[0]["manual_profile"] == "Dev"
-
-    result, _ = service.handle({"op": "notes.set", "text": "Remote only"})
-    assert not result["contact_data_removed"]
-    assert read_profile_notes() == "Remote only\n"
 
     service.handle({"op": "search.delete", "id": search_id})
     assert service.handle({"op": "state.get"})[0]["searches"] == []

@@ -1,4 +1,8 @@
-"""The candidate's profile: one per source, with a history of changes."""
+"""The candidate's profile: the CV the user pastes or imports in Settings, kept as
+snapshots so an analysis knows when the CV changed after it.
+
+Older databases also hold profiles read from sources (VanHack's): they are kept only
+because old analyses point at them."""
 
 import hashlib
 import json
@@ -7,8 +11,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
-# The profile the user writes or pastes in the app (their CV): used for the jobs of
-# sources that don't have a profile of their own.
+# The profile the user writes or pastes in the app (their CV): every job is analyzed
+# with it.
 MANUAL_SOURCE = "manual"
 
 
@@ -21,19 +25,10 @@ def profile_hash(data: dict[str, Any]) -> str:
 
 
 class Profile(BaseModel):
-    # Each source has its own: the profile on VanHack is not the one on LinkedIn.
-    source: str
+    source: str  # MANUAL_SOURCE for the CV
     data: dict[str, Any]
     text: str  # readable version, used in the prompt
     content_hash: str
-
-
-class ProfileSource(ABC):
-    """A source that can read the profile the user keeps there (e.g. VanHack)."""
-
-    @abstractmethod
-    async def read_profile(self) -> Profile:
-        """The profile kept in this source, with `source` set to its name."""
 
 
 class ProfileRepository(ABC):
@@ -44,10 +39,3 @@ class ProfileRepository(ABC):
 
     @abstractmethod
     def last_profile(self, source: str) -> tuple[int, Profile] | None: ...
-
-    @abstractmethod
-    def profile_history(self, source: str) -> list[dict[str, Any]]:
-        """The source's snapshots, newest first, with the fields that changed."""
-
-    @abstractmethod
-    def sources_with_profile(self) -> list[str]: ...

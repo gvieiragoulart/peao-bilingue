@@ -15,8 +15,8 @@ uv run peao control state
 
 The result is JSON with `ok` and `result`. `result` contains the effective
 nonsecret settings, which secrets are configured (booleans only), available
-adapter names, searches, the manually entered CV, and profile notes. Treat the
-CV and notes as private user data.
+adapter names, searches, and the manually entered CV. Treat the CV as private
+user data.
 
 Send one JSON object on standard input to `control apply`. The response is JSON;
 the command exits nonzero when `ok` is false. For example:
@@ -43,27 +43,25 @@ that `id` and the complete search. `sources: []` means every enabled source.
 To remove one, send `{"op":"search.delete","id":3}`. Read the current state
 first so the ID and content are current.
 
-## CV and notes
+## CV
 
-`profile.set` replaces the manual CV snapshot; `notes.set` replaces the notes
-used in analyses. Both take a `text` string. The app removes email addresses,
-phone numbers, links, and CPF numbers before saving, just as the Profile tab
-does. It cannot reliably remove names or addresses, so review the text.
+`profile.set` replaces the CV every job is analyzed with. It takes a `text`
+string. The app removes email addresses, phone numbers, links, and CPF numbers
+before saving, just as Settings does. It cannot reliably remove names or
+addresses, so review the text.
 
 ```json
-{"op":"notes.set","text":"I want remote backend roles in Brazil."}
+{"op":"profile.set","text":"Senior backend engineer: Python, Laravel, AWS."}
 ```
 
-`profile.set` creates a new history snapshot only when the cleaned content
-changes. These operations do not read profiles from job sites and do not start
-collection or an LLM analysis.
+`profile.set` creates a new snapshot only when the cleaned content changes. It
+does not start collection or an LLM analysis.
 
 ## Protocol and boundaries
 
 Each connection sends a single UTF-8 JSON line and receives one JSON line.
 Requests and responses are capped at 1 MiB. The operations are `state.get`,
-`settings.patch`, `search.upsert`, `search.delete`, `profile.set`, and
-`notes.set`. The CLI `control state` sends `state.get`; `control apply` sends
+`settings.patch`, `search.upsert`, `search.delete`, and `profile.set`. The CLI `control state` sends `state.get`; `control apply` sends
 the object read from standard input. Socket handlers queue work onto Tk's
 thread, which performs the write and refreshes the panels.
 

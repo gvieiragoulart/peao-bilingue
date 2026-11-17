@@ -12,7 +12,7 @@ import customtkinter as ctk
 
 from peao_bilingue import config, factories
 from peao_bilingue.application.analysis import analyze_job
-from peao_bilingue.composition import build_llm, read_profile_notes
+from peao_bilingue.composition import build_llm
 from peao_bilingue.config import settings
 from peao_bilingue.domain.analysis import JobAnalysis
 from peao_bilingue.domain.jobs import JobStatus, ListedJob
@@ -128,7 +128,6 @@ class JobsTab(ctk.CTkFrame):
             [search.name for search in searches],
             factories.sources.available(),
         )
-        self.preview.set_profiles(repository.sources_with_profile())
         self.preview.set_llm(settings.analysis_llm)
         self._show_cost_hint()
 
@@ -352,7 +351,6 @@ class JobsTab(ctk.CTkFrame):
         except Exception as failure:  # noqa: BLE001 - a misconfigured provider is a notice
             self.app.show_error(failure)
             return
-        profile = self.preview.chosen_profile()
         job = item.job
         self.preview.set_busy(True)
         self.app.log(
@@ -388,8 +386,6 @@ class JobsTab(ctk.CTkFrame):
                 profiles=self.app.repository,
                 analyses=self.app.repository,
                 costs=self.app.repository,
-                profile_source=profile,
-                notes=read_profile_notes(),
             ),
             on_done=finish,
             on_error=fail,

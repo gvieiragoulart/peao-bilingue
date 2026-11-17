@@ -24,7 +24,6 @@ from peao_bilingue.domain.collection import (
 from peao_bilingue.domain.errors import RunInProgress, SessionExpired
 from peao_bilingue.domain.jobs import Job, JobRepository, JobSummary
 from peao_bilingue.domain.notifications import Notifier
-from peao_bilingue.domain.profile import ProfileRepository, ProfileSource
 from peao_bilingue.domain.searches import Search, SearchRepository
 from peao_bilingue.i18n import _
 
@@ -63,7 +62,6 @@ class Services:
 
     searches: SearchRepository
     jobs: JobRepository
-    profiles: ProfileRepository
     runs: RunRepository
     sources: list[JobSource]
     notifiers: list[Notifier] = field(default_factory=list)
@@ -152,7 +150,6 @@ async def _collect_from_source(
 ) -> None:
     try:
         async with source:
-            await _sync_profile(services.profiles, source)
             state.new += await _collect(
                 services.jobs, run, source, searches, services.max_details
             )
@@ -163,27 +160,6 @@ async def _collect_from_source(
         state.problems.append(f"{source.label}: {failure}")
         run.artifact = run.artifact or getattr(failure, "artifact", None)
         logger.warning("Source %s failed: %s", source.name, failure)
-
-
-async def _sync_profile(profiles: ProfileRepository, source: JobSource) -> None:
-    """Each source with a profile keeps its own: a job is analyzed with the profile
-    from its source."""
-    if not isinstance(source, ProfileSource):
-        return
-    try:
-        profile = await source.read_profile()
-    except SessionExpired:
-        raise
-    # The collection goes on; analysis uses this source's last saved profile.
-    except Exception as failure:  # noqa: BLE001
-        logger.warning(
-            "Reading the %s profile failed; keeping the last saved one: %s",
-            source.name,
-            failure,
-        )
-        return
-    if profiles.save_profile(profile)[1]:
-        logger.info("The %s profile changed since it was last read.", source.name)
 
 
 async def _collect(
