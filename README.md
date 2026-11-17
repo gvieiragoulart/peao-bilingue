@@ -76,15 +76,16 @@ works as an alternative for the command line.
 | Tab (in the app) | What it's for |
 |---|---|
 | Vagas (Jobs) | the list with fit and filters, a text search; pick the LLM, then **Analisar**; mark as studying/applied/discarded |
-| Buscas (Searches) | keywords, excluded terms and which sources each search uses |
+| Buscas (Searches) | keywords, the roles a title must have, terms excluded from the title, and which sources each search uses |
 | Fontes (Sources) | turn each site on or off; manual login and session check |
 | LLMs | the LLM preselected on the Jobs tab, models and keys |
 | Execuções (Runs) | "collect now", the daily automatic collection, history and the live log |
 | Configurações (Settings) | your CV, the default LLM, collection limits, notice channels (Windows notification, email, WhatsApp), version and logs |
 
-Every job is analyzed against **your CV**: paste it, or import a `.pdf`, `.txt` or `.md`, in
-Settings → **Seu currículo**. Emails, phone numbers, links and CPF numbers are removed before it
-is saved; a name or an address can't be found by a pattern, so check the text. The collection
+Every job is analyzed against **your CV**: import it (a `.pdf`, `.txt` or `.md`) in Settings →
+**Seu currículo**, which then shows when it was saved, not its text. Emails, phone numbers, links
+and CPF numbers are removed before it is saved; a name or an address can't be found by a
+pattern, so take them out of the file first. The collection
 calls no LLM: nothing is spent until you click Analyze.
 
 **Sources:** VanHack (manual login), Remotive and Remote OK (public APIs of
@@ -132,13 +133,15 @@ browser. The "confirm you are human" check is yours; the robot never solves it. 
 **2. Add your searches:**
 
 ```bash
-uv run peao searches add "Python" python django fastapi
+uv run peao searches add "Python" python django fastapi --roles engineer developer desenvolvedor
 uv run peao searches add "React" react typescript --exclude internship
 uv run peao searches                    # list
 ```
 
-Careful with `--exclude`: the filter looks at the whole description, and a senior job often
-says "mentor junior engineers"; excluding "junior" would drop exactly those.
+A keyword can be anywhere in the job (title, skills, description), so a Data Analyst whose
+description asks for Python matches a Python search. `--roles` fixes that: the **title** must
+have one of them (or one of the keywords). `--exclude` also looks only at the title, so
+excluding "analyst" drops a Data Analyst, not a developer job that mentions analysts.
 
 **3. Collect:**
 

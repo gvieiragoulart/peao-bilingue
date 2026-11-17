@@ -433,6 +433,7 @@ def search_row(search: Search) -> tuple[str, ...]:
     return (
         search.name,
         ", ".join(search.keywords),
+        ", ".join(search.roles),
         ", ".join(search.exclude),
         ", ".join(search.sources) or _("all"),
         _("yes") if search.active else _("no"),
@@ -484,6 +485,14 @@ def removed_summary(removed: Removed) -> str:
     if removed.cpf:
         parts.append(_("{count} CPF number(s)").format(count=removed.cpf))
     return ", ".join(parts)
+
+
+def cv_status(saved_at: datetime | None) -> str:
+    """Settings' line about the CV: whether there is one, and since when."""
+    if saved_at is None:
+        return _("No CV saved yet: import one to analyze jobs.")
+    when = f"{saved_at.astimezone(ZoneInfo(settings.timezone)):%d/%m/%Y %H:%M}"
+    return _("✓ CV saved on {when}.").format(when=when)
 
 
 def saved_without_contact_data(removed: Removed) -> str:

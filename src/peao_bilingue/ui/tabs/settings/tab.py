@@ -1,21 +1,25 @@
 """The Settings tab: the CV, who analyzes, collection limits, notice channels, and
 about/support. The sections load and read their own fields; the tab saves them
-together and does what the support buttons ask."""
+together and does what the support buttons ask. The CV is saved on its own, as soon
+as a file is imported."""
 
 import os
 import subprocess
 import sys
 import webbrowser
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import customtkinter as ctk
 
 from peao_bilingue import config
+from peao_bilingue.application.profile import manual_profile
 from peao_bilingue.config import settings
 from peao_bilingue.domain.profile import MANUAL_SOURCE
 from peao_bilingue.i18n import _
 from peao_bilingue.logs import LOG_DIR
 from peao_bilingue.ui import presentation
+from peao_bilingue.ui.cv_editor import pick_cv_file, read_cv_file
 from peao_bilingue.ui.tabs.settings.about import AboutSection
 from peao_bilingue.ui.tabs.settings.analysis import AnalysisSection
 from peao_bilingue.ui.tabs.settings.cv import CVSection
@@ -32,7 +36,7 @@ class SettingsTab(ctk.CTkScrollableFrame):
         super().__init__(master, fg_color="transparent")
         self.app = app
 
-        self.cv = CVSection(section_card(self), on_error=self.app.show_error)
+        self.cv = CVSection(section_card(self), on_import=self._pick_cv)
         self.cv.pack(fill="x", padx=SECTION_PADDING, pady=SECTION_PADDING)
         self.analysis = AnalysisSection(section_card(self))
         self.analysis.pack(fill="x", padx=SECTION_PADDING, pady=SECTION_PADDING)
@@ -71,29 +75,45 @@ class SettingsTab(ctk.CTkScrollableFrame):
         for section in self._sections():
             section.load(settings)
         saved = self.app.repository.last_profile(MANUAL_SOURCE)
-        self.cv.show(saved[1].text if saved else "")
+        self.cv.show(saved[1].saved_at if saved else None)
+
+    def _pick_cv(self) -> None:
+        chosen = pick_cv_file(self)
+        if chosen is not None:
+            self.import_cv(chosen)
+
+    def import_cv(self, path: Path) -> None:
+        """Saves the file's text as the CV, without contact data."""
+        try:
+            profile, removed = manual_profile(read_cv_file(path))
+            if not profile.text:
+                raise ValueError(
+                    _("No text left in the file after removing contact data.")
+                )
+        except Exception as failure:  # noqa: BLE001 - a broken file is a notice
+            self.app.show_error(failure)
+            return
+        _id, changed = self.app.repository.save_profile(profile)
+        self.app.inform(
+            presentation.saved_without_contact_data(removed)
+            if changed
+            else _("The CV hasn't changed.")
+        )
+        # The status line, and the job panels' "CV changed" banner.
+        self.app.on_change()
 
     def _save(self) -> None:
         try:
             changes: dict[str, Any] = {}
             for section in self._sections():
                 changes.update(section.values())
-            cv = self.cv.changed_profile()
         except ValueError as failure:
             self.app.show_error(failure)
             return
         config.save(changes)
         ctk.set_appearance_mode(settings.appearance)
-        message = _("Settings saved.")
-        if cv is not None:
-            profile, removed = cv
-            _id, changed = self.app.repository.save_profile(profile)
-            self.cv.editor.mark_saved()
-            if changed:
-                message = presentation.saved_without_contact_data(removed)
-        self.app.inform(message)
-        # The Jobs tab's picker and the LLMs tab's Default follow the default LLM; the
-        # CV box shows the text as saved, without contact data.
+        self.app.inform(_("Settings saved."))
+        # The Jobs tab's picker and the LLMs tab's Default follow the default LLM.
         self.app.on_change()
 
 

@@ -203,7 +203,8 @@ class Onboarding(ctk.CTkFrame):
             page,
             _(
                 "Jobs whose title, skills or description have one of the keywords are "
-                "kept. You can add more searches later, on the Searches tab."
+                "kept; with roles, the title must also have one of them. You can add "
+                "more searches later, on the Searches tab."
             ),
         )
 
@@ -216,8 +217,12 @@ class Onboarding(ctk.CTkFrame):
         self.search_keywords = entry(
             _("Keywords (comma separated)"), _("e.g. python, django, backend")
         )
+        self.search_roles = entry(
+            _("Roles in the title (optional)"),
+            _("e.g. engineer, developer, desenvolvedor, backend"),
+        )
         self.search_exclude = entry(
-            _("Exclude when present (optional)"), _("e.g. intern, wordpress")
+            _("Exclude when in the title (optional)"), _("e.g. intern, wordpress")
         )
         self.search_name = entry(_("Name (optional)"), _("e.g. Python backend"))
         return page
@@ -356,12 +361,13 @@ class Onboarding(ctk.CTkFrame):
 
     def read_search(self) -> Search | None:
         keywords = presentation.terms(self.search_keywords.get())
+        roles = presentation.terms(self.search_roles.get())
         exclude = presentation.terms(self.search_exclude.get())
         name = self.search_name.get().strip() or ", ".join(keywords)
-        if not (keywords or exclude or name):
+        if not (keywords or roles or exclude or name):
             return None  # left blank: added later on the Searches tab
         try:
-            return Search(name=name, keywords=keywords, exclude=exclude)
+            return Search(name=name, keywords=keywords, roles=roles, exclude=exclude)
         except ValidationError:
             raise ValueError(
                 _("Give it at least one keyword, or leave the search blank.")

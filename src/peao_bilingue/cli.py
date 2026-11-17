@@ -84,7 +84,12 @@ def main() -> None:
     add = actions.add_parser("add", help=_("new search"))
     add.add_argument("name")
     add.add_argument("keywords", nargs="+")
-    add.add_argument("--exclude", nargs="*", default=[])
+    add.add_argument(
+        "--roles", nargs="*", default=[], help=_("the title must have one of them")
+    )
+    add.add_argument(
+        "--exclude", nargs="*", default=[], help=_("looked for in the title")
+    )
     add.add_argument(
         "--source", action="append", default=[], help=_("none = every source")
     )
@@ -225,6 +230,7 @@ def _searches(args: argparse.Namespace) -> None:
             Search(
                 name=args.name,
                 keywords=args.keywords,
+                roles=args.roles,
                 exclude=args.exclude,
                 sources=args.source,
             )

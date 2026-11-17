@@ -39,7 +39,40 @@ def test_any_keyword_is_enough() -> None:
 
 
 def test_exclude_beats_keyword() -> None:
-    assert not filters.matches(JOB, search(keywords=["python"], exclude=["django"]))
+    assert not filters.matches(JOB, search(keywords=["python"], exclude=["developer"]))
+
+
+def test_exclude_only_looks_at_the_title() -> None:
+    # "django" is in the description: a developer job that mentions it stays
+    assert filters.matches(JOB, search(keywords=["python"], exclude=["django"]))
+
+
+def test_exclude_ignores_accents_and_case() -> None:
+    senior = job(title="Engenheiro de Software Sênior", description="Python")
+    assert not filters.matches(senior, search(exclude=["SENIOR"]))
+
+
+def test_roles_must_be_in_the_title() -> None:
+    assert filters.matches(JOB, search(roles=["engineer", "developer"]))
+    # Python is in the job, but the title isn't a role the search wants
+    assert not filters.matches(JOB, search(roles=["designer"]))
+
+
+def test_a_data_analyst_asking_for_python_is_not_a_developer_job() -> None:
+    analyst = job(title="Data Analyst", description="SQL and Python required.")
+    assert filters.matches(analyst, search())  # keywords alone let it in
+    assert not filters.matches(analyst, search(roles=["engineer", "developer"]))
+
+
+def test_a_keyword_in_the_title_counts_as_a_role() -> None:
+    assert filters.matches(JOB, search(keywords=["fullstack"], roles=["designer"]))
+
+
+def test_roles_ignore_accents_and_case() -> None:
+    backend = job(title="Desenvolvedora Back-end Pleno", description="Python, Django")
+    assert filters.matches(backend, search(roles=["DESENVOLVEDOR"]))
+    engenheira = job(title="Engenheira de Software", description="Python")
+    assert filters.matches(engenheira, search(roles=["engenhéir"]))
 
 
 def test_search_without_sources_applies_to_all() -> None:
