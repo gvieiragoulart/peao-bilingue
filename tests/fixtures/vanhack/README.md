@@ -1,29 +1,7 @@
 # Fixtures
 
-Real HTML from the site, captured with the user's session and **anonymized** before it entered the
-repository.
-
-## `profile.html`
-
-Captured from `https://app.vanhack.com/profile` on 2026-10-05. It is the `.pf-main` subtree, with:
-
-- **removed:** `.dropdown-menu` (option lists, huge and never read), `script`, `style`, `svg`,
-  `img`, and the Intro Video card (`.iv-player-card`, `.iv-transcript-card`, `video`): the video
-  has a URL signed with a SAS token and the transcript carries a name and a personal story;
-- **anonymized:** the name ("Fulano De Tal"), email, phone, country code, passport expiration,
-  visa status and the LinkedIn/GitHub links;
-- **made fictitious** (2026-10-21, across the whole history): the employers, the role
-  descriptions and dates, the salary expectations, the countries after the first two, the notice
-  period, the English test's scores, date and attempt id, and the resume's file name;
-- **kept:** the rest of the structure and the generic answers (role, skills and their years,
-  languages, industries, the skill chips), which is what the tests check.
-
-`input` values live in the DOM property, not the attribute, so the capture copies
-`value`/`checked` into attributes; without that the fixture would open with every field empty.
-
-To capture again after the site changes: open `/profile` with a valid session, repeat this
-treatment and **audit the file** (`sig=`, `skoid`, `blob.core`, email, name, employers,
-salaries) before committing.
+Real HTML from the site, captured with the user's session and checked for user data before it
+entered the repository.
 
 ## `listing.html`, `detail_12030.html`, `detail_12018.html`
 

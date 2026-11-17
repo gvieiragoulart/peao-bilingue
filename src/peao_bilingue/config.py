@@ -32,7 +32,7 @@ def is_frozen() -> bool:
 
 
 def base_dir() -> Path:
-    """Where `data/`, `.env`, `profile_notes.md` and `artifacts/` live.
+    """Where `data/`, `.env` and `artifacts/` live.
 
     In the project, the folder it runs from (the project's). In the .exe, a folder in
     the user's profile that survives reinstalls and doesn't depend on where the .exe
@@ -271,9 +271,6 @@ class Settings(BaseSettings):
     openai_model: str = ""
     gemini_api_key: str = ""
     gemini_model: str = ""
-
-    # Analysis: notes that complement the profile in every analysis.
-    profile_notes_path: str = "profile_notes.md"
 
     # The first-run guide: shown until finished or skipped (see ui/onboarding.py).
     onboarding_done: bool = False

@@ -1,6 +1,4 @@
-"""Profile snapshots, one history per source."""
-
-from typing import Any
+"""Profile snapshots: the CV's, one per change."""
 
 from sqlmodel import Session, col, select
 
@@ -25,11 +23,6 @@ def _id(row: ProfileTable) -> int:
     return row.id
 
 
-def _differences(before: dict[str, Any], after: dict[str, Any]) -> list[str]:
-    keys = set(before) | set(after)
-    return sorted(key for key in keys if before.get(key) != after.get(key))
-
-
 class ProfilesSQLite(BaseSQLite, ProfileRepository):
     def save_profile(self, profile: Profile) -> tuple[int, bool]:
         with self._session() as session:
@@ -48,31 +41,3 @@ class ProfilesSQLite(BaseSQLite, ProfileRepository):
             if row is None:
                 return None
             return _id(row), Profile.model_validate(row, from_attributes=True)
-
-    def sources_with_profile(self) -> list[str]:
-        query = select(ProfileTable.source).distinct().order_by(ProfileTable.source)
-        with self._session() as session:
-            return list(session.exec(query))
-
-    def profile_history(self, source: str) -> list[dict[str, Any]]:
-        query = (
-            select(ProfileTable)
-            .where(ProfileTable.source == source)
-            .order_by(col(ProfileTable.id).desc())
-        )
-        with self._session() as session:
-            rows = list(session.exec(query))
-        history = []
-        for index, row in enumerate(rows):
-            previous = rows[index + 1] if index + 1 < len(rows) else None
-            history.append(
-                {
-                    "id": row.id,
-                    "read_at": row.read_at,
-                    "content_hash": row.content_hash,
-                    "changed_fields": _differences(
-                        previous.data if previous else {}, row.data
-                    ),
-                }
-            )
-        return history

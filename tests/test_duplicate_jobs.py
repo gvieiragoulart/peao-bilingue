@@ -126,7 +126,6 @@ async def test_duplicate_from_other_source_is_not_new_nor_notified(
     services = Services(
         searches=repository,
         jobs=repository,
-        profiles=repository,
         runs=repository,
         sources=[first, second],
         notifiers=[notifier],

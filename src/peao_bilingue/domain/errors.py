@@ -39,7 +39,7 @@ class InvalidAnalysis(RuntimeError):
 
 
 class MissingProfile(LookupError):
-    """No profile was read from the requested source, and the analysis needs one."""
+    """The user hasn't saved a CV yet, and the analysis needs one."""
 
 
 class UnknownName(LookupError):

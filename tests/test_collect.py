@@ -2,9 +2,8 @@ import asyncio
 from typing import Any
 
 import pytest
-from builders import job, profile
-from fakes import FakeNotifier, FakeSource, FakeSourceWithProfile
-from queries import saved_profile
+from builders import job
+from fakes import FakeNotifier, FakeSource
 
 from peao_bilingue.adapters.persistence.sqlite import SQLiteRepository
 from peao_bilingue.application import collect
@@ -28,7 +27,6 @@ def services(
     return Services(
         searches=repository,
         jobs=repository,
-        profiles=repository,
         runs=repository,
         sources=list(sources),
         notifiers=[notifier] if notifier else [],
@@ -62,9 +60,7 @@ async def test_saves_only_jobs_matching_a_search(
 
 async def test_collection_analyzes_nothing(with_search: SQLiteRepository) -> None:
     # analysis is requested job by job, in the window
-    await run_collection(
-        services(with_search, FakeSourceWithProfile(profile(), jobs=[job("1")]))
-    )
+    await run_collection(services(with_search, FakeSource(jobs=[job("1")])))
     assert with_search.current_analysis("fake:1") is None
 
 
@@ -132,39 +128,6 @@ async def test_failed_notice_is_recorded_and_jobs_are_kept(
     assert with_search.job_exists("fake:1")
     # the broken channel isn't asked to report on itself
     assert notifier.problems == []
-
-
-async def test_each_source_saves_its_own_profile(with_search: SQLiteRepository) -> None:
-    vanhack = FakeSourceWithProfile(profile("Staff"), name="vanhack")
-    linkedin = FakeSourceWithProfile(profile("Tech Lead"), name="linkedin")
-
-    await run_collection(services(with_search, vanhack, linkedin))
-
-    assert with_search.sources_with_profile() == ["linkedin", "vanhack"]
-    assert saved_profile(with_search, "vanhack").data == {"role": "Staff"}
-    assert saved_profile(with_search, "linkedin").data == {"role": "Tech Lead"}
-
-
-async def test_profile_read_failure_does_not_stop_collection(
-    with_search: SQLiteRepository,
-) -> None:
-    source = FakeSourceWithProfile(
-        profile(), jobs=[job("1")], profile_failure=RuntimeError("page changed")
-    )
-
-    result = await run_collection(services(with_search, source))
-
-    assert result.status == RunStatus.ok
-    assert with_search.job_exists("fake:1")
-    assert with_search.sources_with_profile() == []
-
-
-async def test_expired_session_on_profile_becomes_login_required(
-    with_search: SQLiteRepository,
-) -> None:
-    source = FakeSourceWithProfile(profile(), profile_failure=SessionExpired("log in"))
-    result = await run_collection(services(with_search, source))
-    assert result.status == RunStatus.login_required
 
 
 async def test_failed_source_does_not_stop_others(

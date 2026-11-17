@@ -33,7 +33,6 @@ from peao_bilingue.ui.onboarding import Onboarding, needs_onboarding
 from peao_bilingue.ui.tabs.costs import CostsTab
 from peao_bilingue.ui.tabs.jobs import JobsTab
 from peao_bilingue.ui.tabs.llms import LLMsTab
-from peao_bilingue.ui.tabs.profile import ProfileTab
 from peao_bilingue.ui.tabs.runs import RunsTab
 from peao_bilingue.ui.tabs.searches import SearchesTab
 from peao_bilingue.ui.tabs.settings import SettingsTab
@@ -54,7 +53,6 @@ def tabs() -> list[tuple[str, str, type[Any]]]:
         ("sources", _("Sources"), SourcesTab),
         ("llms", _("LLMs"), LLMsTab),
         ("costs", _("Costs"), CostsTab),
-        ("profile", _("Profile"), ProfileTab),
         ("runs", _("Runs"), RunsTab),
         ("settings", _("Settings"), SettingsTab),
     ]
@@ -239,11 +237,7 @@ class App(ctk.CTk):
         self.on_change()
         if not isinstance(payload, dict):
             return
-        if payload.get("op") == "notes.set":
-            from peao_bilingue.composition import read_profile_notes
-
-            self.panels["profile"].notes.show(read_profile_notes())
-        elif payload.get("op") == "settings.patch":
+        if payload.get("op") == "settings.patch":
             changes = payload.get("changes", {})
             if "appearance" in changes:
                 ctk.set_appearance_mode(settings.appearance)

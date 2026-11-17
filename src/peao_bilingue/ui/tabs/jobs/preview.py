@@ -9,7 +9,6 @@ import customtkinter as ctk
 
 from peao_bilingue import factories
 from peao_bilingue.domain.jobs import JobStatus, ListedJob
-from peao_bilingue.domain.profile import MANUAL_SOURCE
 from peao_bilingue.i18n import _
 from peao_bilingue.ui import presentation, theme
 from peao_bilingue.ui.presentation import JobPanel
@@ -20,10 +19,6 @@ PADDING = 20
 RING_SIZE = 76
 RING_WIDTH = 7
 RING_TRACK = ("#DCE0E5", "#343A44")
-
-
-def no_profile_label() -> str:
-    return _("(none)")
 
 
 class FitRing(tk.Canvas):
@@ -74,7 +69,6 @@ class JobPreview(ctk.CTkFrame):
         on_pick_llm: Callable[[str], None],
     ) -> None:
         super().__init__(master, fg_color="transparent")
-        self._sources_with_profile: list[str] = []
         self._panel: JobPanel | None = None
         self._section = "preparation"  # kept from one job to the next
         # The picker shows the label ("Ollama (local, free)"): the cost is in plain view.
@@ -98,11 +92,6 @@ class JobPreview(ctk.CTkFrame):
             command=lambda label: on_pick_llm(self._llms[label]),
         )
         self.llm.pack(side="left", padx=(0, 12))
-        ctk.CTkLabel(choice, text=_("Profile"), text_color=theme.MUTED).pack(
-            side="left", padx=(0, 6)
-        )
-        self.profile = ctk.CTkOptionMenu(choice, values=[no_profile_label()], width=100)
-        self.profile.pack(side="left")
         self.analyze_button = ctk.CTkButton(
             choice,
             text=_("Analyze"),
@@ -180,12 +169,6 @@ class JobPreview(ctk.CTkFrame):
     # ---- what the panel shows
 
     def show_job(self, item: ListedJob, panel: JobPanel) -> None:
-        # By default, a job is analyzed with the profile from its own source, or with
-        # the pasted CV when its source has none (the public APIs).
-        if item.job.source in self._sources_with_profile:
-            self.profile.set(item.job.source)
-        elif MANUAL_SOURCE in self._sources_with_profile:
-            self.profile.set(MANUAL_SOURCE)
         self.status_buttons.show(item.status)
         self._panel = panel
 
@@ -255,13 +238,6 @@ class JobPreview(ctk.CTkFrame):
 
     # ---- the pickers
 
-    def set_profiles(self, sources_with_profile: list[str]) -> None:
-        self._sources_with_profile = sources_with_profile
-        none = no_profile_label()
-        self.profile.configure(values=sources_with_profile or [none])
-        if self.profile.get() not in sources_with_profile:
-            self.profile.set(sources_with_profile[0] if sources_with_profile else none)
-
     def set_llm(self, name: str) -> None:
         labels = {llm: label for label, llm in self._llms.items()}
         self.llm.set(labels.get(name, next(iter(self._llms))))
@@ -271,10 +247,6 @@ class JobPreview(ctk.CTkFrame):
 
     def show_cost_hint(self, text: str) -> None:
         self.cost_hint.configure(text=text)
-
-    def chosen_profile(self) -> str | None:
-        profile: str = self.profile.get()
-        return None if profile == no_profile_label() else profile
 
     def set_busy(self, busy: bool) -> None:
         if busy:

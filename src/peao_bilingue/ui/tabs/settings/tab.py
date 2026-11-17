@@ -1,4 +1,4 @@
-"""The Settings tab: who analyzes, collection limits, notice channels, and
+"""The Settings tab: the CV, who analyzes, collection limits, notice channels, and
 about/support. The sections load and read their own fields; the tab saves them
 together and does what the support buttons ask."""
 
@@ -12,10 +12,13 @@ import customtkinter as ctk
 
 from peao_bilingue import config
 from peao_bilingue.config import settings
+from peao_bilingue.domain.profile import MANUAL_SOURCE
 from peao_bilingue.i18n import _
 from peao_bilingue.logs import LOG_DIR
+from peao_bilingue.ui import presentation
 from peao_bilingue.ui.tabs.settings.about import AboutSection
 from peao_bilingue.ui.tabs.settings.analysis import AnalysisSection
+from peao_bilingue.ui.tabs.settings.cv import CVSection
 from peao_bilingue.ui.tabs.settings.limits import LimitsSection
 from peao_bilingue.ui.tabs.settings.notices import NoticesSection
 from peao_bilingue.ui.widgets import SECTION_PADDING, section_card
@@ -29,6 +32,8 @@ class SettingsTab(ctk.CTkScrollableFrame):
         super().__init__(master, fg_color="transparent")
         self.app = app
 
+        self.cv = CVSection(section_card(self), on_error=self.app.show_error)
+        self.cv.pack(fill="x", padx=SECTION_PADDING, pady=SECTION_PADDING)
         self.analysis = AnalysisSection(section_card(self))
         self.analysis.pack(fill="x", padx=SECTION_PADDING, pady=SECTION_PADDING)
         self.limits = LimitsSection(section_card(self))
@@ -65,19 +70,30 @@ class SettingsTab(ctk.CTkScrollableFrame):
     def refresh(self) -> None:
         for section in self._sections():
             section.load(settings)
+        saved = self.app.repository.last_profile(MANUAL_SOURCE)
+        self.cv.show(saved[1].text if saved else "")
 
     def _save(self) -> None:
         try:
             changes: dict[str, Any] = {}
             for section in self._sections():
                 changes.update(section.values())
+            cv = self.cv.changed_profile()
         except ValueError as failure:
             self.app.show_error(failure)
             return
         config.save(changes)
         ctk.set_appearance_mode(settings.appearance)
-        self.app.inform(_("Settings saved."))
-        # The Jobs tab's picker and the LLMs tab's Default follow the default LLM.
+        message = _("Settings saved.")
+        if cv is not None:
+            profile, removed = cv
+            _id, changed = self.app.repository.save_profile(profile)
+            self.cv.editor.mark_saved()
+            if changed:
+                message = presentation.saved_without_contact_data(removed)
+        self.app.inform(message)
+        # The Jobs tab's picker and the LLMs tab's Default follow the default LLM; the
+        # CV box shows the text as saved, without contact data.
         self.app.on_change()
 
 

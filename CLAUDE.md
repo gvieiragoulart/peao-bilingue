@@ -12,7 +12,7 @@ records the earlier CloudFront plan; `.github/workflows/site.yml` was removed an
 
 A personal job radar: it collects jobs from several sites, filters them by configurable searches
 and reports the new ones by email and WhatsApp. The LLM fit analysis is **requested one job at a
-time** in the app, with the LLM and profile picked right then. A Windows desktop app
+time** in the app, with the LLM picked right then, against the user's CV. A Windows desktop app
 (CustomTkinter), with the daily collection started by Windows Task Scheduler.
 
 Each analysis has: a fit score (0–100), a summary of the fit, preparation steps, **exactly 20**
@@ -40,8 +40,8 @@ interview questions, gaps, and what to improve in the profile (CV, LinkedIn, Van
 
 **Phases 1 to 5 and 8 of the roadmap are done** (6 waits for a decision; 7 hasn't started), plus
 the 2026-10-07 change: the collection calls no LLM; each job is analyzed with the **Analisar**
-(Analyze) button on the Jobs tab, with the chosen LLM (Anthropic, Ollama, OpenAI, Gemini) and the
-**profile of the job's source** (each source has its own). The code is in English, with the app
+(Analyze) button on the Jobs tab, with the chosen LLM (Anthropic, Ollama, OpenAI, Gemini), against
+**the CV pasted in Settings** (since 2026-11-17; see "The CV"). The code is in English, with the app
 in Brazilian Portuguese. All tests run offline; `ruff` and `mypy --strict` are clean.
 
 The database evolves through **automatic additive migration** (`add_new_columns` in
@@ -66,8 +66,9 @@ a hand-written migration, like `persistence/sqlite/legacy.py`.
 - **Secrets in Windows Credential Manager** (through `keyring`, service `peao-bilingue`), never in
   a committed file. `.env` (in `.gitignore`, along with `data/` and `artifacts/`) is only the
   CLI's fallback. Never log a password or a cookie.
-- **No PII in the snapshot or the prompt:** no email, phone, documents, visa, passport,
-  citizenship, name, or signed URLs (CV, video). A test guards it.
+- **No PII in the prompt:** the CV is saved without emails, phones, links and CPF
+  (`remove_contact_data`, tested), and the screen asks the user to take out name, address and
+  documents, which no pattern finds.
 - Every text the user reads goes through `_()` and has a Brazilian Portuguese translation.
 
 ---
@@ -80,7 +81,7 @@ src/peao_bilingue/
 │   │                  # one module per subdomain: entities (pydantic, no SQL) + ports (ABCs)
 │   ├── jobs.py        # Job, JobSummary, Skill, JobStatus, ListedJob, Posting · JobRepository
 │   ├── searches.py    # Search · SearchRepository
-│   ├── profile.py     # Profile, profile_hash · ProfileSource, ProfileRepository
+│   ├── profile.py     # Profile (the CV's snapshots), profile_hash · ProfileRepository
 │   ├── analysis.py    # JobAnalysis, SavedAnalysis, Message, LLMResponse · LLMProvider,
 │   │                  #   AnalysisRepository
 │   ├── collection.py  # Run, RunStatus, Trigger · JobSource, ManualSession, Lock,
@@ -91,14 +92,14 @@ src/peao_bilingue/
 │   ├── privacy.py     # remove_contact_data: emails, links, phones, CPF
 │   └── errors.py      # SessionExpired, HumanChallenge, CollectionError, InvalidAnalysis...
 ├── application/
-│   ├── profile.py     # the pasted CV and the notes, without contact data
+│   ├── profile.py     # the pasted CV, without contact data
 │   ├── collect.py     # run_collection: search → filter → save → notify (no LLM), with a lock
 │   ├── analysis.py    # on-demand analysis: prompt, validation and retries, provider-agnostic
 │   └── filters.py     # a search's keywords / exclude / sources
 ├── adapters/          # importing the package registers them all in the factories
 │   ├── sources/       # api.py (ApiSource base), remotive, remoteok, arbeitnow, himalayas,
 │   │                  #   weworkremotely, html.py; vanhack/ (Playwright: auth, listing, detail,
-│   │                  #   profile, selectors, session, source)
+│   │                  #   selectors, session, source)
 │   ├── llm/           # anthropic, ollama, openai, gemini
 │   ├── notification/  # formatting, email, whatsapp
 │   ├── scheduling/windows.py   # Task Scheduler through PowerShell
@@ -178,8 +179,8 @@ window**, placed on the right (`WIDTH` of the tab; not a `CTkToplevel`, for the 
 the guide); the table stays usable and a click on another row shows that job. It shows
 `presentation.job_panel` (a `JobPanel`): status chip, facts, the fit as a ring (`FitRing`, a
 Canvas arc) with its label and summary, the analysis in parts behind a segmented button
-(`preview.pick_section("questions")`...), the outdated-profile banner, and a footer with the
-LLM/profile pickers, Analyze, Open and the status pills. Esc or ✕ closes it. Marking a status
+(`preview.pick_section("questions")`...), the "CV changed" banner, and a footer with the
+LLM picker, Analyze, Open and the status pills. Esc or ✕ closes it. Marking a status
 keeps it open, showing the new one, even when the job leaves the filtered list; **discarding
 closes it** (from the pills or the selection bar) and the toast offers Undo. Generated mouse
 and key events don't reach the hidden test window: the tests call the click handler and check
@@ -280,9 +281,8 @@ one at a time (one browser open at a time). A failing source doesn't stop the ot
 "Partial failures" on the run; everything fails only if every source fails. The Runs tab's
 picker collects all enabled sources or **only one** of them (2026-10-17; `build_services(sources=)`,
 like `peao run --source`); each run records its sources (`Run.sources`, a JSON column that is
-NULL in older rows, read as `[]`) and the history shows them. Each source that
-implements `ProfileSource` reads and saves **its own profile** on every collection; if reading
-fails, its last saved one stays. **Notices** (a digest of the new jobs: title, source, link) only
+NULL in older rows, read as `[]`) and the history shows them. No source reads a profile any
+more (VanHack did until 2026-11-17). **Notices** (a digest of the new jobs: title, source, link) only
 with `notify=True`: the scheduled collection and `peao run --notify`; the button's doesn't
 notify, because whoever asked is watching. A failed notice also becomes "Partial failures" (the
 jobs stay saved). The Windows notification (`windows`) is on by default, with nothing to set
@@ -293,25 +293,28 @@ collection fail every day in silence. It repeats on every collection until fixed
 it's the reminder. A failed *notice* is not reported as a problem (that channel is the broken
 one).
 
-**Profile per source:** the profile on VanHack isn't the one on LinkedIn. `Profile.source`; the
-repository saves, deduplicates and keeps the history **per source**.
-
-**The pasted CV** (2026-10-17): the profile of source `manual` (`MANUAL_SOURCE`), the one for
-jobs whose source reads none (the public APIs) and for anyone without a VanHack account.
-`analyze_job` tries the job's source, then `manual`. Pasted on the Profile tab or imported
-(`adapters/documents.py`: `.pdf` through `pypdf`, `.txt`/`.md` in UTF-8 or cp1252); before saving,
-`domain/privacy.remove_contact_data` takes out emails, links (they carry names), CPF and phone
-numbers (≥ 9 digits, so "2019-2023" stays) and the lines left with only separators. A name or an
-address can't be found by a pattern: the screen asks the user to check. The **notes**
-(`profile_notes.md`) are edited on the same tab and cleaned the same way. An unsaved paste
-survives a refresh (`edit_modified`); the tab starts on a source with a saved profile, else on
-the CV, until the user picks one.
+**The CV** (2026-10-17; the only profile since 2026-11-17): the profile of source `manual`
+(`MANUAL_SOURCE`), the one every job is analyzed with. It lives in **Settings → "Seu
+currículo"** (`ui/tabs/settings/cv.py`, `CVSection`), pasted or imported (`ui/cv_editor.py`,
+`CVEditor`, shared with the guide; `adapters/documents.py`: `.pdf` through `pypdf`, `.txt`/`.md`
+in UTF-8 or cp1252), and saved by the tab's Save, only when the box was edited (an empty one is
+an error and nothing is saved). Before saving, `domain/privacy.remove_contact_data` takes out
+emails, links (they carry names), CPF and phone numbers (≥ 9 digits, so "2019-2023" stays) and
+the lines left with only separators; the box then shows the saved text. A name or an address
+can't be found by a pattern: the screen asks the user to check. An unsaved paste survives a
+refresh (`edit_modified`).
+**Removed on 2026-11-17** (Gabriel didn't like the Profile tab): the Profile tab, VanHack reading
+the `/profile` page on every collection (`ProfileSource`, `vanhack/profile.py`, its selectors
+and fixture), the per-source profile picker in the job's panel, the profile history and the
+notes (`profile_notes.md`, `profile_notes_path`, local control's `notes.set`). The profile
+table keeps the old VanHack snapshots: old analyses point at them, and `last_profile` only
+reads `manual`. An old `profile_notes.md` is left on disk, unread.
 
 **The first-run guide** (`ui/onboarding.py`, 2026-10-17): six steps (welcome and privacy, a
 first search, sources, the CV, the LLM and its key, the daily collection + the Windows notice)
 **in the place of the tabs**, not in a `CTkToplevel` (Windows may open it behind the window).
 Shown when `needs_onboarding`: `onboarding_done` is false **and** there's no search and no
-profile, so whoever set the app up before the guide existed never sees it. Each Next checks its
+CV, so whoever set the app up before the guide existed never sees it. Each Next checks its
 step (`Step.check` raises `ValueError`); **nothing is saved until Finish**, which saves the
 search, the CV (cleaned), the settings and `onboarding_done`, and schedules the task off the
 window's thread. Skip only saves `onboarding_done`. Email/WhatsApp turned on earlier are kept;
@@ -330,8 +333,7 @@ doesn't.
   labels, registry kinds) are translated once.
 - **Logs stay in English**, untranslated: they are for whoever maintains the app.
 - **The LLM prompt is in English** and asks for the answer in the user's language
-  (`i18n.response_language()`, "Brazilian Portuguese"). The readable profile (`to_text`) is in
-  English too.
+  (`i18n.response_language()`, "Brazilian Portuguese").
 - `tests/test_i18n.py` checks that every `_()` literal has a translation, that no translation is
   unused, that placeholders match, and that **no accented Portuguese** appears in `src/` outside
   `locales/` (the product name "Peão Bilíngue" is the exception; text matched on a third-party
@@ -419,7 +421,7 @@ columns, the settings and the CLI commands were in Portuguese. The update migrat
   `-MultipleInstances IgnoreNew`, a 2 h limit. It runs `.venv\Scripts\pythonw.exe -m
   peao_bilingue.cli run --scheduled` (collects and reports new jobs and problems; no LLM), or
   `PeaoBilingue.exe run --scheduled` in the .exe (see "Executable"), with the **project folder as
-  the working directory**: `data/`, `.env` and `profile_notes.md` are relative to it. ASCII task
+  the working directory**: `data/` and `.env` are relative to it. ASCII task
   name: PowerShell 5.1's output comes in the console's code page.
 - **The script always has `$ErrorActionPreference = 'Stop'` and `exit 0` at the end.** Without
   it, `Get-ScheduledTask -ErrorAction SilentlyContinue` with a missing task exits with code 1 and
@@ -452,8 +454,8 @@ columns, the settings and the CLI commands were in Portuguese. The update migrat
   CLI. It is a GUI app (`console=False`); the scheduled task runs `PeaoBilingue.exe run
   --scheduled` (`collection_command()` picks between that and the project's `pythonw` by
   `sys.frozen`).
-- **Data in `%LOCALAPPDATA%\PeaoBilingue`** when frozen (`config.base_dir()`): `data/`, `.env`,
-  `profile_notes.md` and `artifacts/` come from there, not from the .exe's folder or the working
+- **Data in `%LOCALAPPDATA%\PeaoBilingue`** when frozen (`config.base_dir()`): `data/`, `.env`
+  and `artifacts/` come from there, not from the .exe's folder or the working
   directory. In the project, everything stays relative to the current folder.
 - **The icon** (2026-10-18): "P no balão", blue `#3A86F7`, picked from eight candidates
   drawn on the canvas https://claude.ai/artifact/NTsQVNMHGSAMHg5wCyCJ1n and kept as SVGs
@@ -563,8 +565,8 @@ Anyone can download the app from a **download site with a product preview**; the
   Strider speak of personal use or of not republishing). The bundled libraries are MIT/BSD/
   Apache/MPL (certifi), all fine for this as long as their notices ship.
 - **Before the repository went public** (2026-10-19) the whole history was searched for keys,
-  tokens and private keys (none) and for data files (none ever committed). `profile_notes.md` is
-  in `.gitignore`.
+  tokens and private keys (none) and for data files (none ever committed). The old notes file,
+  `profile_notes.md`, is in `.gitignore`.
 - **History rewritten** (2026-10-21, after going public): `git filter-repo` swapped the commit
   emails (Gabriel's hotmail, Erlon's university address) for each one's GitHub noreply, the
   hotmail in old pyproject.toml versions, a Windows user path in an old README, and the
@@ -576,13 +578,11 @@ Anyone can download the app from a **download site with a product preview**; the
 
 ## Analysis with LLMs
 
-- **On demand:** `analyze_job(key, provider, jobs=, profiles=, analyses=, profile_source=None,
-  notes="")`, called by the Analyze button on the Jobs tab. It uses the profile of the **job's
-  source**; the profile picker chooses another source's (the way for sources with no profile,
-  like the public APIs). No profile read → `MissingProfile`, before spending on the LLM. The
-  analysis keeps `profile_id`: when the same source gets a newer snapshot,
-  `SavedAnalysis.profile_outdated` and the screen suggests analyzing again; there's no automatic
-  re-analysis.
+- **On demand:** `analyze_job(key, provider, jobs=, profiles=, analyses=, costs=)`, called by
+  the Analyze button on the Jobs tab. It uses **the CV** (`last_profile(MANUAL_SOURCE)`); no CV
+  → `MissingProfile`, before spending on the LLM. The analysis keeps `profile_id`: when the CV
+  gets a newer snapshot, `SavedAnalysis.profile_outdated` and the screen suggests analyzing
+  again; there's no automatic re-analysis.
 - The provider only translates the call (`generate_json(system, messages, schema)` → JSON text or
   a refusal). **Validation and retries live in `application/analysis.py`**, the same for all.
 - **No provider enforces `minItems`/`maxItems` on the server.** On Anthropic, `transform_schema`
@@ -608,7 +608,7 @@ Anyone can download the app from a **download site with a product preview**; the
 - **Before writing a new adapter:** check the API in the installed SDK (introspection) and in
   the official docs. Never guess a method or parameter name.
 - `profile_improvements` points at concrete items of the profile, not generic advice. Input: the
-  profile text + `profile_notes.md` (optional) + the job as JSON.
+  CV text + the job as JSON.
 
 ---
 
@@ -637,22 +637,6 @@ page has minicards of **other** jobs.
 **Job:** VanHack **never publishes the company** ("our hiring partner"): `company` is `None`.
 Skills come as `span.vh-jd-skill` chips with the years in a `<small>`.
 
-**Profile (`/profile`):** an editable form; values in `input_value()`, `.vh-dd` dropdowns, checked
-radios and checkboxes: `inner_text()` isn't enough. Blazor ids (`0HNP0Q2EPN2A7`,
-`vhdd-<guid>-button`) **change on every render**: never use them as selectors. Structure:
-
-```
-section.pf-section > h5.pf-section-title + div.pf-card
-  div.pf-field > label.pf-label + (div.vh-dd | input.form-control | radios | checks | pf-target-row)
-  div.pf-skill-group > .pf-skill-group-title + div.pf-skill-row
-  div.pf-lang-row > .pf-lang-select + .pf-lang-level
-  div.pf-exp > a.pf-item-title + .pf-item-sub + div.pf-role(.pf-role-head/.pf-role-desc/.pf-chips)
-```
-
-The snapshot keeps **every** question/answer pair (it survives a question being reworded). There's
-no bio field: the "headline" is the answer to "Which role best applies...". The Intro Video card
-has the video's signed URL and the spoken transcript: only "Level: X" is used.
-
 Selectors **only** in `selectors.py`, documented. Real anonymized fixtures in
 `tests/fixtures/vanhack/` (its README explains the anonymization and what to audit).
 
@@ -668,8 +652,7 @@ the folder when the run ends.
 
 ## API sources
 
-No login and no profile: a job from them is analyzed with the profile picked in the selector
-(the default falls back to the first saved profile, VanHack's today). HTML descriptions become
+No login: a job from them is analyzed with the CV, like any other. HTML descriptions become
 text with one line per paragraph (`adapters/sources/html.py`). Fixture = a real response saved in
 `tests/fixtures/<source>/`; the tests use `FakeApi` (in `fakes.py`, over
 `httpx.MockTransport`), with no network, and count the calls.
@@ -865,7 +848,7 @@ commit and push.
       the vault; the window checked by screenshot.
 - [x] **Phase 4 — Windows Task Scheduler:** a daily task from the app or `peao schedule`; a lock
       across processes with `filelock`; SQLite in WAL; orphan runs closed. Verified end to end.
-- [x] **On-demand analysis and profile per source** (2026-10-07).
+- [x] **On-demand analysis and profile per source** (2026-10-07; since 2026-11-17 only the CV).
 - [x] **Phase 5 — Public APIs:** Remotive, Remote OK, Arbeitnow (Germany with a visa), Himalayas
       (open to Brazil) and We Work Remotely (RSS), over the `ApiSource` base. Terms checked one
       by one; all off by default.
@@ -876,9 +859,10 @@ commit and push.
 - [x] **Phase 8 — `.exe`** with PyInstaller, one folder, no Chromium (see "Executable").
 - [x] **Code in English** (2026-10-17): identifiers, comments, docs, the database, settings and
       CLI, with automatic migration; the app stays in Brazilian Portuguese through `_()`.
-- [x] **Launch items requested on 2026-10-17:** manual profile + notes in the app (2), a guided
-      first run (3), native Windows notifications (4), version + update check (7), an app log +
-      "open the logs folder" (8).
+- [x] **Launch items requested on 2026-10-17:** manual profile + notes in the app (2; the
+      Profile tab and the notes were removed on 2026-11-17), a guided first run (3), native
+      Windows notifications (4), version + update check (7), an app log + "open the logs
+      folder" (8).
 
 - [x] **More sources for Brazil and LATAM** (2026-10-18, branch `add-job-sources`): Strider
       (public page), GitHub job repositories, company boards (Greenhouse/Lever/Ashby), Jobicy,

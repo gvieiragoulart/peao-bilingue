@@ -10,20 +10,12 @@ from typing import Any, ClassVar, Self, TypeVar
 
 from playwright.async_api import BrowserContext, Page
 
-from peao_bilingue.adapters.sources.vanhack import (
-    auth,
-    debug,
-    detail,
-    listing,
-    profile,
-    session,
-)
+from peao_bilingue.adapters.sources.vanhack import auth, debug, detail, listing, session
 from peao_bilingue.adapters.sources.vanhack.browser import open_context, save_state
 from peao_bilingue.config import settings
 from peao_bilingue.domain.collection import JobSource, ManualSession
 from peao_bilingue.domain.errors import CollectionError, HumanChallenge, SessionExpired
 from peao_bilingue.domain.jobs import Job, JobSummary, Skill
-from peao_bilingue.domain.profile import Profile, ProfileSource
 from peao_bilingue.factories import sources
 from peao_bilingue.i18n import _
 
@@ -36,7 +28,7 @@ PAUSE_MAX_S = 5.0
 
 
 @sources.register("vanhack")
-class VanHack(JobSource, ProfileSource, ManualSession):
+class VanHack(JobSource, ManualSession):
     """Collects by reading the DOM with Playwright, in the session saved by the manual
     login.
 
@@ -50,7 +42,7 @@ class VanHack(JobSource, ProfileSource, ManualSession):
         "remote jobs with companies that hire internationally. Uses your account."
     )
     about = _(
-        "The robot reads the jobs and your VanHack profile with the session saved "
+        "The robot reads the jobs with the session saved "
         "when you log in by hand: it never fills in the login form or solves a "
         "human check. If the session expires, the collection stops and asks you to "
         "log in again."
@@ -131,15 +123,6 @@ class VanHack(JobSource, ProfileSource, ManualSession):
             f"job_{summary.external_id}", detail.scrape(self.page, summary.url)
         )
         return _job(summary, data)
-
-    async def read_profile(self) -> Profile:
-        data = await self._with_evidence("profile", profile.scrape(self.page))
-        return Profile(
-            source=self.name,
-            data=data,
-            text=profile.to_text(data),
-            content_hash=profile.content_hash(data),
-        )
 
     async def _with_evidence(self, label: str, operation: Awaitable[T]) -> T:
         """Any reading failure leaves a screenshot + HTML in artifacts/."""

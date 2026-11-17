@@ -13,7 +13,6 @@ from peao_bilingue.ui.widgets import Field, Form, Heading
 def limit_fields() -> list[Field]:
     return [
         Field("max_details_per_run", _("Jobs detailed per source, per run"), "integer"),
-        Field("profile_notes_path", _("Profile notes file")),
     ]
 
 

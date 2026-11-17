@@ -18,7 +18,6 @@ from peao_bilingue.domain.collection import (
 from peao_bilingue.domain.errors import UnknownName
 from peao_bilingue.domain.jobs import NEW_AT_SOURCE, Job, JobStatus, ListedJob, Posting
 from peao_bilingue.domain.privacy import Removed
-from peao_bilingue.domain.profile import ProfileSource
 from peao_bilingue.domain.schedule import ScheduleStatus
 from peao_bilingue.domain.searches import Search
 from peao_bilingue.i18n import _
@@ -153,8 +152,6 @@ def source_features(cls: type[JobSource]) -> list[str]:
         features.append(_("no account needed"))
     if cls.needs_browser:
         features.append(_("browser"))
-    if issubclass(cls, ProfileSource):
-        features.append(_("reads your profile"))
     return features
 
 
@@ -308,7 +305,7 @@ class JobPanel:
     sections: list[AnalysisSection]
     # Who analyzed it and when; without an analysis, how to get one.
     footer: str
-    outdated: str  # empty unless the profile changed after the analysis
+    outdated: str  # empty unless the CV changed after the analysis
 
 
 def fit_label(score: int) -> str:
@@ -348,17 +345,12 @@ def analysis_sections(analysis: JobAnalysis) -> list[AnalysisSection]:
 
 
 def _analysis_footer(analysis: SavedAnalysis) -> str:
-    footer = _("Analysis by {provider} ({model}) on {when}").format(
+    return _("Analysis by {provider} ({model}) on {when}.").format(
         provider=analysis.provider,
         model=analysis.model,
         # The repository gives it back in UTC: shown in the user's timezone.
         when=f"{analysis.created_at.astimezone(ZoneInfo(settings.timezone)):%d/%m/%Y %H:%M}",
     )
-    if analysis.profile_source:
-        footer += _(", with the {source} profile").format(
-            source=analysis.profile_source
-        )
-    return footer + "."
 
 
 def job_panel(
@@ -386,17 +378,12 @@ def job_panel(
             fit_label="",
             summary="",
             sections=[],
-            footer=_(
-                "Not analyzed yet: pick the LLM and the profile, then click Analyze."
-            ),
+            footer=_("Not analyzed yet: pick the LLM, then click Analyze."),
             outdated="",
         )
     outdated = ""
     if analysis.profile_outdated:
-        outdated = _(
-            "The {source} profile changed after this analysis: analyze again to update "
-            "it."
-        ).format(source=analysis.profile_source)
+        outdated = _("Your CV changed after this analysis: analyze again to update it.")
     result = analysis.analysis
     return JobPanel(
         status,
@@ -500,7 +487,7 @@ def removed_summary(removed: Removed) -> str:
 
 
 def saved_without_contact_data(removed: Removed) -> str:
-    """The notice after saving a pasted profile or notes."""
+    """The notice after saving the CV."""
     check = _("Also check that your name, address and documents aren't in it.")
     if not removed.any():
         return _("Saved.") + " " + check

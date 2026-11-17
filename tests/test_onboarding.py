@@ -27,6 +27,6 @@ def test_whoever_set_the_app_up_before_the_guide_existed_doesnt(
     assert not needs_onboarding(repository)
 
 
-def test_a_saved_profile_is_enough_too(repository: SQLiteRepository) -> None:
+def test_a_saved_cv_is_enough_too(repository: SQLiteRepository) -> None:
     repository.save_profile(profile())
     assert not needs_onboarding(repository)

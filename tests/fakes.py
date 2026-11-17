@@ -11,7 +11,6 @@ from peao_bilingue.domain.analysis import LLMProvider, LLMResponse, Message
 from peao_bilingue.domain.collection import JobSource
 from peao_bilingue.domain.jobs import Job, JobSummary
 from peao_bilingue.domain.notifications import Notifier
-from peao_bilingue.domain.profile import Profile, ProfileSource
 from peao_bilingue.domain.schedule import Scheduler, ScheduleStatus
 from peao_bilingue.domain.updates import Release, ReleaseFeed
 
@@ -54,27 +53,6 @@ class FakeSource(JobSource):
     async def detail(self, summary: JobSummary) -> Job:
         self.detailed.append(summary.external_id)
         return self.jobs[summary.external_id]
-
-
-class FakeSourceWithProfile(FakeSource, ProfileSource):
-    def __init__(
-        self,
-        profile: Profile,
-        *,
-        name: str = "fake",
-        jobs: list[Job] | None = None,
-        failure: Exception | None = None,
-        profile_failure: Exception | None = None,
-    ) -> None:
-        super().__init__(name, jobs, failure)
-        # Like a real source, the profile comes out with this source's name.
-        self.profile = profile.model_copy(update={"source": self.name})
-        self.profile_failure = profile_failure
-
-    async def read_profile(self) -> Profile:
-        if self.profile_failure:
-            raise self.profile_failure
-        return self.profile
 
 
 class FakeProvider(LLMProvider):

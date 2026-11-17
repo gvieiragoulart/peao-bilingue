@@ -1,4 +1,5 @@
-"""A profile the user writes or pastes (their CV), for sources that don't have one."""
+"""The user's CV, pasted or imported in Settings: the profile every job is analyzed
+with."""
 
 from peao_bilingue.domain.privacy import Removed, remove_contact_data
 from peao_bilingue.domain.profile import MANUAL_SOURCE, Profile, profile_hash
@@ -16,8 +17,3 @@ def manual_profile(text: str) -> tuple[Profile, Removed]:
         content_hash=profile_hash(data),
     )
     return profile, removed
-
-
-def clean_notes(text: str) -> tuple[str, Removed]:
-    """The user's notes go into every prompt: the same cleanup as the profile."""
-    return remove_contact_data(text)

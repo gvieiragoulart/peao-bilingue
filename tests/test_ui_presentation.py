@@ -32,7 +32,7 @@ def saved(**overrides: Any) -> SavedAnalysis:
         "provider": "anthropic",
         "model": "claude-x",
         "created_at": NOW,
-        "profile_source": "vanhack",
+        "profile_source": "manual",
     }
     return SavedAnalysis(**{**base, **overrides})
 
@@ -117,8 +117,7 @@ def test_panel_with_analysis_has_the_fit_and_its_parts() -> None:
     assert questions.title == "Questions (20)"
     assert "20. Question 20" in questions.text
     assert "anthropic (claude-x)" in panel.footer
-    assert "06/10/2026 09:30" in panel.footer
-    assert "with the vanhack profile" in panel.footer
+    assert panel.footer.endswith("06/10/2026 09:30.")
     assert panel.outdated == ""
 
 
@@ -128,9 +127,9 @@ def test_analysis_date_is_in_the_users_timezone() -> None:
     assert "06/10/2026 09:30" in presentation.job_panel(listed(), in_utc).footer
 
 
-def test_panel_warns_when_profile_changed_after_analysis() -> None:
+def test_panel_warns_when_the_cv_changed_after_analysis() -> None:
     panel = presentation.job_panel(listed(), saved(profile_outdated=True))
-    assert "The vanhack profile changed after this analysis" in panel.outdated
+    assert "Your CV changed after this analysis" in panel.outdated
 
 
 def test_panel_shows_company_when_source_publishes_it() -> None:
@@ -256,7 +255,6 @@ def test_source_features() -> None:
     assert presentation.source_features(vanhack) == [
         "needs your login",
         "browser",
-        "reads your profile",
     ]
     assert presentation.source_features(remotive) == ["no account needed"]
 
