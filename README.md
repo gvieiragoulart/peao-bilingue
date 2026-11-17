@@ -1,4 +1,8 @@
-# Peão Bilíngue
+<p align="center">
+  <img src="packaging/icons/p-bubble.svg" alt="Peão Bilíngue icon" width="128">
+</p>
+
+<h1 align="center">Peão Bilíngue</h1>
 
 A personal job radar for Windows and Linux: it collects jobs from several sites, filters them by your
 searches and lets you know about the new ones. You pick which to analyze, with which LLM and
