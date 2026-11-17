@@ -8,8 +8,8 @@ MESSAGES: dict[str, str] = {
         "Resposta inválida após {attempts} tentativas: {error}"
     ),
     "Job {key} not found.": "Vaga {key} não encontrada.",
-    "There's no CV to compare this job with. Paste yours in Settings, under Your CV.": (
-        "Não há currículo para comparar com esta vaga. Cole o seu nas Configurações, "
+    "There's no CV to compare this job with. Import yours in Settings, under Your CV.": (
+        "Não há currículo para comparar com esta vaga. Importe o seu nas Configurações, "
         "em Seu currículo."
     ),
     "Interrupted: the process ended before finishing (app closed during the "
@@ -642,18 +642,25 @@ MESSAGES: dict[str, str] = {
     "Import file…": "Importar arquivo…",
     "Import your CV": "Importar o seu currículo",
     "CV or profile": "Currículo ou perfil",
-    "Paste your CV or LinkedIn profile, or import a .pdf, .txt or .md file: every job "
-    "is analyzed against it. Emails, phone numbers, links and CPF are removed when "
-    "you save; remove your name and address yourself.": (
-        "Cole o seu currículo ou perfil do LinkedIn, ou importe um arquivo .pdf, .txt ou "
-        ".md: toda vaga é analisada com ele. Emails, telefones, links e CPF saem quando "
-        "você salva; nome e endereço, tire você mesmo."
+    "Import your CV or LinkedIn profile as a .pdf, .txt or .md file: every job is "
+    "analyzed against it. Emails, phone numbers, links and CPF are removed before "
+    "saving; take your name and address out of the file yourself.": (
+        "Importe o seu currículo ou perfil do LinkedIn em um arquivo .pdf, .txt ou .md: "
+        "toda vaga é analisada com ele. Emails, telefones, links e CPF saem antes de "
+        "salvar; nome e endereço, tire você mesmo do arquivo."
     ),
-    "The CV is empty: paste it or import a file.": (
-        "O currículo está vazio: cole o texto ou importe um arquivo."
+    "No CV saved yet: import one to analyze jobs.": (
+        "Nenhum currículo salvo ainda: importe um para analisar as vagas."
     ),
-    "No text found in the file (a scanned PDF is an image). Paste the text instead.": (
-        "Nenhum texto no arquivo (PDF escaneado é imagem). Cole o texto no lugar."
+    "✓ CV saved on {when}.": "✓ Currículo salvo em {when}.",
+    "The CV hasn't changed.": "O currículo não mudou.",
+    "No text left in the file after removing contact data.": (
+        "Não sobrou texto no arquivo depois de tirar os dados de contato."
+    ),
+    "No text found in the file (a scanned PDF is an image). Use a PDF with selectable "
+    "text, or a .txt file.": (
+        "Nenhum texto no arquivo (PDF escaneado é imagem). Use um PDF com texto "
+        "selecionável ou um arquivo .txt."
     ),
     "Can't read {name}: use a .txt, .md or .pdf file.": (
         "Não consigo ler {name}: use um arquivo .txt, .md ou .pdf."

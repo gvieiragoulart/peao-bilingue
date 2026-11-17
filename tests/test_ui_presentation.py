@@ -127,6 +127,12 @@ def test_analysis_date_is_in_the_users_timezone() -> None:
     assert "06/10/2026 09:30" in presentation.job_panel(listed(), in_utc).footer
 
 
+def test_cv_status_says_since_when_in_the_users_timezone() -> None:
+    assert presentation.cv_status(None).startswith("No CV saved yet")
+    in_utc = NOW.astimezone(ZoneInfo("UTC"))
+    assert presentation.cv_status(in_utc) == "✓ CV saved on 06/10/2026 09:30."
+
+
 def test_panel_warns_when_the_cv_changed_after_analysis() -> None:
     panel = presentation.job_panel(listed(), saved(profile_outdated=True))
     assert "Your CV changed after this analysis" in panel.outdated

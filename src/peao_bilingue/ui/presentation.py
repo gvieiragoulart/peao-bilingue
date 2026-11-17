@@ -486,6 +486,14 @@ def removed_summary(removed: Removed) -> str:
     return ", ".join(parts)
 
 
+def cv_status(saved_at: datetime | None) -> str:
+    """Settings' line about the CV: whether there is one, and since when."""
+    if saved_at is None:
+        return _("No CV saved yet: import one to analyze jobs.")
+    when = f"{saved_at.astimezone(ZoneInfo(settings.timezone)):%d/%m/%Y %H:%M}"
+    return _("✓ CV saved on {when}.").format(when=when)
+
+
 def saved_without_contact_data(removed: Removed) -> str:
     """The notice after saving the CV."""
     check = _("Also check that your name, address and documents aren't in it.")

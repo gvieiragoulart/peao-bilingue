@@ -7,6 +7,7 @@ because old analyses point at them."""
 import hashlib
 import json
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel
@@ -29,6 +30,8 @@ class Profile(BaseModel):
     data: dict[str, Any]
     text: str  # readable version, used in the prompt
     content_hash: str
+    # When the snapshot was saved: set by the repository, None before saving.
+    saved_at: datetime | None = None
 
 
 class ProfileRepository(ABC):

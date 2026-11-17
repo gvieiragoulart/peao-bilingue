@@ -160,7 +160,7 @@ async def analyze_job(
     if saved is None:
         raise MissingProfile(
             _(
-                "There's no CV to compare this job with. Paste yours in Settings, "
+                "There's no CV to compare this job with. Import yours in Settings, "
                 "under Your CV."
             )
         )

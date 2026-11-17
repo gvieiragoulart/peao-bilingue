@@ -541,11 +541,17 @@ def test_messages_from_other_threads_reach_the_log(window: App) -> None:
     assert "from the worker" in window.panels["runs"].log.box.get("1.0", "end")
 
 
-def test_settings_show_the_saved_cv(window: App, repository: SQLiteRepository) -> None:
-    repository.save_profile(profile("Staff Engineer"))
+def test_settings_say_whether_there_is_a_cv(
+    window: App, repository: SQLiteRepository
+) -> None:
     tab = window.panels["settings"]
+    assert tab.cv.status.cget("text").startswith("No CV saved yet")
+
+    repository.save_profile(profile("Staff Engineer"))
     tab.refresh()
-    assert "Role: Staff Engineer" in tab.cv.editor.content()
+
+    assert "CV saved on" in tab.cv.status.cget("text")
+    assert "Staff Engineer" not in tab.cv.status.cget("text")  # no preview
     assert "profile" not in window.panels  # no Profile tab any more
 
 
@@ -942,73 +948,65 @@ def test_window_takes_the_app_icon_before_customtkinter(window: App) -> None:
 # --- the CV, in Settings --------------------------------------------------------------
 
 
-def test_pasted_cv_is_saved_without_contact_data(
-    window: App, repository: SQLiteRepository
+def test_an_imported_cv_is_saved_at_once_without_contact_data(
+    window: App, repository: SQLiteRepository, tmp_path: Path
 ) -> None:
-    tab = window.panels["settings"]
-    tab.cv.editor.box.insert(
-        "1.0", "Senior Python Engineer\nme@mail.com | (11) 98765-4321"
+    cv = tmp_path / "cv.txt"
+    cv.write_text(
+        "Senior Python Engineer\nme@mail.com | (11) 98765-4321\n", encoding="utf-8"
     )
-    tab._save()
+    tab = window.panels["settings"]
+
+    tab.import_cv(cv)
 
     saved = repository.last_profile("manual")
     assert saved is not None
     assert saved[1].text == "Senior Python Engineer"
     assert "1 email(s), 1 phone number(s)" in window.notices["infos"][0]
-    assert tab.cv.editor.content() == "Senior Python Engineer"  # as saved
+    assert "CV saved on" in tab.cv.status.cget("text")
 
 
-def test_saving_settings_leaves_an_untouched_cv_alone(
-    window: App, repository: SQLiteRepository
-) -> None:
-    repository.save_profile(profile("Staff Engineer"))
-    before = repository.last_profile("manual")
-    tab = window.panels["settings"]
-    tab.refresh()
-
-    tab._save()
-
-    assert repository.last_profile("manual") == before
-    assert window.notices["infos"] == ["Settings saved."]
-
-
-def test_an_empty_cv_saves_nothing(window: App, repository: SQLiteRepository) -> None:
-    repository.save_profile(profile("Staff Engineer"))
-    tab = window.panels["settings"]
-    tab.refresh()
-    tab.cv.editor.box.delete("1.0", "end")
-
-    tab._save()
-
-    assert any("The CV is empty" in error for error in window.notices["errors"])
-    assert not config.CONFIG_PATH.exists()  # the other settings weren't saved either
-    saved = repository.last_profile("manual")
-    assert saved is not None and "Staff Engineer" in saved[1].text
-
-
-def test_an_imported_cv_waits_for_save(
+def test_importing_the_same_cv_again_says_so(
     window: App, repository: SQLiteRepository, tmp_path: Path
 ) -> None:
     cv = tmp_path / "cv.txt"
     cv.write_text("Backend Engineer\n", encoding="utf-8")
     tab = window.panels["settings"]
 
-    tab.cv.editor.import_file(cv)
+    tab.import_cv(cv)
+    tab.import_cv(cv)
 
-    assert tab.cv.editor.content() == "Backend Engineer"
-    assert repository.last_profile("manual") is None
-    tab._save()
-    saved = repository.last_profile("manual")
-    assert saved is not None and saved[1].text == "Backend Engineer"
+    assert window.notices["infos"][-1] == "The CV hasn't changed."
 
 
-def test_an_unsaved_cv_survives_a_refresh(window: App) -> None:
+def test_a_file_without_text_saves_nothing(
+    window: App, repository: SQLiteRepository, tmp_path: Path
+) -> None:
+    scanned = tmp_path / "scanned.txt"
+    scanned.write_text("  \n", encoding="utf-8")
+    only_contact = tmp_path / "contact.txt"
+    only_contact.write_text("me@mail.com\n", encoding="utf-8")
     tab = window.panels["settings"]
-    tab.cv.editor.box.insert("1.0", "half written")
 
-    window.on_change()  # e.g. a collection ended
+    tab.import_cv(scanned)
+    tab.import_cv(only_contact)
 
-    assert "half written" in tab.cv.editor.content()
+    [no_text, no_text_left] = window.notices["errors"]
+    assert "No text found in the file" in no_text
+    assert "No text left in the file" in no_text_left
+    assert repository.last_profile("manual") is None
+
+
+def test_saving_settings_leaves_the_cv_alone(
+    window: App, repository: SQLiteRepository
+) -> None:
+    repository.save_profile(profile("Staff Engineer"))
+    before = repository.last_profile("manual")
+
+    window.panels["settings"]._save()
+
+    assert repository.last_profile("manual") == before
+    assert window.notices["infos"] == ["Settings saved."]
 
 
 # --- the first-run guide ----------------------------------------------------------------

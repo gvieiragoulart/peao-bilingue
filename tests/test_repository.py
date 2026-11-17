@@ -277,7 +277,10 @@ def test_profile_saved_only_when_content_changes(repository: SQLiteRepository) -
 
     _id, changed = repository.save_profile(profile("Staff"))
     assert changed is True
-    assert saved_profile(repository, "manual").data == {"role": "Staff"}
+    saved = saved_profile(repository, "manual")
+    assert saved.data == {"role": "Staff"}
+    # when it was saved, with its timezone (Settings shows it)
+    assert saved.saved_at is not None and saved.saved_at.tzinfo is not None
 
 
 def test_without_saved_profile_returns_none(repository: SQLiteRepository) -> None:

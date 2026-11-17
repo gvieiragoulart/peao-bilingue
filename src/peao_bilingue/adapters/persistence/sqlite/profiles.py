@@ -3,7 +3,7 @@
 from sqlmodel import Session, col, select
 
 from peao_bilingue.adapters.persistence.sqlite.database import BaseSQLite
-from peao_bilingue.adapters.persistence.sqlite.tables import ProfileTable
+from peao_bilingue.adapters.persistence.sqlite.tables import ProfileTable, local
 from peao_bilingue.domain.profile import Profile, ProfileRepository
 
 
@@ -29,7 +29,7 @@ class ProfilesSQLite(BaseSQLite, ProfileRepository):
             current = last_source_profile(session, profile.source)
             if current and current.content_hash == profile.content_hash:
                 return _id(current), False
-            row = ProfileTable(**profile.model_dump())
+            row = ProfileTable(**profile.model_dump(exclude={"saved_at"}))
             session.add(row)
             session.commit()
             session.refresh(row)
@@ -40,4 +40,5 @@ class ProfilesSQLite(BaseSQLite, ProfileRepository):
             row = last_source_profile(session, source)
             if row is None:
                 return None
-            return _id(row), Profile.model_validate(row, from_attributes=True)
+            profile = Profile.model_validate(row, from_attributes=True)
+            return _id(row), profile.model_copy(update={"saved_at": local(row.read_at)})

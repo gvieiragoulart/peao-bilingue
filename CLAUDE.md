@@ -295,14 +295,17 @@ one).
 
 **The CV** (2026-10-17; the only profile since 2026-11-17): the profile of source `manual`
 (`MANUAL_SOURCE`), the one every job is analyzed with. It lives in **Settings → "Seu
-currículo"** (`ui/tabs/settings/cv.py`, `CVSection`), pasted or imported (`ui/cv_editor.py`,
-`CVEditor`, shared with the guide; `adapters/documents.py`: `.pdf` through `pypdf`, `.txt`/`.md`
-in UTF-8 or cp1252), and saved by the tab's Save, only when the box was edited (an empty one is
-an error and nothing is saved). Before saving, `domain/privacy.remove_contact_data` takes out
-emails, links (they carry names), CPF and phone numbers (≥ 9 digits, so "2019-2023" stays) and
-the lines left with only separators; the box then shows the saved text. A name or an address
-can't be found by a pattern: the screen asks the user to check. An unsaved paste survives a
-refresh (`edit_modified`).
+currículo"** (`ui/tabs/settings/cv.py`, `CVSection`): only a status line
+(`presentation.cv_status`: "✓ Currículo salvo em <date>" from `Profile.saved_at`, the row's
+`read_at`) and "Importar arquivo…"; **the CV's text isn't shown** (Gabriel, 2026-11-17: no
+preview) and there's no paste. Importing saves at once (`SettingsTab.import_cv`, not the tab's
+Save): `ui/cv_editor.py` picks and reads the file (`adapters/documents.py`: `.pdf` through
+`pypdf`, `.txt`/`.md` in UTF-8 or cp1252; no text = a scanned PDF, an error). Before saving,
+`domain/privacy.remove_contact_data` takes out emails, links (they carry names), CPF and phone
+numbers (≥ 9 digits, so "2019-2023" stays) and the lines left with only separators; a file left
+empty is an error. A name or an address can't be found by a pattern: the hint asks the user to
+take them out of the file. The first-run guide keeps a box (`CVEditor`) to paste into or fill
+from a file, saved at Finish.
 **Removed on 2026-11-17** (Gabriel didn't like the Profile tab): the Profile tab, VanHack reading
 the `/profile` page on every collection (`ProfileSource`, `vanhack/profile.py`, its selectors
 and fixture), the per-source profile picker in the job's panel, the profile history and the

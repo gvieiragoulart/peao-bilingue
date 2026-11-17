@@ -82,9 +82,10 @@ works as an alternative for the command line.
 | Execuções (Runs) | "collect now", the daily automatic collection, history and the live log |
 | Configurações (Settings) | your CV, the default LLM, collection limits, notice channels (Windows notification, email, WhatsApp), version and logs |
 
-Every job is analyzed against **your CV**: paste it, or import a `.pdf`, `.txt` or `.md`, in
-Settings → **Seu currículo**. Emails, phone numbers, links and CPF numbers are removed before it
-is saved; a name or an address can't be found by a pattern, so check the text. The collection
+Every job is analyzed against **your CV**: import it (a `.pdf`, `.txt` or `.md`) in Settings →
+**Seu currículo**, which then shows when it was saved, not its text. Emails, phone numbers, links
+and CPF numbers are removed before it is saved; a name or an address can't be found by a
+pattern, so take them out of the file first. The collection
 calls no LLM: nothing is spent until you click Analyze.
 
 **Sources:** VanHack (manual login), Remotive and Remote OK (public APIs of
