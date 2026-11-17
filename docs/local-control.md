@@ -35,10 +35,11 @@ the Runs tab or `peao schedule enable --time HH:MM` to change the systemd timer.
 ## Searches
 
 ```bash
-printf '%s\n' '{"op":"search.upsert","search":{"name":"Python remote","keywords":["python","django"],"exclude":[],"sources":["remotive"],"active":true}}' | uv run peao control apply
+printf '%s\n' '{"op":"search.upsert","search":{"name":"Python remote","keywords":["python","django"],"roles":["engineer","developer"],"exclude":[],"sources":["remotive"],"active":true}}' | uv run peao control apply
 ```
 
-The response includes the assigned `id`. To edit, send `search.upsert` with
+`roles` must be in the job's title (or a keyword must); `exclude` is looked
+for in the title only. The response includes the assigned `id`. To edit, send `search.upsert` with
 that `id` and the complete search. `sources: []` means every enabled source.
 To remove one, send `{"op":"search.delete","id":3}`. Read the current state
 first so the ID and content are current.

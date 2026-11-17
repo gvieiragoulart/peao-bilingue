@@ -60,6 +60,8 @@ MESSAGES: dict[str, str] = {
     "list or add searches": "lista ou cadastra buscas",
     "new search": "nova busca",
     "none = every source": "nenhuma = todas as fontes",
+    "the title must have one of them": "o título precisa ter um deles",
+    "looked for in the title": "procurado no título",
     "daily collection through Windows Task Scheduler": (
         "coleta diária pelo Agendador do Windows"
     ),
@@ -589,13 +591,21 @@ MESSAGES: dict[str, str] = {
     # --- window: Searches tab -----------------------------------------------------
     "Name": "Nome",
     "Keywords": "Palavras-chave",
+    "Roles": "Cargos",
     "Exclude": "Excluir",
     "Active": "Ativa",
     "New search": "Nova busca",
     "Keywords (comma separated)": "Palavras-chave (separadas por vírgula)",
-    "Exclude when present (optional)": "Excluir se aparecer (opcional)",
-    'Careful: "junior" also matches "mentor junior engineers".': (
-        'Cuidado: "junior" também casa com "mentor junior engineers".'
+    "Roles in the title (optional)": "Cargos no título (opcional)",
+    "e.g. engineer, developer, desenvolvedor, backend": (
+        "ex.: engineer, developer, desenvolvedor, backend"
+    ),
+    "Exclude when in the title (optional)": "Excluir se estiver no título (opcional)",
+    "The title must have one of the roles (or a keyword). Exclude also looks only at "
+    'the title: "analyst" drops a Data Analyst, not a job that mentions analysts.': (
+        "O título precisa ter um dos cargos (ou uma palavra-chave). O Excluir também "
+        'olha só o título: "analyst" tira uma vaga de Data Analyst, não uma vaga que '
+        "cita analistas."
     ),
     "Sources (none checked = all)": "Fontes (nenhuma marcada = todas)",
     "Remove": "Remover",
@@ -769,10 +779,12 @@ MESSAGES: dict[str, str] = {
     "It takes about 3 minutes, and everything can be changed later.": (
         "Leva uns 3 minutos, e tudo pode ser mudado depois."
     ),
-    "Jobs whose title, skills or description have one of the keywords are kept. You can "
-    "add more searches later, on the Searches tab.": (
+    "Jobs whose title, skills or description have one of the keywords are kept; with "
+    "roles, the title must also have one of them. You can add more searches later, on "
+    "the Searches tab.": (
         "Ficam as vagas com alguma das palavras-chave no título, nas habilidades ou na "
-        "descrição. Dá para criar mais buscas depois, na aba Buscas."
+        "descrição; com cargos, o título também precisa ter um deles. Dá para criar "
+        "mais buscas depois, na aba Buscas."
     ),
     "e.g. python, django, backend": "ex.: python, django, backend",
     "e.g. intern, wordpress": "ex.: estágio, wordpress",

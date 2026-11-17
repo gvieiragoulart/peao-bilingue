@@ -433,6 +433,7 @@ def search_row(search: Search) -> tuple[str, ...]:
     return (
         search.name,
         ", ".join(search.keywords),
+        ", ".join(search.roles),
         ", ".join(search.exclude),
         ", ".join(search.sources) or _("all"),
         _("yes") if search.active else _("no"),

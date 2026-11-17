@@ -95,7 +95,7 @@ src/peao_bilingue/
 │   ├── profile.py     # the pasted CV, without contact data
 │   ├── collect.py     # run_collection: search → filter → save → notify (no LLM), with a lock
 │   ├── analysis.py    # on-demand analysis: prompt, validation and retries, provider-agnostic
-│   └── filters.py     # a search's keywords / exclude / sources
+│   └── filters.py     # a search's keywords / roles / exclude / sources
 ├── adapters/          # importing the package registers them all in the factories
 │   ├── sources/       # api.py (ApiSource base), remotive, remoteok, arbeitnow, himalayas,
 │   │                  #   weworkremotely, html.py; vanhack/ (Playwright: auth, listing, detail,
@@ -272,6 +272,17 @@ company means no fingerprint: VanHack never publishes the company, and the title
 merge unrelated jobs. The duplicate is **saved** with `duplicate_of=<the original's key>` (or it
 would be detailed again on every collection, using up the per-source limit), but it isn't new,
 isn't notified and isn't listed; the original's detail shows "Também em <source>: <link>".
+
+**The search filter** (`application/filters.matches`, since 2026-11-17): a keyword can be
+anywhere in the job (title, headline, skills, description); **`Search.roles`** ("Cargos no
+título") must be in the **title** when the search has any, and a keyword in the title counts as
+a role ("APAC Python"); **`exclude` looks at the title only** (before, the whole text: excluding
+"analyst" dropped developer jobs that mention analysts). Titles are compared without accents or
+case (`strip_accents`). Why: on Gabriel's data, 220 of 810 jobs had non-developer titles (data
+scientists, credit analysts...), 190 of them in only because the description asked for Python;
+half came from the company boards (Clara, QuintoAndar, Nubank, Stone). `roles` is a JSON column
+added by the additive migration, NULL in older rows and read as `[]` (no role required). The
+filter only applies to new collections: saved jobs stay.
 
 **Search text** on the Jobs tab (`list_jobs(search_text=)`, `Job.matches`): every word has to
 appear in the title, company, location, skills or description, ignoring accents and case.
@@ -894,7 +905,7 @@ uv sync
 uv run peao-ui                       # the desktop app
 uv run peao login                    # manual login to VanHack (--source for others)
 uv run peao check                    # is the saved session still valid?
-uv run peao searches                 # list; `searches add NAME kw1 kw2 --exclude x`
+uv run peao searches                 # list; `searches add NAME kw1 kw2 --roles r --exclude x`
 uv run peao adapters                 # registered sources, LLMs and notifiers
 uv run peao run                      # collect and save; no LLM (analysis is in the app)
 uv run peao run --source vanhack     # only one source

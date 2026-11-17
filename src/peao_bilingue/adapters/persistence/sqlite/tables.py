@@ -30,6 +30,8 @@ class SearchTable(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
     keywords: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    # Added on 2026-11-17: NULL in older rows, read as [].
+    roles: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     exclude: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     sources: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     active: bool = True

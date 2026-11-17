@@ -11,11 +11,17 @@ class Search(BaseModel):
     id: int | None = None
     name: str = Field(min_length=1)
     keywords: list[str] = Field(min_length=1)
+    # The title must name one of these (or a keyword): "engineer", "developer"...
+    # Empty = any title. Keywords alone let in a Data Analyst whose description asks
+    # for Python.
+    roles: list[str] = []
+    # Looked for in the title only: "analyst" drops a Data Analyst, not a developer
+    # job that mentions analysts.
     exclude: list[str] = []
     sources: list[str] = []  # empty = every enabled source
     active: bool = True
 
-    @field_validator("keywords", "exclude")
+    @field_validator("keywords", "roles", "exclude")
     @classmethod
     def drop_empty_terms(cls, terms: list[str]) -> list[str]:
         clean = [term.strip() for term in terms if term.strip()]

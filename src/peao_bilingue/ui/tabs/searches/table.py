@@ -13,11 +13,14 @@ class SearchTable(Table):
         super().__init__(
             master,
             [
-                ("name", _("Name"), 150),
-                ("keywords", _("Keywords"), 230),
-                ("exclude", _("Exclude"), 140),
-                ("sources", _("Sources"), 120),
-                ("active", _("Active"), 60),
+                # Together they fit the table at 1280 px (the form shows each value
+                # whole); Keywords, the widest, takes what a wider window adds.
+                ("name", _("Name"), 110),
+                ("keywords", _("Keywords"), 140),
+                ("roles", _("Roles"), 115),
+                ("exclude", _("Exclude"), 85),
+                ("sources", _("Sources"), 60),
+                ("active", _("Active"), 45),
             ],
         )
         self._searches: dict[str, Search] = {}

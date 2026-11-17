@@ -431,13 +431,20 @@ def test_creates_search_from_screen(window: App, repository: SQLiteRepository) -
     tab = window.panels["searches"]
     tab.form.name.insert(0, "Go")
     tab.form.keywords.insert(0, "golang, go ")
+    tab.form.roles.insert(0, "engineer, developer")
     tab.form.sources["vanhack"].select()
     tab._save()
 
     [search] = repository.list_searches()
     assert search.name == "Go"
     assert search.keywords == ["golang", "go"]
+    assert search.roles == ["engineer", "developer"]
     assert search.sources == ["vanhack"]
+
+    tab.form.clear()
+    assert tab.form.roles.get() == ""  # the example shows, but isn't a value
+    tab.form.load(search)
+    assert tab.form.roles.get() == "engineer, developer"
 
 
 def test_search_without_keyword_warns(
@@ -1028,6 +1035,7 @@ def test_the_guide_saves_everything_at_the_end(
 ) -> None:
     guide = the_guide(new_user_window)
     guide.search_keywords.insert(0, "python, django")
+    guide.search_roles.insert(0, "engineer, desenvolvedor")
     guide.search_exclude.insert(0, "intern")
     for name, box in guide.source_boxes.items():
         box.select() if name in ("remotive", "vanhack") else box.deselect()
@@ -1042,9 +1050,10 @@ def test_the_guide_saves_everything_at_the_end(
     assert new_user_window.onboarding is None
     assert new_user_window.content.winfo_manager() == "pack"
     [search] = repository.list_searches()
-    assert (search.name, search.keywords, search.exclude) == (
+    assert (search.name, search.keywords, search.roles, search.exclude) == (
         "python, django",
         ["python", "django"],
+        ["engineer", "desenvolvedor"],
         ["intern"],
     )
     assert set(settings.enabled_sources) == {"remotive", "vanhack"}

@@ -1,6 +1,6 @@
 """Which saved searches a job matches."""
 
-from peao_bilingue.domain.jobs import Job
+from peao_bilingue.domain.jobs import Job, strip_accents
 from peao_bilingue.domain.searches import Search
 
 
@@ -10,14 +10,25 @@ def applies_to_source(search: Search, source: str) -> bool:
 
 
 def matches(job: Job, search: Search) -> bool:
-    """True when the search applies to the source, some keyword shows up and no
-    excluded term does."""
+    """True when the search applies to the source, no excluded term is in the title,
+    the title names one of the roles (if the search has any) and some keyword shows
+    up anywhere.
+
+    A keyword in the title also counts as a role: "Python Developer" or "APAC
+    Python" for a Python search. The title is compared without accents or case.
+    """
     if not applies_to_source(search, job.source):
         return False
-    text = job.searchable_text()
-    if any(term.lower() in text for term in search.exclude):
+    title = strip_accents(job.title)
+    if _in_title(title, search.exclude):
         return False
-    return bool(_found(text, search.keywords))
+    if search.roles and not _in_title(title, [*search.roles, *search.keywords]):
+        return False
+    return bool(_found(job.searchable_text(), search.keywords))
+
+
+def _in_title(title: str, terms: list[str]) -> bool:
+    return any(strip_accents(term) in title for term in terms)
 
 
 def matched_keywords(job: Job, search: Search) -> list[str]:

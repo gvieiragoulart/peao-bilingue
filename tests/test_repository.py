@@ -33,6 +33,39 @@ def test_updates_existing_search(repository: SQLiteRepository) -> None:
     assert search.keywords == ["python"]  # what didn't change survives
 
 
+def test_search_roles_are_saved(repository: SQLiteRepository) -> None:
+    saved = repository.save_search(
+        Search(name="Python", keywords=["python"], roles=["engineer", "developer"])
+    )
+
+    assert saved.roles == ["engineer", "developer"]
+    assert repository.list_searches()[0].roles == ["engineer", "developer"]
+
+
+def test_searches_from_before_the_roles_column_require_none() -> None:
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+    # The search table as it was before the column.
+    with engine.begin() as connection:
+        connection.exec_driver_sql(
+            'CREATE TABLE "search" (id INTEGER PRIMARY KEY, name VARCHAR NOT NULL, '
+            "keywords JSON, exclude JSON, sources JSON, active BOOLEAN NOT NULL, "
+            "created_at DATETIME NOT NULL)"
+        )
+        connection.exec_driver_sql(
+            "INSERT INTO search VALUES (1, 'Python', '[\"python\"]', '[]', '[]', 1, "
+            "'2026-10-06 09:30:00')"
+        )
+    repository = SQLiteRepository(engine)
+
+    [old] = repository.list_searches()
+
+    assert (old.keywords, old.roles) == (["python"], [])
+    updated = repository.save_search(old.model_copy(update={"roles": ["engineer"]}))
+    assert updated.roles == ["engineer"]
+
+
 def test_lists_only_active(repository: SQLiteRepository) -> None:
     repository.save_search(Search(name="Active", keywords=["a"]))
     repository.save_search(Search(name="Paused", keywords=["b"], active=False))

@@ -159,11 +159,16 @@ def test_fit_label(score: int, label: str) -> None:
 
 def test_search_row() -> None:
     search = Search(
-        name="Python", keywords=["python", "django"], exclude=["intern"], sources=[]
+        name="Python",
+        keywords=["python", "django"],
+        roles=["engineer", "developer"],
+        exclude=["intern"],
+        sources=[],
     )
     assert presentation.search_row(search) == (
         "Python",
         "python, django",
+        "engineer, developer",
         "intern",
         "all",
         "yes",

@@ -32,10 +32,18 @@ class SearchForm(ctk.CTkFrame):
 
         self.name = self._entry(_("Name"))
         self.keywords = self._entry(_("Keywords (comma separated)"))
-        self.exclude = self._entry(_("Exclude when present (optional)"))
+        self.roles = self._entry(
+            _("Roles in the title (optional)"),
+            _("e.g. engineer, developer, desenvolvedor, backend"),
+        )
+        self.exclude = self._entry(_("Exclude when in the title (optional)"))
         Hint(
             self,
-            _('Careful: "junior" also matches "mentor junior engineers".'),
+            _(
+                "The title must have one of the roles (or a keyword). Exclude also "
+                'looks only at the title: "analyst" drops a Data Analyst, not a job '
+                "that mentions analysts."
+            ),
             justify="left",
             wraplength=320,
         ).pack(anchor="w", padx=12)
@@ -77,16 +85,16 @@ class SearchForm(ctk.CTkFrame):
         ).pack(side="right")
         self.clear()
 
-    def _entry(self, label: str) -> ctk.CTkEntry:
+    def _entry(self, label: str, example: str | None = None) -> ctk.CTkEntry:
         ctk.CTkLabel(self, text=label).pack(anchor="w", padx=12)
-        entry = ctk.CTkEntry(self)
+        entry = ctk.CTkEntry(self, placeholder_text=example)
         entry.pack(fill="x", padx=12, pady=(0, 8))
         return entry
 
     def clear(self) -> None:
         self.editing = None
         self.heading.configure(text=_("New search"))
-        for entry in (self.name, self.keywords, self.exclude):
+        for entry in (self.name, self.keywords, self.roles, self.exclude):
             entry.delete(0, "end")
         for box in self.sources.values():
             box.deselect()
@@ -98,10 +106,12 @@ class SearchForm(ctk.CTkFrame):
         for entry, value in (
             (self.name, search.name),
             (self.keywords, ", ".join(search.keywords)),
+            (self.roles, ", ".join(search.roles)),
             (self.exclude, ", ".join(search.exclude)),
         ):
             entry.delete(0, "end")
-            entry.insert(0, value)
+            if value:  # inserting "" would hide the example
+                entry.insert(0, value)
         for name, box in self.sources.items():
             box.select() if name in search.sources else box.deselect()
         self.active.select() if search.active else self.active.deselect()
@@ -113,6 +123,7 @@ class SearchForm(ctk.CTkFrame):
                 id=self.editing,
                 name=self.name.get().strip(),
                 keywords=presentation.terms(self.keywords.get()),
+                roles=presentation.terms(self.roles.get()),
                 exclude=presentation.terms(self.exclude.get()),
                 sources=[name for name, box in self.sources.items() if box.get()],
                 active=bool(self.active.get()),
